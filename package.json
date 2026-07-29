@@ -1,0 +1,31 @@
+{
+  "name": "sf2e-cyberpunk-remaster",
+  "private": true,
+  "version": "2.5.1",
+  "type": "module",
+  "description": "Build and validation tooling for the SF2E Cyberpunk Remaster Foundry module.",
+  "scripts": {
+    "extract:folders": "node scripts/extract-pack-folders.mjs",
+    "import:items": "node scripts/import-items-from-pack.mjs",
+    "sync:from-foundry": "node scripts/sync-from-foundry.mjs",
+    "icons:organize": "node scripts/organize-icons.mjs",
+    "icons:restore-names": "node scripts/restore-icon-filenames.mjs",
+    "icons:restore-external": "node scripts/restore-external-icons.mjs",
+    "deploy": "node scripts/deploy-to-foundry.mjs",
+    "author:update": "node scripts/author-update.mjs",
+    "author:update:workspace": "npm run sync:from-foundry && npm run build && npm test && npm run deploy",
+    "content:add-red-pkt": "node scripts/add-red-pkt-content.mjs",
+    "content:cyberpunkify-programs": "node scripts/cyberpunkify-programs.mjs",
+    "content:add-interface-scan": "node scripts/add-netrunner-interface-scan.mjs",
+    "audit:pkt": "node scripts/audit-pkt-bonuses.mjs",
+    "build": "node scripts/build-packs.mjs",
+    "validate": "node scripts/validate-packs.mjs",
+    "test": "node --test tests/*.test.mjs && npm run validate"
+  },
+  "devDependencies": {
+    "classic-level": "3.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

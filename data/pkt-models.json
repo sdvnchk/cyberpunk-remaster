@@ -1,0 +1,2234 @@
+[
+  {
+    "schema": 1,
+    "key": "cybermatrix-copernicus",
+    "name": "Cybermatrix Inc. «Коперник»",
+    "journalId": "LRV1KlxZGvXDm9ny",
+    "pageId": "RDlD9z1ODepxz8ct",
+    "requiredBodyId": "tkeQt2AZwYxlo0G4",
+    "bodyQuality": 2,
+    "priceEddies": 68450,
+    "unique": [
+      {
+        "key": "copernicus-core",
+        "itemId": "bVOs64i0xa8OI4Mx",
+        "family": "pkt-unique",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "mono-vision",
+        "itemId": "yNN1l6d0WprQumHm",
+        "family": "cyber-eye",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      }
+    ],
+    "components": [
+      {
+        "key": "cyber-arms",
+        "itemId": "cvuIqkqCdTswg3uF",
+        "family": "cyber-arm",
+        "quantity": 2,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-audio",
+        "itemId": "Is8gWdAjU55hVtYb",
+        "family": "cyber-audio",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-legs",
+        "itemId": "voKIFcyxPmzJSfki",
+        "family": "cyber-leg",
+        "quantity": 2,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "neural-link",
+        "itemId": "bMgxTWp5PGp30uQ8",
+        "family": "neural-link",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-skull",
+        "itemId": "6Lnce5KtpF8VqE6O",
+        "family": "pkt-structure",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "endoskeleton",
+        "itemId": "ZjLOJXI4FD2i1512",
+        "family": "endoskeleton",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "emi-shield",
+        "itemId": "XY3CmEvz1v21noJy",
+        "family": "pkt-defense",
+        "quantity": 2,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "grips",
+        "itemId": "FU2q8REKaGwCIwhy",
+        "family": "cyber-arm-module",
+        "quantity": 2,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-arm"
+      },
+      {
+        "key": "hydraulics",
+        "itemId": "x9k8yGcrJmuIteIG",
+        "family": "pkt-internal",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "transformer-feet",
+        "itemId": "5AdoGIaG78q9wqRP",
+        "family": "cyber-leg-module",
+        "quantity": 2,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-leg"
+      },
+      {
+        "key": "radar-sonar",
+        "itemId": "nMrGBRnCHh0ovGw0",
+        "family": "cyber-audio-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-audio"
+      },
+      {
+        "key": "radio",
+        "itemId": "UkLphu1jZYQFW1Tm",
+        "family": "cyber-audio-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-audio"
+      },
+      {
+        "key": "arm-multitools",
+        "itemId": "umS0qPQn3PYD0pLA",
+        "family": "cyber-arm-module",
+        "quantity": 2,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-arm"
+      },
+      {
+        "key": "zero-gravity",
+        "itemId": "DdX973Uzp9NYo9Uj",
+        "family": "cyber-leg-module",
+        "quantity": 2,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-leg"
+      },
+      {
+        "key": "anti-dazzle",
+        "itemId": "ZyWwRVfa97xTAo4d",
+        "family": "cyber-eye-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-eye"
+      }
+    ],
+    "choices": []
+  },
+  {
+    "schema": 1,
+    "key": "dynalar-aquarius",
+    "name": "Dynalar «Водолей»",
+    "journalId": "LRV1KlxZGvXDm9ny",
+    "pageId": "g3hnc9T8FyCW7lQx",
+    "requiredBodyId": "tg2eHjiZMoKUxtTR",
+    "bodyQuality": 1,
+    "priceEddies": 23750,
+    "unique": [
+      {
+        "key": "aquarius-drive",
+        "itemId": "AMaFNjS5iVw0JlYm",
+        "family": "cyber-leg",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      }
+    ],
+    "components": [
+      {
+        "key": "cyber-arms",
+        "itemId": "0SWZlFXOhLgKJdD4",
+        "family": "cyber-arm",
+        "quantity": 2,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-eyes",
+        "itemId": "7IRYHaVmugCdEFsr",
+        "family": "cyber-eye",
+        "quantity": 2,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "neural-link",
+        "itemId": "PrU4x8lXoSclhUEF",
+        "family": "neural-link",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-skull",
+        "itemId": "6Lnce5KtpF8VqE6O",
+        "family": "pkt-structure",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "endoskeleton",
+        "itemId": "lvhux6M22BuSYNlj",
+        "family": "endoskeleton",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "advanced-audio",
+        "itemId": "Is8gWdAjU55hVtYb",
+        "family": "cyber-audio",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "ir-uv",
+        "itemId": "QqRn625xdHY8xLaP",
+        "family": "cyber-eye-module",
+        "quantity": 2,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-eye"
+      },
+      {
+        "key": "radar-detector",
+        "itemId": "TPRcl7PfEbxy2TCm",
+        "family": "cyber-audio-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-audio"
+      },
+      {
+        "key": "radio",
+        "itemId": "UkLphu1jZYQFW1Tm",
+        "family": "cyber-audio-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-audio"
+      },
+      {
+        "key": "radar-sonar",
+        "itemId": "nMrGBRnCHh0ovGw0",
+        "family": "cyber-audio-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-audio"
+      },
+      {
+        "key": "subdermal-armor",
+        "itemId": "IKHNA2PcSB3zIMlp",
+        "family": "skin-armor",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false
+      }
+    ],
+    "choices": []
+  },
+  {
+    "schema": 1,
+    "key": "dynalar-sulfur",
+    "name": "Dynalar «Сера»",
+    "journalId": "LRV1KlxZGvXDm9ny",
+    "pageId": "rsRQsNJn43AcmP2v",
+    "requiredBodyId": "tkeQt2AZwYxlo0G4",
+    "bodyQuality": 2,
+    "priceEddies": 73200,
+    "unique": [
+      {
+        "key": "sulfur-coating",
+        "itemId": "jhK1TZLzHOJeflTC",
+        "family": "pkt-unique",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "sulfur-controller",
+        "itemId": "UXG0ucDX3ylMs1lU",
+        "family": "pkt-unique",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      }
+    ],
+    "components": [
+      {
+        "key": "cyber-arms",
+        "itemId": "cvuIqkqCdTswg3uF",
+        "family": "cyber-arm",
+        "quantity": 2,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-audio",
+        "itemId": "Is8gWdAjU55hVtYb",
+        "family": "cyber-audio",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-eyes",
+        "itemId": "NstC7slTFoxrUhbu",
+        "family": "cyber-eye",
+        "quantity": 2,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-legs",
+        "itemId": "voKIFcyxPmzJSfki",
+        "family": "cyber-leg",
+        "quantity": 2,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "neural-link",
+        "itemId": "bMgxTWp5PGp30uQ8",
+        "family": "neural-link",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-skull",
+        "itemId": "6Lnce5KtpF8VqE6O",
+        "family": "pkt-structure",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "endoskeleton",
+        "itemId": "lvhux6M22BuSYNlj",
+        "family": "endoskeleton",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "enhanced-hearing",
+        "itemId": "ZxPOaEPP0tLRu1lE",
+        "family": "cyber-audio-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-audio"
+      },
+      {
+        "key": "heavy-subdermal",
+        "itemId": "xQYaULcqM8yE194M",
+        "family": "skin-armor",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "ir-uv",
+        "itemId": "QqRn625xdHY8xLaP",
+        "family": "cyber-eye-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-eye"
+      },
+      {
+        "key": "radar-sonar",
+        "itemId": "nMrGBRnCHh0ovGw0",
+        "family": "cyber-audio-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-audio"
+      },
+      {
+        "key": "radio",
+        "itemId": "UkLphu1jZYQFW1Tm",
+        "family": "cyber-audio-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-audio"
+      },
+      {
+        "key": "fire-suppressors",
+        "itemId": "93iPHmIvUxBRSTwV",
+        "family": "cyber-arm-module",
+        "quantity": 2,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-arm"
+      }
+    ],
+    "choices": []
+  },
+  {
+    "schema": 1,
+    "key": "militech-dragoon",
+    "name": "Militech «Драгун»",
+    "journalId": "LRV1KlxZGvXDm9ny",
+    "pageId": "Gm0ZPBH1e9ziojoj",
+    "requiredBodyId": "Ozh4qKfrpO3vIyXD",
+    "bodyQuality": 4,
+    "priceEddies": 389350,
+    "unique": [
+      {
+        "key": "dragoon-armor",
+        "itemId": "9iSyrB5qXoUUaRqc",
+        "family": "pkt-unique",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "dragoon-node",
+        "itemId": "bPKRQDJZHKTiDlQX",
+        "family": "pkt-unique",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      }
+    ],
+    "components": [
+      {
+        "key": "cyber-arms",
+        "itemId": "mnHATtZUwDIcl7K8",
+        "family": "cyber-arm",
+        "quantity": 2,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-audio",
+        "itemId": "yGnMhyXCX5CAs63S",
+        "family": "cyber-audio",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-eyes",
+        "itemId": "1aFhSbLd1NXpzNPI",
+        "family": "cyber-eye",
+        "quantity": 2,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-legs",
+        "itemId": "voKIFcyxPmzJSfki",
+        "family": "cyber-leg",
+        "quantity": 2,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "neural-link",
+        "itemId": "bMgxTWp5PGp30uQ8",
+        "family": "neural-link",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-skull",
+        "itemId": "6Lnce5KtpF8VqE6O",
+        "family": "pkt-structure",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "endoskeleton",
+        "itemId": "8S1Ma3b6ReGxwpvA",
+        "family": "endoskeleton",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "emi-shield",
+        "itemId": "XY3CmEvz1v21noJy",
+        "family": "pkt-defense",
+        "quantity": 2,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "anti-dazzle",
+        "itemId": "ZyWwRVfa97xTAo4d",
+        "family": "cyber-eye-module",
+        "quantity": 2,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-eye"
+      },
+      {
+        "key": "chiron",
+        "itemId": "GBtIO5fqFGD9Dzk1",
+        "family": "cyber-audio-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-audio"
+      },
+      {
+        "key": "internal-agent",
+        "itemId": "M8uvPCSLMkBqSrzA",
+        "family": "neural-link-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "neural-link"
+      },
+      {
+        "key": "ir-uv",
+        "itemId": "QqRn625xdHY8xLaP",
+        "family": "cyber-eye-module",
+        "quantity": 2,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-eye"
+      },
+      {
+        "key": "hydraulics",
+        "itemId": "x9k8yGcrJmuIteIG",
+        "family": "pkt-internal",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false
+      }
+    ],
+    "choices": []
+  },
+  {
+    "schema": 1,
+    "key": "militech-dragoon-2",
+    "name": "Militech «Драгун 2.0»",
+    "journalId": "LRV1KlxZGvXDm9ny",
+    "pageId": "J7mD2rG9vK4pT8xN",
+    "requiredBodyId": "tVLVycxfLpejAKaO",
+    "bodyQuality": 5,
+    "priceEddies": 1114350,
+    "unique": [
+      {
+        "key": "dragoon-2-armor",
+        "itemId": "8dG2pQ4sV7xK1mNz",
+        "family": "pkt-unique",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "dragoon-2-node",
+        "itemId": "D2rA9gN6uE3kT8wP",
+        "family": "pkt-unique",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "dragoon-2-reactor",
+        "itemId": "R2cT7vM4xB9nK5qL",
+        "family": "pkt-unique",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      }
+    ],
+    "components": [
+      {
+        "key": "cyber-arms",
+        "itemId": "mnHATtZUwDIcl7K8",
+        "family": "cyber-arm",
+        "quantity": 2,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-audio",
+        "itemId": "yGnMhyXCX5CAs63S",
+        "family": "cyber-audio",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-eyes",
+        "itemId": "1aFhSbLd1NXpzNPI",
+        "family": "cyber-eye",
+        "quantity": 2,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-legs",
+        "itemId": "voKIFcyxPmzJSfki",
+        "family": "cyber-leg",
+        "quantity": 2,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "neural-link",
+        "itemId": "bMgxTWp5PGp30uQ8",
+        "family": "neural-link",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-skull",
+        "itemId": "6Lnce5KtpF8VqE6O",
+        "family": "pkt-structure",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "endoskeleton",
+        "itemId": "8S1Ma3b6ReGxwpvA",
+        "family": "endoskeleton",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "emi-shield",
+        "itemId": "XY3CmEvz1v21noJy",
+        "family": "pkt-defense",
+        "quantity": 2,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "anti-dazzle",
+        "itemId": "ZyWwRVfa97xTAo4d",
+        "family": "cyber-eye-module",
+        "quantity": 2,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-eye"
+      },
+      {
+        "key": "chiron",
+        "itemId": "GBtIO5fqFGD9Dzk1",
+        "family": "cyber-audio-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-audio"
+      },
+      {
+        "key": "internal-agent",
+        "itemId": "M8uvPCSLMkBqSrzA",
+        "family": "neural-link-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "neural-link"
+      },
+      {
+        "key": "ir-uv",
+        "itemId": "QqRn625xdHY8xLaP",
+        "family": "cyber-eye-module",
+        "quantity": 2,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-eye"
+      },
+      {
+        "key": "hydraulics",
+        "itemId": "x9k8yGcrJmuIteIG",
+        "family": "pkt-internal",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false
+      }
+    ],
+    "choices": []
+  },
+  {
+    "schema": 1,
+    "key": "militech-eclipse",
+    "name": "Militech «Затмение»",
+    "journalId": "LRV1KlxZGvXDm9ny",
+    "pageId": "B8L1jtdBIii6NFqL",
+    "requiredBodyId": "Y6CGkTe62Gray49S",
+    "bodyQuality": 3,
+    "priceEddies": 153640,
+    "unique": [
+      {
+        "key": "eclipse-core",
+        "itemId": "TlYh6BTJyzwdgn0b",
+        "family": "pkt-unique",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "mono-vision",
+        "itemId": "yNN1l6d0WprQumHm",
+        "family": "cyber-eye",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "mono-three",
+        "itemId": "NKpwUryTOib4WVKQ",
+        "family": "cyber-arm-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-arm"
+      },
+      {
+        "key": "chameleon-coating",
+        "itemId": "XrMKojmO5brKtWGR",
+        "family": "pkt-coating",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      }
+    ],
+    "components": [
+      {
+        "key": "cyber-arms",
+        "itemId": "mnHATtZUwDIcl7K8",
+        "family": "cyber-arm",
+        "quantity": 2,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-audio",
+        "itemId": "yGnMhyXCX5CAs63S",
+        "family": "cyber-audio",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-legs",
+        "itemId": "voKIFcyxPmzJSfki",
+        "family": "cyber-leg",
+        "quantity": 2,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "neural-link",
+        "itemId": "bMgxTWp5PGp30uQ8",
+        "family": "neural-link",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-skull",
+        "itemId": "6Lnce5KtpF8VqE6O",
+        "family": "pkt-structure",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "endoskeleton",
+        "itemId": "ZjLOJXI4FD2i1512",
+        "family": "endoskeleton",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "enhanced-hearing",
+        "itemId": "ZxPOaEPP0tLRu1lE",
+        "family": "cyber-audio-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-audio"
+      },
+      {
+        "key": "ir-uv",
+        "itemId": "QqRn625xdHY8xLaP",
+        "family": "cyber-eye-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-eye"
+      },
+      {
+        "key": "radio",
+        "itemId": "UkLphu1jZYQFW1Tm",
+        "family": "cyber-audio-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-audio"
+      },
+      {
+        "key": "encryption",
+        "itemId": "3ZY93agCTvzr588o",
+        "family": "cyber-audio-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-audio"
+      },
+      {
+        "key": "subdermal-armor",
+        "itemId": "IKHNA2PcSB3zIMlp",
+        "family": "skin-armor",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "subdermal-pockets",
+        "itemId": "KVWvdMwTW9qcDPRs",
+        "family": "pkt-storage",
+        "quantity": 2,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "hydraulics",
+        "itemId": "x9k8yGcrJmuIteIG",
+        "family": "pkt-internal",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false
+      }
+    ],
+    "choices": []
+  },
+  {
+    "schema": 1,
+    "key": "militech-lawman",
+    "name": "Militech «Страж порядка»",
+    "journalId": "LRV1KlxZGvXDm9ny",
+    "pageId": "p98SUu5G8zw5xFXc",
+    "requiredBodyId": "tkeQt2AZwYxlo0G4",
+    "bodyQuality": 2,
+    "priceEddies": 64950,
+    "unique": [
+      {
+        "key": "mono-vision",
+        "itemId": "yNN1l6d0WprQumHm",
+        "family": "cyber-eye",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "popup-launcher",
+        "itemId": "V08iCfNY9JLL8yRA",
+        "family": "cyber-arm-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-arm"
+      },
+      {
+        "key": "shock-baton",
+        "itemId": "3bNQqSFHsFXCB2pd",
+        "family": "cyber-arm-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-arm"
+      }
+    ],
+    "components": [
+      {
+        "key": "cyber-arms",
+        "itemId": "cvuIqkqCdTswg3uF",
+        "family": "cyber-arm",
+        "quantity": 2,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-audio",
+        "itemId": "Is8gWdAjU55hVtYb",
+        "family": "cyber-audio",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-legs",
+        "itemId": "voKIFcyxPmzJSfki",
+        "family": "cyber-leg",
+        "quantity": 2,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "neural-link",
+        "itemId": "bMgxTWp5PGp30uQ8",
+        "family": "neural-link",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-skull",
+        "itemId": "6Lnce5KtpF8VqE6O",
+        "family": "pkt-structure",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "endoskeleton",
+        "itemId": "lvhux6M22BuSYNlj",
+        "family": "endoskeleton",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "anti-dazzle",
+        "itemId": "ZyWwRVfa97xTAo4d",
+        "family": "cyber-eye-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-eye"
+      },
+      {
+        "key": "audio-recorder",
+        "itemId": "uMJzcFLUXea4H5kr",
+        "family": "cyber-audio-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-audio"
+      },
+      {
+        "key": "heavy-subdermal",
+        "itemId": "xQYaULcqM8yE194M",
+        "family": "skin-armor",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "hidden-holster",
+        "itemId": "ib7UwlCqzgOlC4wK",
+        "family": "cyber-arm-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-arm"
+      },
+      {
+        "key": "ir-uv",
+        "itemId": "QqRn625xdHY8xLaP",
+        "family": "cyber-eye-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-eye"
+      },
+      {
+        "key": "radio",
+        "itemId": "UkLphu1jZYQFW1Tm",
+        "family": "cyber-audio-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-audio"
+      },
+      {
+        "key": "tactical-sight",
+        "itemId": "HgdFUO8yWnmYp22b",
+        "family": "cyber-eye-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-eye"
+      },
+      {
+        "key": "voice-stress",
+        "itemId": "LTKAV0EyBY3wpLaz",
+        "family": "cyber-audio-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-audio"
+      }
+    ],
+    "choices": []
+  },
+  {
+    "schema": 1,
+    "key": "militech-spider-2",
+    "name": "Militech «Паук 2.0»",
+    "journalId": "LRV1KlxZGvXDm9ny",
+    "pageId": "AzP72iIxC5bT6PCF",
+    "requiredBodyId": "tVLVycxfLpejAKaO",
+    "bodyQuality": 5,
+    "priceEddies": 339500,
+    "unique": [
+      {
+        "key": "spider-shoulder",
+        "itemId": "ctU9NriKI6zCjkE7",
+        "family": "pkt-unique",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "mono-vision",
+        "itemId": "yNN1l6d0WprQumHm",
+        "family": "cyber-eye",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      }
+    ],
+    "components": [
+      {
+        "key": "cyber-arms",
+        "itemId": "mnHATtZUwDIcl7K8",
+        "family": "cyber-arm",
+        "quantity": 4,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-audio",
+        "itemId": "yGnMhyXCX5CAs63S",
+        "family": "cyber-audio",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-legs",
+        "itemId": "voKIFcyxPmzJSfki",
+        "family": "cyber-leg",
+        "quantity": 2,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "neural-link",
+        "itemId": "bMgxTWp5PGp30uQ8",
+        "family": "neural-link",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-skull",
+        "itemId": "6Lnce5KtpF8VqE6O",
+        "family": "pkt-structure",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "endoskeleton",
+        "itemId": "ZjLOJXI4FD2i1512",
+        "family": "endoskeleton",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "enhanced-hearing",
+        "itemId": "ZxPOaEPP0tLRu1lE",
+        "family": "cyber-audio-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-audio"
+      },
+      {
+        "key": "chip-socket",
+        "itemId": "fNR8H0UFTJOXOFWB",
+        "family": "neural-link-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "neural-link"
+      },
+      {
+        "key": "chameleon-coating",
+        "itemId": "XrMKojmO5brKtWGR",
+        "family": "pkt-coating",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "grips",
+        "itemId": "FU2q8REKaGwCIwhy",
+        "family": "cyber-arm-module",
+        "quantity": 4,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-arm"
+      },
+      {
+        "key": "grip-soles",
+        "itemId": "FkkVbWD9GLb3ri16",
+        "family": "cyber-leg-module",
+        "quantity": 2,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-leg"
+      },
+      {
+        "key": "internal-agent",
+        "itemId": "M8uvPCSLMkBqSrzA",
+        "family": "neural-link-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "neural-link"
+      },
+      {
+        "key": "ir-uv",
+        "itemId": "QqRn625xdHY8xLaP",
+        "family": "cyber-eye-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-eye"
+      },
+      {
+        "key": "micro-video",
+        "itemId": "PJaarOSEHTLje8sT",
+        "family": "cyber-eye-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-eye"
+      },
+      {
+        "key": "tactile-boost",
+        "itemId": "lxfraANQJZV1Beg1",
+        "family": "cyber-arm-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-arm"
+      },
+      {
+        "key": "teleoptics",
+        "itemId": "AgzCndJRd4GzoDuF",
+        "family": "cyber-eye-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-eye"
+      },
+      {
+        "key": "hydraulics",
+        "itemId": "x9k8yGcrJmuIteIG",
+        "family": "pkt-internal",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false
+      }
+    ],
+    "choices": []
+  },
+  {
+    "schema": 1,
+    "key": "moore-technologies-pit",
+    "name": "Moore Technologies «Яма»",
+    "journalId": "LRV1KlxZGvXDm9ny",
+    "pageId": "RiGkkqXTcbbS9ydm",
+    "requiredBodyId": "tkeQt2AZwYxlo0G4",
+    "bodyQuality": 2,
+    "priceEddies": 49400,
+    "unique": [
+      {
+        "key": "pit-survival",
+        "itemId": "xYg1Xeysx27fPlQT",
+        "family": "pkt-unique",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      }
+    ],
+    "components": [
+      {
+        "key": "cyber-arms",
+        "itemId": "cvuIqkqCdTswg3uF",
+        "family": "cyber-arm",
+        "quantity": 2,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-audio",
+        "itemId": "Is8gWdAjU55hVtYb",
+        "family": "cyber-audio",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-eyes",
+        "itemId": "NstC7slTFoxrUhbu",
+        "family": "cyber-eye",
+        "quantity": 2,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-legs",
+        "itemId": "voKIFcyxPmzJSfki",
+        "family": "cyber-leg",
+        "quantity": 2,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "neural-link",
+        "itemId": "bMgxTWp5PGp30uQ8",
+        "family": "neural-link",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-skull",
+        "itemId": "6Lnce5KtpF8VqE6O",
+        "family": "pkt-structure",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "endoskeleton",
+        "itemId": "ZjLOJXI4FD2i1512",
+        "family": "endoskeleton",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "chemical-analyzer",
+        "itemId": "aEC26xOyJETn5P8H",
+        "family": "pkt-sensor",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "chip-socket",
+        "itemId": "fNR8H0UFTJOXOFWB",
+        "family": "neural-link-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "neural-link"
+      },
+      {
+        "key": "chiron",
+        "itemId": "GBtIO5fqFGD9Dzk1",
+        "family": "cyber-audio-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-audio"
+      },
+      {
+        "key": "heavy-subdermal",
+        "itemId": "xQYaULcqM8yE194M",
+        "family": "skin-armor",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "internal-agent",
+        "itemId": "M8uvPCSLMkBqSrzA",
+        "family": "neural-link-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "neural-link"
+      },
+      {
+        "key": "radiation-detector",
+        "itemId": "AExMnmNOoRXp0KgL",
+        "family": "pkt-sensor",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false
+      }
+    ],
+    "choices": []
+  },
+  {
+    "schema": 1,
+    "key": "noveltech-samson",
+    "name": "NovelTech «Самсон»",
+    "journalId": "LRV1KlxZGvXDm9ny",
+    "pageId": "LMVDGCuMN5Cbhrna",
+    "requiredBodyId": "Y6CGkTe62Gray49S",
+    "bodyQuality": 3,
+    "priceEddies": 179550,
+    "unique": [
+      {
+        "key": "samson-core",
+        "itemId": "lTDgKC3KtCY4OoZD",
+        "family": "pkt-unique",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      }
+    ],
+    "components": [
+      {
+        "key": "cyber-arms",
+        "itemId": "mnHATtZUwDIcl7K8",
+        "family": "cyber-arm",
+        "quantity": 2,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-audio",
+        "itemId": "yGnMhyXCX5CAs63S",
+        "family": "cyber-audio",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-eyes",
+        "itemId": "1aFhSbLd1NXpzNPI",
+        "family": "cyber-eye",
+        "quantity": 2,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-legs",
+        "itemId": "voKIFcyxPmzJSfki",
+        "family": "cyber-leg",
+        "quantity": 2,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "neural-link",
+        "itemId": "bMgxTWp5PGp30uQ8",
+        "family": "neural-link",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-skull",
+        "itemId": "6Lnce5KtpF8VqE6O",
+        "family": "pkt-structure",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "endoskeleton",
+        "itemId": "8S1Ma3b6ReGxwpvA",
+        "family": "endoskeleton",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "anti-dazzle",
+        "itemId": "ZyWwRVfa97xTAo4d",
+        "family": "cyber-eye-module",
+        "quantity": 2,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-eye"
+      },
+      {
+        "key": "chiron",
+        "itemId": "GBtIO5fqFGD9Dzk1",
+        "family": "cyber-audio-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-audio"
+      },
+      {
+        "key": "internal-agent",
+        "itemId": "M8uvPCSLMkBqSrzA",
+        "family": "neural-link-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "neural-link"
+      },
+      {
+        "key": "radiation-detector",
+        "itemId": "AExMnmNOoRXp0KgL",
+        "family": "pkt-sensor",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "subdermal-armor",
+        "itemId": "IKHNA2PcSB3zIMlp",
+        "family": "skin-armor",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "techscanner",
+        "itemId": "rX7QvOjb8LN6FVnT",
+        "family": "cyber-arm-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-arm"
+      },
+      {
+        "key": "arm-multitools",
+        "itemId": "umS0qPQn3PYD0pLA",
+        "family": "cyber-arm-module",
+        "quantity": 2,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-arm"
+      }
+    ],
+    "choices": []
+  },
+  {
+    "schema": 1,
+    "key": "raven-twins",
+    "name": "Raven Microcybernetics «Близнецы»",
+    "journalId": "LRV1KlxZGvXDm9ny",
+    "pageId": "z1FeeMMP0HblK71h",
+    "requiredBodyId": "uvmhsMeuPT9EsaH8",
+    "bodyQuality": 0,
+    "priceEddies": 6400,
+    "unique": [
+      {
+        "itemId": "79pZ4u30HWg9OKd5",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true
+      }
+    ],
+    "components": [
+      {
+        "key": "cyber-arms",
+        "itemId": "WZzwXU0ef7Yx8itS",
+        "family": "cyber-arm",
+        "quantity": 2,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-audio",
+        "itemId": "flVKT2G69kaubzSz",
+        "family": "cyber-audio",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-eyes",
+        "itemId": "uKhSDhKc84Gk8mXU",
+        "family": "cyber-eye",
+        "quantity": 2,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-legs",
+        "itemId": "SHvNjIPjtGTvdt5K",
+        "family": "cyber-leg",
+        "quantity": 2,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "neural-link",
+        "itemId": "3TQ2WCBNaFwEUDHo",
+        "family": "neural-link",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "endoskeleton",
+        "itemId": "lvhux6M22BuSYNlj",
+        "family": "endoskeleton",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "skin-armor",
+        "itemId": "BANdFbfuD16lPHs4",
+        "family": "skin-armor",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false
+      }
+    ],
+    "choices": [
+      {
+        "key": "appearance",
+        "choose": 1,
+        "itemIds": [
+          "Ndx3eGnbRw5bYDLj",
+          "mqkOCr9ufgYYDUto"
+        ],
+        "stress": "normal",
+        "locked": true
+      }
+    ]
+  },
+  {
+    "schema": 1,
+    "key": "raven-sage",
+    "name": "Raven Microcybernetics «Мудрец»",
+    "journalId": "LRV1KlxZGvXDm9ny",
+    "pageId": "CzvhbYuTVtoLl39o",
+    "requiredBodyId": "tg2eHjiZMoKUxtTR",
+    "bodyQuality": 1,
+    "priceEddies": 61950,
+    "unique": [
+      {
+        "key": "sage-decoy-brain",
+        "itemId": "cD0zlyvVhTfUXml3",
+        "family": "neural-link-module",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": false,
+        "replaceableBase": false,
+        "parentFamily": "neural-link"
+      }
+    ],
+    "components": [
+      {
+        "key": "cyber-arms",
+        "itemId": "0SWZlFXOhLgKJdD4",
+        "family": "cyber-arm",
+        "quantity": 2,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-audio",
+        "itemId": "wrBmpNUgCDClReJk",
+        "family": "cyber-audio",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-eyes",
+        "itemId": "7IRYHaVmugCdEFsr",
+        "family": "cyber-eye",
+        "quantity": 2,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-legs",
+        "itemId": "TArau54uxPp00TPr",
+        "family": "cyber-leg",
+        "quantity": 2,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-skull",
+        "itemId": "6Lnce5KtpF8VqE6O",
+        "family": "pkt-structure",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "endoskeleton",
+        "itemId": "lvhux6M22BuSYNlj",
+        "family": "endoskeleton",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "neural-link",
+        "itemId": "bMgxTWp5PGp30uQ8",
+        "family": "neural-link",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "chiron",
+        "itemId": "GBtIO5fqFGD9Dzk1",
+        "family": "cyber-audio-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-audio"
+      }
+    ],
+    "choices": [
+      {
+        "key": "cyberdeck",
+        "choose": 1,
+        "itemIds": [
+          "G2Pjb3guhEbiUTa0",
+          "4m5cZrKQCWN3qzUC",
+          "Q7vK2mR9xT4nP6dL"
+        ],
+        "family": "neural-link-module",
+        "parentFamily": "neural-link",
+        "stress": "normal",
+        "locked": true
+      }
+    ]
+  },
+  {
+    "schema": 1,
+    "key": "rocklin-alpha",
+    "name": "Rocklin Augmentics «Класс Альфа»",
+    "journalId": "LRV1KlxZGvXDm9ny",
+    "pageId": "EH2dSptC1o1WZpna",
+    "requiredBodyId": "uvmhsMeuPT9EsaH8",
+    "bodyQuality": 0,
+    "priceEddies": 7150,
+    "unique": [],
+    "components": [
+      {
+        "key": "cyber-arms",
+        "itemId": "WZzwXU0ef7Yx8itS",
+        "family": "cyber-arm",
+        "quantity": 2,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-audio",
+        "itemId": "flVKT2G69kaubzSz",
+        "family": "cyber-audio",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-eyes",
+        "itemId": "uKhSDhKc84Gk8mXU",
+        "family": "cyber-eye",
+        "quantity": 2,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-legs",
+        "itemId": "SHvNjIPjtGTvdt5K",
+        "family": "cyber-leg",
+        "quantity": 2,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "neural-link",
+        "itemId": "3TQ2WCBNaFwEUDHo",
+        "family": "neural-link",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "endoskeleton",
+        "itemId": "lvhux6M22BuSYNlj",
+        "family": "endoskeleton",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "subdermal-armor",
+        "itemId": "IKHNA2PcSB3zIMlp",
+        "family": "skin-armor",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "chiron",
+        "itemId": "GBtIO5fqFGD9Dzk1",
+        "family": "cyber-audio-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-audio"
+      },
+      {
+        "key": "cyber-skull",
+        "itemId": "6Lnce5KtpF8VqE6O",
+        "family": "pkt-structure",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      }
+    ],
+    "choices": []
+  },
+  {
+    "schema": 1,
+    "key": "techtronika-hammer-0",
+    "name": "Techtronika «МОЛОТ-0»",
+    "journalId": "LRV1KlxZGvXDm9ny",
+    "pageId": "HnzffVt4NYaOy28t",
+    "requiredBodyId": "tg2eHjiZMoKUxtTR",
+    "bodyQuality": 1,
+    "priceEddies": 33650,
+    "unique": [
+      {
+        "itemId": "4IbyCQUaKOb2qckk",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true
+      }
+    ],
+    "components": [
+      {
+        "key": "cyber-arms",
+        "itemId": "0SWZlFXOhLgKJdD4",
+        "family": "cyber-arm",
+        "quantity": 2,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-audio",
+        "itemId": "wrBmpNUgCDClReJk",
+        "family": "cyber-audio",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-eyes",
+        "itemId": "7IRYHaVmugCdEFsr",
+        "family": "cyber-eye",
+        "quantity": 2,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-legs",
+        "itemId": "TArau54uxPp00TPr",
+        "family": "cyber-leg",
+        "quantity": 2,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "neural-link",
+        "itemId": "PrU4x8lXoSclhUEF",
+        "family": "neural-link",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "endoskeleton",
+        "itemId": "ZjLOJXI4FD2i1512",
+        "family": "endoskeleton",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "anti-dazzle",
+        "itemId": "ZyWwRVfa97xTAo4d",
+        "family": "cyber-eye-module",
+        "quantity": 2,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-eye"
+      },
+      {
+        "key": "ir-uv",
+        "itemId": "QqRn625xdHY8xLaP",
+        "family": "cyber-eye-module",
+        "quantity": 2,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-eye"
+      },
+      {
+        "key": "popup-blades",
+        "itemId": "krNr5PTr5HmccpGz",
+        "family": "cyber-arm-module",
+        "quantity": 2,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-arm"
+      },
+      {
+        "key": "internal-agent",
+        "itemId": "M8uvPCSLMkBqSrzA",
+        "family": "neural-link-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "neural-link"
+      },
+      {
+        "key": "carbon-tendons",
+        "itemId": "q5vKWIwkpKECVPN1",
+        "family": "cyber-leg-module",
+        "quantity": 2,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-leg"
+      },
+      {
+        "key": "heavy-subdermal-armor",
+        "itemId": "xQYaULcqM8yE194M",
+        "family": "skin-armor",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false
+      }
+    ],
+    "choices": []
+  },
+  {
+    "schema": 1,
+    "key": "trauma-team-kildare",
+    "name": "Trauma Team «Киль-Дара»",
+    "journalId": "LRV1KlxZGvXDm9ny",
+    "pageId": "VnizzFtbIK6wHThP",
+    "requiredBodyId": "tkeQt2AZwYxlo0G4",
+    "bodyQuality": 2,
+    "priceEddies": 76170,
+    "unique": [
+      {
+        "key": "kildare-core",
+        "itemId": "esjGcRYS539r3CGt",
+        "family": "pkt-unique",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "mono-vision",
+        "itemId": "yNN1l6d0WprQumHm",
+        "family": "cyber-eye",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      }
+    ],
+    "components": [
+      {
+        "key": "cyber-arms",
+        "itemId": "cvuIqkqCdTswg3uF",
+        "family": "cyber-arm",
+        "quantity": 2,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-audio",
+        "itemId": "Is8gWdAjU55hVtYb",
+        "family": "cyber-audio",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-legs",
+        "itemId": "voKIFcyxPmzJSfki",
+        "family": "cyber-leg",
+        "quantity": 2,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "neural-link",
+        "itemId": "bMgxTWp5PGp30uQ8",
+        "family": "neural-link",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": true
+      },
+      {
+        "key": "cyber-skull",
+        "itemId": "6Lnce5KtpF8VqE6O",
+        "family": "pkt-structure",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "endoskeleton",
+        "itemId": "lvhux6M22BuSYNlj",
+        "family": "endoskeleton",
+        "quantity": 1,
+        "stress": "waived",
+        "locked": true,
+        "replaceableBase": false
+      },
+      {
+        "key": "enhanced-hearing",
+        "itemId": "ZxPOaEPP0tLRu1lE",
+        "family": "cyber-audio-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-audio"
+      },
+      {
+        "key": "chiron",
+        "itemId": "GBtIO5fqFGD9Dzk1",
+        "family": "cyber-audio-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-audio"
+      },
+      {
+        "key": "ir-uv",
+        "itemId": "QqRn625xdHY8xLaP",
+        "family": "cyber-eye-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-eye"
+      },
+      {
+        "key": "micro-optics",
+        "itemId": "z9gyRvEFA2CGgfMK",
+        "family": "cyber-eye-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-eye"
+      },
+      {
+        "key": "radio",
+        "itemId": "UkLphu1jZYQFW1Tm",
+        "family": "cyber-audio-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-audio"
+      },
+      {
+        "key": "micro-waldo",
+        "itemId": "XIaKqTB6DNfy70nx",
+        "family": "cyber-arm-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-arm"
+      },
+      {
+        "key": "aerohypo",
+        "itemId": "FcuhCSaJoJH2JSaD",
+        "family": "cyber-arm-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-arm"
+      },
+      {
+        "key": "arm-multitool",
+        "itemId": "umS0qPQn3PYD0pLA",
+        "family": "cyber-arm-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-arm"
+      },
+      {
+        "key": "techscanner",
+        "itemId": "rX7QvOjb8LN6FVnT",
+        "family": "cyber-arm-module",
+        "quantity": 1,
+        "stress": "normal",
+        "locked": true,
+        "replaceableBase": false,
+        "parentFamily": "cyber-arm"
+      }
+    ],
+    "choices": []
+  }
+]

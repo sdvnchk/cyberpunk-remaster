@@ -1,0 +1,74 @@
+# SF2E Cyberpunk Remaster — Icon Design Rules
+
+Цвет обозначает функциональную роль изображения и помогает ориентироваться
+внутри разделов инвентаря. Он не обязан быть уникальным для каждого типа
+предметов: разделы Foundry уже отделяют оружие, броню, боеприпасы, улучшения и
+другие документы друг от друга.
+
+## Общие требования
+
+- Все новые иконки должны быть в формате SVG.
+- Размер холста: 512×512 px.
+- Не использовать одну и ту же иконку для нескольких предметов.
+- Существующие изображения других форматов можно сохранять до их плановой
+  замены.
+- Имя и путь файла должны оставаться уникальными и стабильными для предмета.
+
+## Implants and PKT
+
+Категория файлов: `implants`. Иконки обычных имплантов и ПКТ хранятся вместе.
+
+- Background: `#1B1F21`
+- Foreground: `#E64539`
+- Shadow: `#3A3F5E`
+- Foreground shadow: смещение внутрь, blur 10
+
+## Items, Weapons and Armor
+
+Категории файлов: `items`, `weapons`, `armor`.
+
+- Background: `#1B1F21`
+- Foreground: `#FFFFFF`
+- Shadow: `#3A3F5E`
+- Foreground shadow: смещение внутрь, blur 10
+
+## Consumables
+
+Категория файлов: `consumables`.
+
+- Background: `#1B1F21`
+- Foreground: `#55EAD4`
+- Shadow: `#3A3F5E`
+- Foreground shadow: смещение внутрь, blur 10
+
+## Upgrades and Ammo
+
+Категории файлов: `upgrades`, `ammo`.
+
+- Background: `#1B1F21`
+- Foreground: `#F3E600`
+- Shadow: `#3A3F5E`
+- Foreground shadow: смещение внутрь, blur 10
+
+## Abilities, Feats and Effects
+
+Категория файлов: `abilities`.
+
+- Background: `#E64539`
+- Foreground: `#1B1F21`
+- Shadow: `#3A3F5E`
+- Foreground shadow: смещение наружу, blur 10
+
+## Programs
+
+Категория файлов: `programs`.
+
+- Background: `#55EAD4`
+- Foreground: `#1B1F21`
+- Shadow: `#3A3F5E`
+- Foreground shadow: смещение наружу, blur 10
+
+## Special
+
+Категория `special` предназначена для служебных изображений, макросов и
+временных заглушек. Для неё нет единой обязательной цветовой схемы.

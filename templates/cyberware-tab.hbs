@@ -1,0 +1,491 @@
+<div class="cw-tab {{#if readOnly}}cw-readonly{{/if}}">
+  {{#if readOnly}}
+  <div class="cw-readonly-notice">
+    <i class="fa-solid fa-eye" aria-hidden="true"></i>
+    Режим просмотра
+  </div>
+  {{/if}}
+
+  <section class="cw-humanity-section" aria-labelledby="{{humanityHeadingId}}">
+    <h3 class="cw-section-heading" id="{{humanityHeadingId}}">Человечность</h3>
+    <div class="cw-humanity-body">
+      <div class="cw-humanity-bar-track" role="progressbar"
+           aria-valuemin="0" aria-valuemax="{{humanity.maxPossible}}"
+           aria-valuenow="{{humanity.current}}">
+        <div class="cw-humanity-bar-fill {{humanityState.cssClass}}"
+             style="width: {{humanityPercent}}%;"></div>
+      </div>
+      <span class="cw-humanity-state-label {{humanityState.cssClass}}">
+        {{humanityState.label}} · {{humanityPercent}}%
+      </span>
+    </div>
+
+    <div class="cw-humanity-inputs">
+      <div class="cw-humanity-field">
+        <label for="{{humanityInputId}}">Текущая</label>
+        {{#if editable}}
+        <input class="cw-humanity-input" id="{{humanityInputId}}" type="number"
+               data-field="current" value="{{humanity.current}}"
+               min="0" max="{{humanity.max}}">
+        {{else}}
+        <span class="cw-humanity-static">{{humanity.current}}</span>
+        {{/if}}
+      </div>
+      <span class="cw-slash">/</span>
+      <div class="cw-humanity-field">
+        <label>Макс</label>
+        <span class="cw-humanity-static"
+              title="{{humanityHardCostTitle}}">
+          {{humanity.max}}
+        </span>
+      </div>
+      <span class="cw-slash">/</span>
+      <div class="cw-humanity-field">
+        <label>Предел</label>
+        <span class="cw-humanity-static"
+              title="40 + модификатор Мудрости × 10">
+          {{humanity.maxPossible}}
+        </span>
+      </div>
+    </div>
+  </section>
+
+  {{#if editable}}
+  {{#if baseDock.length}}
+  <section class="cw-base-dock" aria-label="Быстрые цели для модулей">
+    <span class="cw-dock-label">
+      <i class="fa-solid fa-link" aria-hidden="true"></i> Базы
+    </span>
+    <div class="cw-dock-targets">
+      {{#each baseDock}}
+      <div class="cw-drop-zone cw-dock-target" data-base-id="{{id}}"
+           title="Перетащить модуль в «{{name}}»">
+        <span>{{name}}</span>
+        <strong>{{usedSlots}}/{{totalSlots}}</strong>
+      </div>
+      {{/each}}
+    </div>
+  </section>
+  {{/if}}
+  {{/if}}
+
+  {{#if showPktModels}}
+  {{#if hasPktModels}}
+  <section class="cw-section cw-pkt-models-section">
+    <h3 class="cw-section-heading">Готовые модели ПКТ</h3>
+    <p class="cw-pkt-models-note">
+      Цена указана без корпуса и не списывается автоматически.
+    </p>
+    <div class="cw-pkt-model-list">
+      {{#each pktModels}}
+      <article class="cw-pkt-model-card {{#if installed}}cw-pkt-model-installed{{/if}}">
+        <header class="cw-pkt-model-header">
+          <div class="cw-pkt-model-title">
+            <strong>{{name}}</strong>
+            <span>Минимум: {{requiredBodyName}} · {{priceLabel}} эдди</span>
+          </div>
+          <span class="cw-badge cw-badge-pkt">{{componentCount}} комп.</span>
+        </header>
+
+        <details class="cw-pkt-model-details">
+          <summary>Состав комплекта</summary>
+          <ul class="cw-pkt-model-components">
+            {{#each entries}}
+            <li>
+              <span>{{name}} × {{quantity}}</span>
+            </li>
+            {{/each}}
+          </ul>
+          <p class="cw-pkt-models-note">
+            Один общий бросок Потери Человечности находится на странице модели
+            в журнале. Hard Cost компонентов сохраняется.
+          </p>
+        </details>
+
+        {{#each choices}}
+        <label class="cw-pkt-choice-row">
+          <span>Выбор</span>
+          <select class="cw-pkt-choice"
+                  data-model-key="{{../key}}"
+                  data-choice-key="{{key}}"
+                  {{#unless ../canInstall}}disabled{{/unless}}>
+            {{#each options}}
+            <option value="{{itemId}}">{{name}}</option>
+            {{/each}}
+          </select>
+        </label>
+        {{/each}}
+
+        <footer class="cw-pkt-model-footer">
+          {{#if installed}}
+          <span class="cw-pkt-model-status">
+            Установлено компонентов: {{installedCount}}
+          </span>
+          {{else}}
+          {{#if validation}}
+          <span class="cw-pkt-model-status cw-pkt-model-blocked">
+            {{validation}}
+          </span>
+          {{else}}
+          <span class="cw-pkt-model-status">Готова к установке</span>
+          {{/if}}
+          {{/if}}
+
+          {{#if ../editable}}
+          {{#if installed}}
+          <button type="button" class="cw-pkt-action cw-pkt-model-remove"
+                  data-model-key="{{key}}" data-model-name="{{name}}">
+            <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
+            Демонтировать
+          </button>
+          {{else}}
+          <button type="button" class="cw-pkt-action cw-pkt-model-install"
+                  data-model-key="{{key}}" {{#unless canInstall}}disabled{{/unless}}
+                  title="{{#if validation}}{{validation}}{{else}}Установить модель ПКТ{{/if}}">
+            <i class="fa-solid fa-gears" aria-hidden="true"></i>
+            Установить модель
+          </button>
+          {{/if}}
+          {{/if}}
+        </footer>
+      </article>
+      {{/each}}
+    </div>
+  </section>
+  {{else}}
+  {{#if pktModelsError}}
+  <section class="cw-section cw-pkt-models-section">
+    <h3 class="cw-section-heading cw-warning">Модели ПКТ недоступны</h3>
+    <p class="cw-inline-warning">{{pktModelsError}}</p>
+  </section>
+  {{/if}}
+  {{/if}}
+  {{/if}}
+
+  {{#if pktBodies.length}}
+  <section class="cw-section cw-pkt-section">
+    <h3 class="cw-section-heading">Полная Конверсия Тела</h3>
+    {{#if multiplePktBodies}}
+    <p class="cw-inline-warning">
+      Установлено несколько корпусов ПКТ. Активным может быть только один.
+    </p>
+    {{/if}}
+    {{#if missingPktBiosystem}}
+    <p class="cw-inline-warning">
+      Для корпуса ПКТ требуется установленная Биосистема.
+    </p>
+    {{/if}}
+    <div class="cw-simple-list">
+      {{#each pktBodies}}
+      <div class="cw-item-row" data-item-id="{{id}}">
+        <img class="cw-item-img" src="{{img}}" alt="{{name}}">
+        <button type="button" class="cw-item-name" data-item-id="{{id}}">
+          {{name}}
+        </button>
+        <span class="cw-badge cw-badge-pkt">ПКТ</span>
+        {{#if ../editable}}
+        <button type="button" class="cw-install-btn cw-install-btn-off"
+                data-item-id="{{id}}" title="Извлечь корпус">
+          <i class="fa-solid fa-eject" aria-hidden="true"></i>
+        </button>
+        {{/if}}
+      </div>
+      {{/each}}
+    </div>
+    {{#if pktImplants.length}}
+    <div class="cw-pkt-components">
+      <span>Компоненты ПКТ:</span>
+      {{#each pktImplants}}
+      <button type="button" class="cw-item-name cw-inline-item"
+              data-item-id="{{id}}">{{name}}</button>
+      {{/each}}
+    </div>
+    {{/if}}
+  </section>
+  {{/if}}
+
+  {{#if unconfigured.length}}
+  <section class="cw-section cw-unconfigured-section">
+    <h3 class="cw-section-heading cw-warning">Требуют настройки</h3>
+    <div class="cw-simple-list">
+      {{#each unconfigured}}
+      <div class="cw-item-row cw-unconfigured-row" data-item-id="{{id}}">
+        <img class="cw-item-img" src="{{img}}" alt="{{name}}">
+        <button type="button" class="cw-item-name" data-item-id="{{id}}">
+          {{name}}
+        </button>
+        <span class="cw-hint-inline">добавьте «Тип импланта: …»</span>
+        {{#if ../editable}}
+        <button type="button" class="cw-install-btn cw-install-btn-off"
+                data-item-id="{{id}}" title="Извлечь из тела">
+          <i class="fa-solid fa-eject" aria-hidden="true"></i>
+        </button>
+        {{/if}}
+      </div>
+      {{/each}}
+    </div>
+  </section>
+  {{/if}}
+
+  {{#if notInstalled.length}}
+  <section class="cw-section cw-notinstalled-section">
+    <h3 class="cw-section-heading">Не установлено</h3>
+    <div class="cw-simple-list">
+      {{#each notInstalled}}
+      <div class="cw-item-row cw-notinstalled-row"
+           data-item-id="{{id}}"
+           {{#if ../editable}}{{#if draggableModule}}data-draggable-module="1"{{/if}}{{/if}}>
+        <img class="cw-item-img" src="{{img}}" alt="{{name}}">
+        <button type="button" class="cw-item-name" data-item-id="{{id}}">
+          {{name}}
+        </button>
+        {{#if typeLabel}}
+        <span class="cw-badge cw-badge-type">{{typeLabel}}</span>
+        {{/if}}
+        {{#if hardCost}}
+        <span class="cw-badge cw-badge-hard" title="Hard Cost">−{{hardCost}}</span>
+        {{/if}}
+        {{#if ../editable}}
+        {{#if draggableModule}}
+        {{#if baseOptions.length}}
+        <select class="cw-base-select" data-item-id="{{id}}"
+                aria-label="Установить и назначить базу для {{name}}">
+          <option value="">Назначить базу…</option>
+          {{#each baseOptions}}
+          <option value="{{id}}" {{#unless canFit}}disabled{{/unless}}>
+            {{name}} · свободно {{remaining}}
+          </option>
+          {{/each}}
+        </select>
+        {{/if}}
+        {{/if}}
+        <button type="button" class="cw-install-btn cw-install-btn-on"
+                data-item-id="{{id}}" title="Установить в тело"
+                aria-label="Установить {{name}} в тело">
+          <i class="fa-solid fa-download" aria-hidden="true"></i>
+        </button>
+        {{/if}}
+      </div>
+      {{/each}}
+    </div>
+  </section>
+  {{/if}}
+
+  {{#if unlinked.length}}
+  <section class="cw-section cw-unlinked-section">
+    <h3 class="cw-section-heading cw-warning">Свободные модули</h3>
+    <div class="cw-simple-list">
+      {{#each unlinked}}
+      <div class="cw-module-row cw-unlinked-row" data-item-id="{{id}}"
+           {{#if ../editable}}data-draggable-module="1"{{/if}}>
+        <img class="cw-item-img" src="{{img}}" alt="{{name}}">
+        <button type="button" class="cw-item-name" data-item-id="{{id}}">
+          {{name}}
+        </button>
+        <span class="cw-badge cw-badge-warn">{{slotsUsed}} сл</span>
+        {{#if ../editable}}
+        {{#if baseOptions.length}}
+        <select class="cw-base-select" data-item-id="{{id}}"
+                aria-label="Назначить базу для {{name}}">
+          <option value="">Назначить базу…</option>
+          {{#each baseOptions}}
+          <option value="{{id}}" {{#unless canFit}}disabled{{/unless}}>
+            {{name}} · свободно {{remaining}}
+          </option>
+          {{/each}}
+        </select>
+        {{/if}}
+        <button type="button" class="cw-install-btn cw-install-btn-off"
+                data-item-id="{{id}}" title="Извлечь из тела">
+          <i class="fa-solid fa-eject" aria-hidden="true"></i>
+        </button>
+        {{/if}}
+      </div>
+      {{/each}}
+    </div>
+  </section>
+  {{/if}}
+
+  {{#if bases.length}}
+  <section class="cw-section">
+    <h3 class="cw-section-heading">Базы</h3>
+    {{#each bases}}
+    <div class="cw-base-card" data-item-id="{{id}}">
+      <div class="cw-base-header">
+        <img class="cw-item-img" src="{{img}}" alt="{{name}}">
+        <button type="button" class="cw-item-name" data-item-id="{{id}}">
+          {{name}}
+        </button>
+        <div class="cw-slot-dots" aria-hidden="true">
+          {{#each slotDots}}
+          <span class="cw-slot-dot {{#if filled}}filled{{/if}}"></span>
+          {{/each}}
+          {{#if hiddenSlotDots}}
+          <span class="cw-slot-more">+{{hiddenSlotDots}}</span>
+          {{/if}}
+        </div>
+        <span class="cw-slots-text {{#if full}}cw-slots-full{{/if}}">
+          {{usedSlots}}/{{totalSlots}}
+        </span>
+        {{#if ../editable}}
+        <button type="button" class="cw-install-btn cw-install-btn-off"
+                data-item-id="{{id}}" title="Извлечь из тела">
+          <i class="fa-solid fa-eject" aria-hidden="true"></i>
+        </button>
+        {{/if}}
+      </div>
+
+      {{#if ../editable}}
+      {{#if replacementAllowed}}
+      <div class="cw-pkt-base-replacement">
+        <span>
+          <i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i>
+          Замена базы ПКТ
+        </span>
+        <select class="cw-base-select cw-pkt-base-replace"
+                data-item-id="{{id}}"
+                aria-label="Заменить базу {{name}}"
+                {{#unless hasUsableReplacement}}disabled{{/unless}}>
+          <option value="">
+            {{#if hasUsableReplacement}}Выберите аналог…{{else}}Нет подходящих аналогов{{/if}}
+          </option>
+          {{#each replacementOptions}}
+          <option value="{{itemId}}" {{#unless canUse}}disabled{{/unless}}>
+            {{name}} · {{slots}} сл{{#unless canUse}} · нужно {{occupiedSlots}}{{/unless}}
+          </option>
+          {{/each}}
+        </select>
+      </div>
+      {{else if replacementLocked}}
+      <div class="cw-pkt-base-replacement cw-pkt-base-locked">
+        <i class="fa-solid fa-lock" aria-hidden="true"></i>
+        Уникальная база модели — замена запрещена
+      </div>
+      {{/if}}
+      {{/if}}
+
+      <div class="cw-modules-list">
+        {{#each modules}}
+        <div class="cw-module-row" data-item-id="{{id}}"
+             {{#if ../../editable}}data-draggable-module="1"{{/if}}>
+          <img class="cw-item-img" src="{{img}}" alt="{{name}}">
+          <button type="button" class="cw-item-name" data-item-id="{{id}}">
+            {{name}}
+          </button>
+          <span class="cw-badge">{{slotsUsed}} сл</span>
+          {{#if ../../editable}}
+          {{#if baseOptions.length}}
+          <select class="cw-base-select" data-item-id="{{id}}"
+                  aria-label="Переместить {{name}} в другую базу">
+            <option value="">Переместить…</option>
+            {{#each baseOptions}}
+            <option value="{{id}}"
+                    {{#unless canFit}}disabled{{/unless}}
+                    {{#if current}}disabled{{/if}}>
+              {{name}} · свободно {{remaining}}
+            </option>
+            {{/each}}
+          </select>
+          {{/if}}
+          <button type="button" class="cw-install-btn cw-install-btn-off"
+                  data-item-id="{{id}}" title="Извлечь из тела">
+            <i class="fa-solid fa-eject" aria-hidden="true"></i>
+          </button>
+          <button type="button" class="cw-unlink-btn"
+                  data-item-id="{{id}}" title="Отвязать от базы">
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
+          {{/if}}
+        </div>
+        {{/each}}
+
+        {{#if ../editable}}
+        <div class="cw-drop-zone" data-base-id="{{id}}">
+          <i class="fa-solid fa-plus" aria-hidden="true"></i>
+          Перетащите модуль сюда
+        </div>
+        {{/if}}
+      </div>
+    </div>
+    {{/each}}
+  </section>
+  {{/if}}
+
+  {{#if internals.length}}
+  <section class="cw-section">
+    <h3 class="cw-section-heading">Внутренние</h3>
+    <div class="cw-simple-list">
+      {{#each internals}}
+      <div class="cw-item-row" data-item-id="{{id}}">
+        <img class="cw-item-img" src="{{img}}" alt="{{name}}">
+        <button type="button" class="cw-item-name" data-item-id="{{id}}">
+          {{name}}
+        </button>
+        {{#if ../editable}}
+        <button type="button" class="cw-install-btn cw-install-btn-off"
+                data-item-id="{{id}}" title="Извлечь из тела">
+          <i class="fa-solid fa-eject" aria-hidden="true"></i>
+        </button>
+        {{/if}}
+      </div>
+      {{/each}}
+    </div>
+  </section>
+  {{/if}}
+
+  {{#if externals.length}}
+  <section class="cw-section">
+    <h3 class="cw-section-heading">Внешние</h3>
+    <div class="cw-simple-list">
+      {{#each externals}}
+      <div class="cw-item-row" data-item-id="{{id}}">
+        <img class="cw-item-img" src="{{img}}" alt="{{name}}">
+        <button type="button" class="cw-item-name" data-item-id="{{id}}">
+          {{name}}
+        </button>
+        {{#if ../editable}}
+        <button type="button" class="cw-install-btn cw-install-btn-off"
+                data-item-id="{{id}}" title="Извлечь из тела">
+          <i class="fa-solid fa-eject" aria-hidden="true"></i>
+        </button>
+        {{/if}}
+      </div>
+      {{/each}}
+    </div>
+  </section>
+  {{/if}}
+
+  {{#if fashion.length}}
+  <section class="cw-section">
+    <h3 class="cw-section-heading">Стилевые</h3>
+    <div class="cw-simple-list">
+      {{#each fashion}}
+      <div class="cw-item-row" data-item-id="{{id}}">
+        <img class="cw-item-img" src="{{img}}" alt="{{name}}">
+        <button type="button" class="cw-item-name" data-item-id="{{id}}">
+          {{name}}
+        </button>
+        {{#if ../editable}}
+        <button type="button" class="cw-install-btn cw-install-btn-off"
+                data-item-id="{{id}}" title="Извлечь из тела">
+          <i class="fa-solid fa-eject" aria-hidden="true"></i>
+        </button>
+        {{/if}}
+      </div>
+      {{/each}}
+    </div>
+  </section>
+  {{/if}}
+
+  {{#unless hasCyberware}}
+  <div class="cw-empty">
+    <i class="fa-solid fa-microchip" aria-hidden="true"></i>
+    <p>Нет кибервэра</p>
+    <p class="cw-hint">
+      Добавьте предмет с <code>Hard Cost</code>,
+      <code>Тип импланта: …</code> или способом использования
+      <code>implanted</code>.
+    </p>
+  </div>
+  {{/unless}}
+</div>

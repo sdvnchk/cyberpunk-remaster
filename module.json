@@ -1,0 +1,278 @@
+{
+  "id": "cyberpunk-remaster",
+  "title": "SF2E Cyberpunk Remaster",
+  "description": "Cyberpunk equipment, netrunning, full-body conversion rules and cyberware management for Starfinder Second Edition.",
+  "version": "2.5.1",
+  "authors": [
+    {
+      "name": "Ogorodnik"
+    }
+  ],
+  "compatibility": {
+    "minimum": "14.360",
+    "verified": "14.361",
+    "maximum": "14"
+  },
+  "relationships": {
+    "requires": [
+      {
+        "id": "pf2e-anachronism",
+        "type": "module",
+        "manifest": "https://raw.githubusercontent.com/foundryvtt/pf2e/v14-dev/module.pf2e-anachronism.json",
+        "compatibility": {
+          "minimum": "2.2.0"
+        }
+      }
+    ],
+    "recommends": [
+      {
+        "id": "pf2e-ru",
+        "type": "module",
+        "manifest": "https://gitlab.com/gnuraco/pf2r/-/releases/permalink/latest/downloads/module.json",
+        "compatibility": {
+          "minimum": "2.2.0"
+        }
+      },
+      {
+        "id": "pf2e-toolbelt",
+        "type": "module",
+        "manifest": "https://raw.githubusercontent.com/reonZ/pf2e-toolbelt/master/module.json",
+        "compatibility": {
+          "minimum": "3.50.0"
+        }
+      }
+    ],
+    "systems": [
+      {
+        "id": "sf2e",
+        "type": "system",
+        "manifest": "https://raw.githubusercontent.com/foundryvtt/pf2e/v14-dev/system.sf2e.json",
+        "compatibility": {
+          "minimum": "1.2.0"
+        }
+      }
+    ]
+  },
+  "esmodules": [
+    "module.js",
+    "main.mjs"
+  ],
+  "styles": [
+    {
+      "src": "styles/cyberware.css"
+    },
+    {
+      "src": "styles/sf2e-upgrades.css"
+    }
+  ],
+  "packs": [
+    {
+      "name": "cyberpunk-items",
+      "label": "SF2E Cyberpunk Items",
+      "path": "packs/cyberpunk-items",
+      "type": "Item",
+      "system": "sf2e",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      },
+      "flags": {}
+    },
+    {
+      "name": "cyberpunk-journals",
+      "label": "SF2E Cyberpunk Journals",
+      "path": "packs/cyberpunk-journals",
+      "type": "JournalEntry",
+      "system": "sf2e",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      },
+      "flags": {}
+    },
+    {
+      "name": "cyberpunk-macros",
+      "label": "SF2E Cyberpunk Macros",
+      "path": "packs/cyberpunk-macros",
+      "type": "Macro",
+      "system": "sf2e",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      },
+      "flags": {}
+    }
+  ],
+  "packFolders": [
+    {
+      "name": "SF2E Cyberpunk",
+      "sorting": "m",
+      "color": "#850000",
+      "packs": [
+        "cyberpunk-items",
+        "cyberpunk-journals",
+        "cyberpunk-macros"
+      ]
+    }
+  ],
+  "flags": {
+    "cyberpunk-remaster": {
+      "pf2e-homebrew": {
+        "classTraits": {
+          "netrunner": {
+            "label": "Нетраннер",
+            "description": "Черты, фиты и программы класса Нетраннер."
+          }
+        },
+        "equipmentTraits": {
+          "neironn-uskoritell": {
+            "label": "Нейронный ускоритель",
+            "description": "Имплант напрямую взаимодействует с нервной системой и требует монопольного доступа к нейронным интерфейсам. Персонаж может иметь не более одного импланта с этим признаком одновременно."
+          },
+          "pkt": {
+            "label": "ПКТ",
+            "description": "Этот имплант можно установить только в Полную Конверсию Тела."
+          }
+        },
+        "spellTraits": {
+          "ustroystvo": {
+            "label": "Устройство",
+            "description": "У цели должна быть любая кибернетика или сетевое устройство. Если рядом с этим признаком указан конкретный тип, требуется именно он; несколько признаков означают, что нужны все."
+          },
+          "ustroystvo-neyro": {
+            "label": "Устройство:Нейро",
+            "description": "У цели должен быть нейролинк или нейроинтерфейс."
+          },
+          "ustroystvo-optika": {
+            "label": "Устройство:Оптика",
+            "description": "У цели должны быть киберглаза, оптический имплант или AR-интерфейс."
+          },
+          "ustroystvo-audio": {
+            "label": "Устройство:Аудио",
+            "description": "У цели должны быть киберуши или иной аудиоимплант."
+          },
+          "ustroystvo-kiberruka": {
+            "label": "Устройство:Киберрука",
+            "description": "У цели должна быть кибернетическая рука."
+          },
+          "ustroystvo-kibernoga": {
+            "label": "Устройство:Кибернога",
+            "description": "У цели должна быть кибернетическая нога."
+          },
+          "ustroystvo-oruzhie": {
+            "label": "Устройство:Оружие",
+            "description": "У цели должно быть умное оружие или смартлинк-система прицеливания."
+          },
+          "ustroystvo-bronya": {
+            "label": "Устройство:Броня",
+            "description": "У цели должна быть активная броня с электроникой."
+          },
+          "set": {
+            "label": "Сеть",
+            "description": "Программу можно запустить только внутри Сети. Внутри Сети требования к устройствам аннулируются."
+          },
+          "dostup": {
+            "label": "Доступ",
+            "description": "Программа работает только по цели, к которой у вас есть Доступ."
+          }
+        },
+        "baseWeapons": {
+          "svetovie-povyazki": {
+            "label": "Световые повязки",
+            "description": ""
+          },
+          "tyazhelyy-pistolet": {
+            "label": "Тяжёлый пистолет",
+            "description": ""
+          },
+          "shturmovaya-vintovka": {
+            "label": "Штурмовая винтовка",
+            "description": ""
+          },
+          "snaypers-kaya-vintovka": {
+            "label": "Снайперская винтовка",
+            "description": ""
+          },
+          "tyazhelyy-pistolet-pulyomyot": {
+            "label": "Тяжёлый пистолет-пулемёт",
+            "description": ""
+          },
+          "pistolet-pulyomyot": {
+            "label": "Пистолет-пулемёт",
+            "description": ""
+          },
+          "reaktivnyy-granatomyot": {
+            "label": "Реактивный гранатомёт",
+            "description": ""
+          },
+          "massivnyy-pistolet": {
+            "label": "Массивный пистолет",
+            "description": ""
+          },
+          "pistolet": {
+            "label": "Пистолет",
+            "description": ""
+          },
+          "drobovik-drob": {
+            "label": "Дробовик (Дробь)",
+            "description": ""
+          },
+          "drobovik-zhakan": {
+            "label": "Дробовик (Жакан)",
+            "description": ""
+          }
+        },
+        "baseArmors": {
+          "podkozhnaya-bronya": {
+            "label": "Подкожная броня",
+            "description": ""
+          },
+          "tyazhelaya-podkozhnaya-bronya": {
+            "label": "Тяжёлая подкожная броня",
+            "description": ""
+          },
+          "tkanekozha": {
+            "label": "Тканекожа",
+            "description": ""
+          },
+          "bronezhilet": {
+            "label": "Бронежилет",
+            "description": ""
+          },
+          "delovoy-kostyum": {
+            "label": "Деловой костюм",
+            "description": ""
+          },
+          "kevlarovyy-zhilet": {
+            "label": "Кевларовый жилет",
+            "description": ""
+          },
+          "bronekostyum-talos": {
+            "label": "Бронекостюм \"TALOS\"",
+            "description": ""
+          },
+          "bronya-bravada": {
+            "label": "Броня \"Бравада\"",
+            "description": ""
+          },
+          "bronya-flibuster": {
+            "label": "Броня \"Флибустер\"",
+            "description": ""
+          },
+          "bronya-shkura-drakona": {
+            "label": "Броня \"Шкура дракона\"",
+            "description": ""
+          },
+          "bronya-mtv": {
+            "label": "Броня \"MTV\"",
+            "description": ""
+          },
+          "bronekostyum-metallgir": {
+            "label": "Бронекостюм \"МеталлГир\"",
+            "description": ""
+          }
+        }
+      }
+    }
+  }
+}

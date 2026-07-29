@@ -1,0 +1,1063 @@
+[
+  {
+    "type": "Item",
+    "folder": "PMRTCPIPYWMFkLaX",
+    "name": "1-й ранг",
+    "color": null,
+    "sorting": "a",
+    "_id": "6MQWZuJMinhNeFeh",
+    "description": "",
+    "sort": 0,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1784640180675,
+      "modifiedTime": 1784640180675,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.6MQWZuJMinhNeFeh"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "PMRTCPIPYWMFkLaX",
+    "name": "2-й ранг",
+    "color": null,
+    "sorting": "a",
+    "_id": "l2RR9PJAmGnWef7j",
+    "description": "",
+    "sort": 0,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1784640180675,
+      "modifiedTime": 1784640180675,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.l2RR9PJAmGnWef7j"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "PMRTCPIPYWMFkLaX",
+    "name": "3-й ранг",
+    "color": null,
+    "sorting": "a",
+    "_id": "KMSimKSsLKpJttI6",
+    "description": "",
+    "sort": 0,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1784640180676,
+      "modifiedTime": 1784640180676,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.KMSimKSsLKpJttI6"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "PMRTCPIPYWMFkLaX",
+    "name": "4-й ранг",
+    "color": null,
+    "sorting": "a",
+    "_id": "opvAGUWUiJT1kkXk",
+    "description": "",
+    "sort": 0,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1784640180676,
+      "modifiedTime": 1784640180676,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.opvAGUWUiJT1kkXk"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "PMRTCPIPYWMFkLaX",
+    "name": "5-й ранг",
+    "color": null,
+    "sorting": "a",
+    "_id": "vHapPLMfe9xqw1DX",
+    "description": "",
+    "sort": 0,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1784640180676,
+      "modifiedTime": 1784640180676,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.vHapPLMfe9xqw1DX"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "PMRTCPIPYWMFkLaX",
+    "name": "6-й ранг",
+    "color": null,
+    "sorting": "a",
+    "_id": "liGmmDpdzdOSs3Kf",
+    "description": "",
+    "sort": 0,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1784640180676,
+      "modifiedTime": 1784640180676,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.liGmmDpdzdOSs3Kf"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "dA33gezswUiXS8Tt",
+    "name": "Амуниция",
+    "color": "#374200",
+    "sorting": "a",
+    "_id": "cts5yqALyXswRN6N",
+    "description": "",
+    "sort": 331250,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782917980456,
+      "modifiedTime": 1782917980456,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.cts5yqALyXswRN6N"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "VmvoyVb5HFOgpGGg",
+    "name": "База",
+    "color": "#420000",
+    "sorting": "m",
+    "_id": "m4yyoSRYrKD9vLqw",
+    "description": "",
+    "sort": 100000,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782917917860,
+      "modifiedTime": 1782917917860,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.m4yyoSRYrKD9vLqw"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": null,
+    "name": "Броня",
+    "color": "#850000",
+    "sorting": "a",
+    "_id": "d9gUCdv0Yy75TeDk",
+    "description": "",
+    "sort": 500000,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782917986374,
+      "modifiedTime": 1782917986442,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.d9gUCdv0Yy75TeDk"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": null,
+    "name": "Вещества",
+    "color": "#850000",
+    "sorting": "a",
+    "_id": "XUPlN8a9zDChB6rk",
+    "description": "",
+    "sort": 600000,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782917987361,
+      "modifiedTime": 1782917987420,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.XUPlN8a9zDChB6rk"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "VmvoyVb5HFOgpGGg",
+    "name": "Внешние Импланты",
+    "color": "#420000",
+    "sorting": "a",
+    "_id": "jxGyIQqv4oZBFXHd",
+    "description": "",
+    "sort": 200000,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782917917860,
+      "modifiedTime": 1782917917860,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.jxGyIQqv4oZBFXHd"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "VmvoyVb5HFOgpGGg",
+    "name": "Внутренние Импланты",
+    "color": "#420000",
+    "sorting": "m",
+    "_id": "8yzMR4H0otQ4cXlG",
+    "description": "",
+    "sort": 850000,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782917917861,
+      "modifiedTime": 1782917917861,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.8yzMR4H0otQ4cXlG"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "ilrXuuQpFumG3SbV",
+    "name": "Гарантированные",
+    "color": null,
+    "sorting": "a",
+    "_id": "NFEpORzKRnHO6E6Y",
+    "description": "",
+    "sort": 100000,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782920280924,
+      "modifiedTime": 1782931305395,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.NFEpORzKRnHO6E6Y"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": null,
+    "name": "Действия",
+    "color": "#850000",
+    "sorting": "a",
+    "_id": "OeTN8Uj5vIrnXYng",
+    "description": "",
+    "sort": 700000,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782917992717,
+      "modifiedTime": 1782917992751,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.OeTN8Uj5vIrnXYng"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": null,
+    "name": "Импланты",
+    "color": "#850000",
+    "sorting": "m",
+    "_id": "VmvoyVb5HFOgpGGg",
+    "description": "",
+    "sort": 100000,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782917917860,
+      "modifiedTime": 1782917918037,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.VmvoyVb5HFOgpGGg"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "dhVQBgF1EveVFcib",
+    "name": "Инструменты",
+    "color": "#420000",
+    "sorting": "a",
+    "_id": "yFnl6Lmm0q6hD4O0",
+    "description": "",
+    "sort": 0,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782917984948,
+      "modifiedTime": 1782917984948,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.yFnl6Lmm0q6hD4O0"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "BQ2qdIFgVN3m54We",
+    "name": "Квикхаки",
+    "color": null,
+    "sorting": "a",
+    "_id": "sTtDtvdzeUljYFSM",
+    "description": "",
+    "sort": 100000,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1784640178904,
+      "modifiedTime": 1784640178957,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.sTtDtvdzeUljYFSM"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": null,
+    "name": "Квикхаки и Программы",
+    "color": "#850000",
+    "sorting": "a",
+    "_id": "BQ2qdIFgVN3m54We",
+    "description": "",
+    "sort": 900000,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782918234980,
+      "modifiedTime": 1782918234997,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.BQ2qdIFgVN3m54We"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "VmvoyVb5HFOgpGGg",
+    "name": "КиберАудио",
+    "color": "#420000",
+    "sorting": "a",
+    "_id": "jYIJXf2o1VlPYqPT",
+    "description": "",
+    "sort": 400000,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782917917860,
+      "modifiedTime": 1782917917860,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.jYIJXf2o1VlPYqPT"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "VmvoyVb5HFOgpGGg",
+    "name": "КиберНога",
+    "color": "#420000",
+    "sorting": "a",
+    "_id": "2DyYtSbqBIpODNat",
+    "description": "",
+    "sort": 600000,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782917917861,
+      "modifiedTime": 1782917917861,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.2DyYtSbqBIpODNat"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "VmvoyVb5HFOgpGGg",
+    "name": "КиберОптика",
+    "color": "#420000",
+    "sorting": "a",
+    "_id": "fUxGDR4dSGvcWVSc",
+    "description": "",
+    "sort": 300000,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782917917860,
+      "modifiedTime": 1782917917860,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.fUxGDR4dSGvcWVSc"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "VmvoyVb5HFOgpGGg",
+    "name": "КиберРука",
+    "color": "#420000",
+    "sorting": "a",
+    "_id": "WlqQIuwPvhz1J6SA",
+    "description": "",
+    "sort": 500000,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782917917861,
+      "modifiedTime": 1782917917861,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.WlqQIuwPvhz1J6SA"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": null,
+    "name": "Классы",
+    "color": "#850000",
+    "sorting": "a",
+    "_id": "7fwm5NfAJ2KrlSce",
+    "description": "",
+    "sort": 800000,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782917995534,
+      "modifiedTime": 1782917995566,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.7fwm5NfAJ2KrlSce"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "d9gUCdv0Yy75TeDk",
+    "name": "Лёгкие Бронежилеты",
+    "color": "#420000",
+    "sorting": "a",
+    "_id": "G0847hTZtZ7wSG19",
+    "description": "",
+    "sort": 0,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782917986375,
+      "modifiedTime": 1782917986375,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.G0847hTZtZ7wSG19"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "dhVQBgF1EveVFcib",
+    "name": "Медицинские Предметы",
+    "color": "#420000",
+    "sorting": "a",
+    "_id": "7ajf6qerOUszhMVx",
+    "description": "",
+    "sort": 0,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782917984949,
+      "modifiedTime": 1782917984949,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.7ajf6qerOUszhMVx"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "dA33gezswUiXS8Tt",
+    "name": "Метательное",
+    "color": "#374200",
+    "sorting": "a",
+    "_id": "XlURslbt54CRwf15",
+    "description": "",
+    "sort": 303125,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782917980456,
+      "modifiedTime": 1782917980456,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.XlURslbt54CRwf15"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "dhVQBgF1EveVFcib",
+    "name": "Наборы",
+    "color": "#420000",
+    "sorting": "a",
+    "_id": "zZS7UpZvQeIweJ2c",
+    "description": "",
+    "sort": 0,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782917984949,
+      "modifiedTime": 1782917984949,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.zZS7UpZvQeIweJ2c"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "VmvoyVb5HFOgpGGg",
+    "name": "Нейронные Импланты",
+    "color": "#420000",
+    "sorting": "a",
+    "_id": "JeInsdaVjKVtVQbU",
+    "description": "",
+    "sort": 700000,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782917917861,
+      "modifiedTime": 1782917917861,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.JeInsdaVjKVtVQbU"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "MTM6aOAhKnCV2p1p",
+    "name": "Общие способности",
+    "color": "#420000",
+    "sorting": "a",
+    "_id": "IcFJnP6YQqtuZL0l",
+    "description": "",
+    "sort": 100000,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782918001707,
+      "modifiedTime": 1782918175929,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.IcFJnP6YQqtuZL0l"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": null,
+    "name": "Оружие",
+    "color": "#850000",
+    "sorting": "m",
+    "_id": "dA33gezswUiXS8Tt",
+    "description": "",
+    "sort": 200000,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782917980456,
+      "modifiedTime": 1782917980838,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.dA33gezswUiXS8Tt"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "dA33gezswUiXS8Tt",
+    "name": "От Известных Производителей",
+    "color": "#002c42",
+    "sorting": "a",
+    "_id": "5P5Ve8j4qTlZlXwd",
+    "description": "",
+    "sort": 275000,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782917980456,
+      "modifiedTime": 1782917980456,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.5P5Ve8j4qTlZlXwd"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "dhVQBgF1EveVFcib",
+    "name": "От Известных Производителей",
+    "color": "#002c42",
+    "sorting": "a",
+    "_id": "UPIonwgL8AjNJNLD",
+    "description": "",
+    "sort": 0,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782917984949,
+      "modifiedTime": 1782917984949,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.UPIonwgL8AjNJNLD"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "VmvoyVb5HFOgpGGg",
+    "name": "От Известных Производителей",
+    "color": "#002c42",
+    "sorting": "a",
+    "_id": "buDPqnE7IFaqnVwd",
+    "description": "",
+    "sort": 900000,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782917917861,
+      "modifiedTime": 1782917917861,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.buDPqnE7IFaqnVwd"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": null,
+    "name": "ПКТ",
+    "color": "#850000",
+    "sorting": "a",
+    "_id": "YIrrBYxWOSnGHL7N",
+    "description": "",
+    "sort": 300000,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782917983150,
+      "modifiedTime": 1782917983186,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.YIrrBYxWOSnGHL7N"
+    }
+  },
+  {
+    "_id": "hAjxPF8rxyrHozYl",
+    "name": "ПКТ Импланты",
+    "type": "Item",
+    "folder": "YIrrBYxWOSnGHL7N",
+    "sorting": "a",
+    "sort": 100000,
+    "color": "#002c42",
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.hAjxPF8rxyrHozYl"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "YIrrBYxWOSnGHL7N",
+    "name": "ПКТ Уникальные Импланты",
+    "color": "#53005c",
+    "sorting": "a",
+    "_id": "ahY6bGvcjTypaV6b",
+    "description": "",
+    "sort": 0,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782917983150,
+      "modifiedTime": 1782917983150,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.ahY6bGvcjTypaV6b"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": null,
+    "name": "Предметы",
+    "color": "#850000",
+    "sorting": "a",
+    "_id": "dhVQBgF1EveVFcib",
+    "description": "",
+    "sort": 400000,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782917984948,
+      "modifiedTime": 1782917985066,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.dhVQBgF1EveVFcib"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "7fwm5NfAJ2KrlSce",
+    "name": "Программная специализация",
+    "color": null,
+    "sorting": "a",
+    "_id": "LZLVEgvNHE0ELLGR",
+    "description": "",
+    "sort": 100000,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782919149214,
+      "modifiedTime": 1782920086539,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.LZLVEgvNHE0ELLGR"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "BQ2qdIFgVN3m54We",
+    "name": "Программы",
+    "color": null,
+    "sorting": "a",
+    "_id": "PMRTCPIPYWMFkLaX",
+    "description": "",
+    "sort": 200000,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1784640180675,
+      "modifiedTime": 1784640180795,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.PMRTCPIPYWMFkLaX"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "dhVQBgF1EveVFcib",
+    "name": "Снаряжение",
+    "color": "#420000",
+    "sorting": "a",
+    "_id": "NWL99usi0MKhROgp",
+    "description": "",
+    "sort": 0,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782917984949,
+      "modifiedTime": 1782917984949,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.NWL99usi0MKhROgp"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": null,
+    "name": "Способности",
+    "color": "#850000",
+    "sorting": "a",
+    "_id": "MTM6aOAhKnCV2p1p",
+    "description": "",
+    "sort": 0,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782918161275,
+      "modifiedTime": 1782918161275,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.MTM6aOAhKnCV2p1p"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "MTM6aOAhKnCV2p1p",
+    "name": "Способность класса",
+    "color": "#420000",
+    "sorting": "a",
+    "_id": "ilrXuuQpFumG3SbV",
+    "description": "",
+    "sort": 0,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782918153260,
+      "modifiedTime": 1782918178061,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.ilrXuuQpFumG3SbV"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "d9gUCdv0Yy75TeDk",
+    "name": "Средняя Броня",
+    "color": "#420000",
+    "sorting": "a",
+    "_id": "hQDylNNX1YmL0Ejv",
+    "description": "",
+    "sort": 0,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782917986375,
+      "modifiedTime": 1782917986375,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.hQDylNNX1YmL0Ejv"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "dA33gezswUiXS8Tt",
+    "name": "Стандартный Ближний Бой",
+    "color": "#420000",
+    "sorting": "a",
+    "_id": "HDwqjpXIBJVEatLV",
+    "description": "",
+    "sort": 175000,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782917980456,
+      "modifiedTime": 1782917980456,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.HDwqjpXIBJVEatLV"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "dA33gezswUiXS8Tt",
+    "name": "Стандартный Дальний Бой",
+    "color": "#420000",
+    "sorting": "m",
+    "_id": "GhPgQH1IlfNVwqGb",
+    "description": "",
+    "sort": 100000,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782917980456,
+      "modifiedTime": 1782917980456,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.GhPgQH1IlfNVwqGb"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "VmvoyVb5HFOgpGGg",
+    "name": "Стилевые Импланты",
+    "color": "#420000",
+    "sorting": "a",
+    "_id": "nOgz1xT7KCOJR0me",
+    "description": "",
+    "sort": 800000,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782917917861,
+      "modifiedTime": 1782917917861,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.nOgz1xT7KCOJR0me"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "d9gUCdv0Yy75TeDk",
+    "name": "Тяжёлые Бронекостюмы",
+    "color": "#420000",
+    "sorting": "a",
+    "_id": "CSqfJoCCFazemrAA",
+    "description": "",
+    "sort": 0,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782917986375,
+      "modifiedTime": 1782917986375,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.CSqfJoCCFazemrAA"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "d9gUCdv0Yy75TeDk",
+    "name": "Улучшения",
+    "color": "#374200",
+    "sorting": "a",
+    "_id": "4Y9MJ1vGmaivNNW9",
+    "description": "",
+    "sort": 0,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782917986375,
+      "modifiedTime": 1782917986375,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.4Y9MJ1vGmaivNNW9"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "dA33gezswUiXS8Tt",
+    "name": "Улучшения",
+    "color": "#374200",
+    "sorting": "a",
+    "_id": "CrCtNIAKwagMLFEz",
+    "description": "",
+    "sort": 289063,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782917980456,
+      "modifiedTime": 1782917980456,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.CrCtNIAKwagMLFEz"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "CrCtNIAKwagMLFEz",
+    "name": "Уникальное",
+    "color": "#53005c",
+    "sorting": "a",
+    "_id": "jDUh9wSh8cnjnIZH",
+    "description": "",
+    "sort": 0,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1784709584436,
+      "modifiedTime": 1784709584436,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.jDUh9wSh8cnjnIZH"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "VmvoyVb5HFOgpGGg",
+    "name": "Уникальные Импланты",
+    "color": "#53005c",
+    "sorting": "a",
+    "_id": "roqMf9AphGlz4hEx",
+    "description": "",
+    "sort": 1100000,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782917917861,
+      "modifiedTime": 1782917917861,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.roqMf9AphGlz4hEx"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "dhVQBgF1EveVFcib",
+    "name": "Уникальные Предметы",
+    "color": "#53005c",
+    "sorting": "a",
+    "_id": "3Ep1ZnwAiwjgaVEh",
+    "description": "",
+    "sort": 0,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782917984949,
+      "modifiedTime": 1782917984949,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.3Ep1ZnwAiwjgaVEh"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "dA33gezswUiXS8Tt",
+    "name": "Уникальный Ближний Бой",
+    "color": "#53005c",
+    "sorting": "m",
+    "_id": "9H48FiCjRoe2AYDf",
+    "description": "",
+    "sort": 262500,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782917980456,
+      "modifiedTime": 1782917980456,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.9H48FiCjRoe2AYDf"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "dA33gezswUiXS8Tt",
+    "name": "Уникальный Дальний Бой",
+    "color": "#53005c",
+    "sorting": "m",
+    "_id": "l9VI6c7W7LfUZvmN",
+    "description": "",
+    "sort": 250000,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782917980456,
+      "modifiedTime": 1782917980456,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.l9VI6c7W7LfUZvmN"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": "BQ2qdIFgVN3m54We",
+    "name": "Фокусные программы",
+    "color": null,
+    "sorting": "a",
+    "_id": "b808j8P1ThJ8Ia56",
+    "description": "",
+    "sort": 150000,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1784640182358,
+      "modifiedTime": 1784640182376,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.b808j8P1ThJ8Ia56"
+    }
+  },
+  {
+    "type": "Item",
+    "folder": null,
+    "name": "Эффекты",
+    "color": "#850000",
+    "sorting": "a",
+    "_id": "JKFMcgOiDWALOmdz",
+    "description": "",
+    "sort": 0,
+    "flags": {},
+    "_stats": {
+      "coreVersion": "14.361",
+      "systemId": "sf2e",
+      "systemVersion": "1.2.0",
+      "createdTime": 1782920080990,
+      "modifiedTime": 1782920080990,
+      "compendiumSource": "Compendium.cyberpunk-remaster.cyberpunk-items.Folder.JKFMcgOiDWALOmdz"
+    }
+  }
+]
