@@ -9,7 +9,6 @@ import {
   transformJournals,
   transformMacros,
 } from "./lib/content.mjs";
-import { organizeIconLibrary } from "./lib/icon-library.mjs";
 import { requireAuthorPath, resolveAuthorPaths } from "./lib/author-paths.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -210,15 +209,6 @@ try {
     writeJson("data/pkt-models.json", models),
   ]);
 
-  const iconResult =
-    process.env.SYNC_ORGANIZE_ICONS === "0"
-      ? null
-      : await organizeIconLibrary({
-          root,
-          sourceModuleRoot,
-          foundryDataRoot: authorPaths.foundryDataRoot,
-          foundryAppRoot: authorPaths.foundryAppRoot,
-        });
   console.table({
     items: summarize(currentItems, items),
     folders: summarize(currentFolders, folders),
@@ -226,13 +216,6 @@ try {
     macros: summarize(currentMacros, macros),
     pktModels: summarize(currentModels, models, (model) => model.key),
   });
-  if (iconResult) {
-    console.log(
-      `Organized ${iconResult.documents} icons; ` +
-        `${iconResult.copied} copied, ${iconResult.removed} superseded removed.`,
-    );
-    console.table(iconResult.counts);
-  }
   if (!allowDeletions) {
     console.log(
       "Documents absent from Foundry were retained. " +

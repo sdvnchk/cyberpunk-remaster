@@ -35,21 +35,6 @@ const packSpecs = [
   },
 ];
 
-async function listFiles(directory, prefix = "") {
-  const files = [];
-  for (const entry of await fs.readdir(directory, { withFileTypes: true })) {
-    const relative = prefix ? `${prefix}/${entry.name}` : entry.name;
-    if (entry.isDirectory()) {
-      files.push(
-        ...(await listFiles(path.join(directory, entry.name), relative)),
-      );
-    } else if (entry.isFile()) {
-      files.push(relative);
-    }
-  }
-  return files;
-}
-
 function canonicalValue(value) {
   if (Array.isArray(value)) return value.map(canonicalValue);
   if (!value || typeof value !== "object") return value;
@@ -319,7 +304,7 @@ try {
   );
   for (const string of allStrings(canonicalExports)) {
     if (
-      /Compendium\.world\.sf2e-cyberpunk-|Compendium\.pf2e\.|@UUID\[(?:Item|JournalEntry)\.|(?<!modules\/cyberpunk-remaster\/)assets\/icons\/|modules\/cyberpunk-remaster\/modules\/cyberpunk-remaster\//.test(
+      /Compendium\.world\.sf2e-cyberpunk-|Compendium\.pf2e\.|@UUID\[(?:Item|JournalEntry)\./.test(
         string,
       )
     ) {
@@ -327,39 +312,6 @@ try {
         `Canonical export contains a legacy reference: ${string}`,
       );
     }
-  }
-
-  const iconPaths = new Set();
-  for (const string of allStrings([items, folders, journals, macros])) {
-    for (const match of string.matchAll(
-      /modules\/cyberpunk-remaster\/assets\/icons\/([^"'()<>\s]+)/g,
-    )) {
-      const relative = match[1];
-      if (
-        path.posix.isAbsolute(relative) ||
-        relative.split("/").includes("..") ||
-        relative.includes("\\")
-      ) {
-        throw new Error(`Unsafe module icon path: ${relative}`);
-      }
-      iconPaths.add(relative);
-    }
-  }
-  const iconDirectory = path.join(root, "assets", "icons");
-  const iconFiles = new Set(
-    (await listFiles(iconDirectory)).filter((file) =>
-      /\.(?:avif|gif|jpe?g|png|svg|webp)$/i.test(file),
-    ),
-  );
-  const missingIcons = [...iconPaths].filter((file) => !iconFiles.has(file));
-  const unreferencedIcons = [...iconFiles].filter(
-    (file) => !iconPaths.has(file),
-  );
-  if (missingIcons.length) {
-    throw new Error(`Missing icons: ${missingIcons.join(", ")}`);
-  }
-  if (unreferencedIcons.length) {
-    throw new Error(`Unreferenced icon files: ${unreferencedIcons.join(", ")}`);
   }
 
   if (pktModels.length !== sourcePktModels.length) {
@@ -402,18 +354,10 @@ try {
     throw new Error("The trace macro still uses a world-scoped flag.");
   }
 
-  const designRules = await fs.stat(
-    path.join(root, "assets", "icons", "ICON_DESIGN_RULES.md"),
-  );
-  if (!designRules.isFile() || designRules.size === 0) {
-    throw new Error("ICON_DESIGN_RULES.md must contain the design guide.");
-  }
-
   console.log(
     `Validated ${items.length} Items, ${folders.length} folders, ` +
       `${journals.length} journals / ${pages.length} pages, ` +
-      `${macros.length} macros, ${pktComponents.length} PKT components and ` +
-      `${iconPaths.size} icons.`,
+      `${macros.length} macros and ${pktComponents.length} PKT components.`,
   );
 } finally {
   await fs.rm(temporaryPacksRoot, { recursive: true, force: true });

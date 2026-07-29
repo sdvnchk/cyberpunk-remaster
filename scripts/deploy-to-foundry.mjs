@@ -60,7 +60,6 @@ await fs.mkdir(path.dirname(backupRoot), { recursive: true });
 await fs.cp(targetRoot, backupRoot, { recursive: true });
 
 const directories = [
-  "assets",
   "content",
   "data",
   "docs",
@@ -118,7 +117,6 @@ for (const obsoleteName of [
   }
   await fs.rm(obsoleteTarget, { force: true });
 }
-await fs.rm(path.join(targetRoot, "ICON_DESIGN_RULES.md"), { force: true });
 
 console.log(`Deployed ${manifest.title} to ${targetRoot}`);
 console.log(`Backup: ${backupRoot}`);

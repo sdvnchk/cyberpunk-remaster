@@ -6,7 +6,7 @@
 
 - Издание: **SF2E Cyberpunk Remaster**
 - Автор: **Ogorodnik**
-- Версия: **2.6.0**
+- Версия: **2.6.1**
 - Foundry VTT: **14.360+**
 - SF2e: **1.2.0+**
 - Обязательная зависимость: **Pathfinder Anachronism 2.2.0+**

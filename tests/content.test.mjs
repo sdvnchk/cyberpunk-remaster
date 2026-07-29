@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -50,13 +50,12 @@ function fakeItem({
   };
 }
 
-test("UUID and icon rewrites cover world, relative, and PF2e references", () => {
+test("UUID rewrites cover world, relative, and PF2e references", () => {
   const source =
     "@UUID[Item.BANdFbfuD16lPHs4] " +
     "@UUID[Compendium.world.sf2e-cyberpunk-items.Item.abc123] " +
     "@UUID[Compendium.cyberpunk-remaster.cyberpunk-items.UIRRVbPxBWPV7zAm] " +
-    "@UUID[Compendium.pf2e.conditionitems.Item.x] " +
-    "assets/icons/customs/test.svg";
+    "@UUID[Compendium.pf2e.conditionitems.Item.x]";
   const result = rewriteString(source);
   assert.match(
     result,
@@ -68,10 +67,6 @@ test("UUID and icon rewrites cover world, relative, and PF2e references", () => 
   );
   assert.doesNotMatch(result, /Compendium\.world|Compendium\.pf2e\./);
   assert.match(result, /Compendium\.sf2e\.conditions/);
-  assert.match(
-    result,
-    /modules\/cyberpunk-remaster\/assets\/icons\/customs\/test\.svg/,
-  );
 });
 
 test("cyberware parser normalizes HTML and extracts structured values", () => {
@@ -1980,57 +1975,6 @@ test("PKT journal placeholders are replaced and stale models are cleared", () =>
 
   const [second] = transformJournals([first], models);
   assert.deepEqual(second, first);
-});
-
-test("core and SF2e icons keep canonical external paths", () => {
-  const items = JSON.parse(
-    readFileSync(
-      new URL("../content/exports/items.json", import.meta.url),
-      "utf8",
-    ),
-  );
-  const macros = JSON.parse(
-    readFileSync(
-      new URL("../content/exports/macros.json", import.meta.url),
-      "utf8",
-    ),
-  );
-  const byName = new Map(items.map((item) => [item.name, item]));
-
-  assert.equal(
-    byName.get("Горячий буфер")?.img,
-    "systems/sf2e/icons/actions/OneAction.webp",
-  );
-  assert.equal(
-    byName.get("Аккумулятор [Серийный]")?.img,
-    "systems/sf2e/icons/equipment/other/green-battery.webp",
-  );
-  assert.equal(
-    byName.get("Расплывчатость / Blur")?.img,
-    "systems/sf2e/icons/spells/blur.webp",
-  );
-  assert.equal(
-    byName.get("Глухота / Deafness")?.img,
-    "icons/magic/air/air-burst-spiral-large-pink.webp",
-  );
-  assert.equal(
-    macros.find((macro) => macro.name === "Счётчик следа")?.img,
-    "icons/svg/dice-target.svg",
-  );
-
-  for (const relative of [
-    "abilities/OneAction.webp",
-    "ammo/green-battery.webp",
-    "programs/blur.webp",
-    "special/dice-target.svg",
-    "weapons/grenade.webp",
-  ]) {
-    assert.equal(
-      existsSync(new URL(`../assets/icons/${relative}`, import.meta.url)),
-      false,
-      `${relative} must not be duplicated inside the module`,
-    );
-  }
 });
 
 test("author update delegates an installed-module run to the workspace", async (t) => {

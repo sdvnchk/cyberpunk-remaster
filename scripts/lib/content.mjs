@@ -236,21 +236,6 @@ export function rewriteString(value, counters = null) {
   );
 
   replace(
-    /(?<!modules\/cyberpunk-remaster\/)assets\/icons\//g,
-    `modules/${MODULE_ID}/assets/icons/`,
-    "iconReferences",
-  );
-  replace(
-    /systems\/pf2e\/icons\/actions\/FreeAction\.webp/g,
-    "systems/sf2e/icons/actions/FreeAction.webp",
-    "systemIconReferences",
-  );
-  replace(
-    /systems\/pf2e\/icons\/actions\/Reaction\.webp/g,
-    "systems/sf2e/icons/actions/Reaction.webp",
-    "systemIconReferences",
-  );
-  replace(
     /flags\.world\.netrunnerTrace/g,
     `flags.${MODULE_ID}.netrunnerTrace`,
     "macroFlags",
@@ -525,18 +510,6 @@ export function allStrings(value, output = []) {
   return output;
 }
 
-export function collectCustomIconPaths(value) {
-  const paths = new Set();
-  for (const string of allStrings(value)) {
-    for (const match of string.matchAll(
-      /(?:^|["'(=\s])(?:assets\/icons|modules\/cyberpunk-remaster\/assets\/icons)\/([^"'()<>\s]+)/g,
-    )) {
-      paths.add(match[1]);
-    }
-  }
-  return paths;
-}
-
 export function validateTransformedContent({
   items,
   folders,
@@ -762,10 +735,6 @@ export function validateTransformedContent({
     ) {
       failures.push(`Module shorthand UUID remains: ${string.slice(0, 180)}`);
     }
-    if (/(?:^|["'(=\s])assets\/icons\//.test(string)) {
-      failures.push(`Legacy icon path remains: ${string.slice(0, 180)}`);
-    }
-
     for (const match of string.matchAll(
       /Compendium\.cyberpunk-remaster\.cyberpunk-items\.Item\.([A-Za-z0-9]{16})/g,
     )) {
