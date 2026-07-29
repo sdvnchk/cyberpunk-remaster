@@ -1,8 +1,8 @@
 {
   "id": "cyberpunk-remaster",
   "title": "SF2E Cyberpunk Remaster",
-  "description": "Cyberpunk equipment, netrunning, full-body conversion rules and cyberware management for Starfinder Second Edition.",
-  "version": "2.6.1",
+  "description": "Cyberpunk equipment, netrunning, full-body conversion, cyberware management and NPC generation for Starfinder Second Edition.",
+  "version": "2.7.0",
   "authors": [
     {
       "name": "Ogorodnik"
@@ -55,7 +55,8 @@
   },
   "esmodules": [
     "runtime/cyberware-runtime.mjs",
-    "runtime/item-sheet-enhancements.mjs"
+    "runtime/item-sheet-enhancements.mjs",
+    "forge/forge-runtime.mjs"
   ],
   "styles": [
     {
@@ -63,6 +64,9 @@
     },
     {
       "src": "styles/sf2e-upgrades.css"
+    },
+    {
+      "src": "styles/cyberpunk-forge.css"
     }
   ],
   "packs": [

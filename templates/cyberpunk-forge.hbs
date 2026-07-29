@@ -1,0 +1,275 @@
+<div class="cyberpunk-forge-shell">
+  <header class="cyberpunk-forge-hero">
+    <div>
+      <span class="cyberpunk-forge-kicker">SF2E CYBERPUNK REMASTER</span>
+      <h1>Киберпанк-Кузница NPC</h1>
+      <p>Статблок, оружие, броня, программы и установленный хром — только из вашей библиотеки.</p>
+    </div>
+    <div class="cyberpunk-forge-catalog-status {{#if catalogError}}has-error{{/if}}">
+      {{#if catalogError}}
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <span>{{catalogError}}</span>
+      {{else}}
+        <strong>{{catalogStats.items}}</strong>
+        <span>предметов</span>
+        <small>{{catalogStats.weapons}} оружия · {{catalogStats.armor}} брони · {{catalogStats.cyberware}} хрома · {{catalogStats.programs}} программ</small>
+      {{/if}}
+    </div>
+  </header>
+
+  <input type="hidden" name="preset" value="corporate-patrol">
+
+  <div class="cyberpunk-forge-layout">
+    <main class="cyberpunk-forge-body">
+      <section class="cyberpunk-forge-panel">
+        <div class="cyberpunk-forge-section-heading">
+          <div>
+            <span class="cyberpunk-forge-step">01</span>
+            <h2>Кто это</h2>
+          </div>
+          <button type="button" class="cyberpunk-forge-ghost" data-forge-randomize>
+            <i class="fa-solid fa-shuffle"></i> Новый вариант
+          </button>
+        </div>
+
+        <div class="cyberpunk-forge-preset-groups">
+          {{#each presetGroups}}
+          <details class="cyberpunk-forge-preset-group" {{#if @first}}open{{/if}}>
+            <summary>
+              <i class="{{icon}}"></i>
+              <span>{{label}}</span>
+              <small>{{presets.length}}</small>
+            </summary>
+            <div class="cyberpunk-forge-preset-grid">
+              {{#each presets}}
+              <button type="button" class="cyberpunk-forge-preset" data-forge-preset="{{id}}" title="{{description}}">
+                <i class="{{icon}}"></i>
+                <span>
+                  <strong>{{label}}</strong>
+                  <small>{{description}}</small>
+                </span>
+              </button>
+              {{/each}}
+            </div>
+          </details>
+          {{/each}}
+        </div>
+
+        <div class="cyberpunk-forge-fields cyberpunk-forge-fields-core">
+          <label>
+            <span>Имя <small>необязательно</small></span>
+            <input type="text" name="name" placeholder="Сгенерировать">
+          </label>
+          <label>
+            <span>Уровень</span>
+            <input type="number" name="level" min="-1" max="20" step="1" value="3">
+          </label>
+          <label>
+            <span>Количество</span>
+            <input type="number" name="count" min="1" max="20" step="1" value="1">
+          </label>
+          <label>
+            <span>Статус</span>
+            <select name="quality">
+              <option value="standard">Обычный</option>
+              <option value="elite">Элитный</option>
+            </select>
+          </label>
+          <label class="cyberpunk-forge-seed">
+            <span>Базовый seed <small>оставьте пустым для нового варианта</small></span>
+            <input type="text" name="randomSeed" maxlength="120" placeholder="Будет создан автоматически">
+          </label>
+        </div>
+        <p class="cyberpunk-forge-note is-hidden" data-forge-batch-note>
+          Каждый участник группы получит отдельный seed, роль и случайный набор предметов внутри стиля пресета.
+        </p>
+
+        <label class="cyberpunk-forge-prompt">
+          <span>Свободное описание</span>
+          <textarea name="prompt" rows="3" maxlength="4000" placeholder="Например: корпоративный снайпер, который наблюдает за терминалом и не вступает в ближний бой"></textarea>
+        </label>
+        <button type="button" class="cyberpunk-forge-link-button" data-forge-infer>
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Определить пресет по описанию
+        </button>
+      </section>
+
+      <section class="cyberpunk-forge-panel">
+        <div class="cyberpunk-forge-section-heading">
+          <div>
+            <span class="cyberpunk-forge-step">02</span>
+            <h2>Снаряжение и хром</h2>
+          </div>
+          <button type="button" class="cyberpunk-forge-ghost" data-forge-refresh-catalog>
+            <i class="fa-solid fa-rotate"></i> Обновить библиотеку
+          </button>
+        </div>
+
+        <div class="cyberpunk-forge-fields">
+          <label>
+            <span>Количество хрома</span>
+            <select name="chromeIntensity">
+              <option value="none">Без имплантов</option>
+              <option value="light">Мало</option>
+              <option value="standard">По пресету</option>
+              <option value="heavy">Много</option>
+            </select>
+          </label>
+          <label>
+            <span>Наполнение инвентаря</span>
+            <select name="loadoutIntensity">
+              <option value="minimal">Минимальное</option>
+              <option value="standard">Обычное</option>
+              <option value="rich">Богатое</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="cyberpunk-forge-options">
+          <label>
+            <input type="checkbox" name="includeConsumables" checked>
+            <span><i class="fa-solid fa-kit-medical"></i><strong>Расходники и инструменты</strong><small>Подбираются по роли</small></span>
+          </label>
+          <label>
+            <input type="checkbox" name="includePrograms">
+            <span><i class="fa-solid fa-code"></i><strong>Программы нетраннера</strong><small>Только из библиотеки</small></span>
+          </label>
+        </div>
+      </section>
+
+      <section class="cyberpunk-forge-panel">
+        <div class="cyberpunk-forge-section-heading">
+          <div>
+            <span class="cyberpunk-forge-step">03</span>
+            <h2>Куда и что создать</h2>
+          </div>
+        </div>
+
+        {{#if selectedNpc.available}}
+        <div class="cyberpunk-forge-selected">
+          <i class="fa-solid fa-crosshairs"></i>
+          <span>Выбран NPC: <strong>{{selectedNpc.actorName}}</strong></span>
+        </div>
+        {{else}}
+        <div class="cyberpunk-forge-selected is-empty">
+          <i class="fa-regular fa-circle"></i>
+          <span>На сцене не выбран один NPC.</span>
+        </div>
+        {{/if}}
+
+        <div class="cyberpunk-forge-fields">
+          <label>
+            <span>Цель операции</span>
+            <select name="target">
+              <option value="new">Новый NPC в каталоге</option>
+              <option value="duplicate">Копия выбранного NPC</option>
+              <option value="selected">Перестроить выбранного NPC</option>
+            </select>
+          </label>
+          <label>
+            <span>Размещение</span>
+            <select name="deploymentMode">
+              {{#each deploymentModes}}
+              <option value="{{value}}">{{label}}</option>
+              {{/each}}
+            </select>
+          </label>
+        </div>
+
+        <div class="cyberpunk-forge-rebuild is-hidden" data-forge-rebuild-options>
+          <label>
+            <span>Предметы при перестройке</span>
+            <select name="itemPolicy">
+              <option value="generated">Заменить только созданное Кузницей</option>
+              <option value="keep">Сохранить всё и добавить новый набор</option>
+            </select>
+          </label>
+          <label class="cyberpunk-forge-checkline">
+            <input type="checkbox" name="backupOriginal" checked>
+            <span>Создать полную резервную копию</span>
+          </label>
+        </div>
+
+        <div class="cyberpunk-forge-options cyberpunk-forge-options-operation">
+          <label>
+            <input type="checkbox" name="addToCombat">
+            <span><i class="fa-solid fa-swords"></i><strong>Добавить в бой</strong></span>
+          </label>
+          <label>
+            <input type="checkbox" name="createBriefing">
+            <span><i class="fa-solid fa-book"></i><strong>Создать сводку</strong></span>
+          </label>
+          <label>
+            <input type="checkbox" name="sendChatSummary">
+            <span><i class="fa-solid fa-message"></i><strong>Отчёт GM в чат</strong></span>
+          </label>
+          <label>
+            <input type="checkbox" name="openSheet" checked>
+            <span><i class="fa-solid fa-address-card"></i><strong>Открыть лист</strong></span>
+          </label>
+        </div>
+      </section>
+
+      <section class="cyberpunk-forge-panel cyberpunk-forge-library">
+        <div class="cyberpunk-forge-section-heading">
+          <div>
+            <span class="cyberpunk-forge-step">04</span>
+            <h2>Свои пресеты и история</h2>
+          </div>
+        </div>
+        <div class="cyberpunk-forge-library-row">
+          <select data-forge-load-custom>
+            <option value="">Загрузить свой пресет…</option>
+            {{#each customPresets}}
+            <option value="{{id}}">{{name}}</option>
+            {{/each}}
+          </select>
+          <button type="button" data-forge-save-preset title="Сохранить текущие параметры"><i class="fa-solid fa-floppy-disk"></i></button>
+          <button type="button" data-forge-delete-custom title="Удалить выбранный пресет"><i class="fa-solid fa-trash"></i></button>
+          <button type="button" data-forge-export title="Экспорт пресетов"><i class="fa-solid fa-file-export"></i></button>
+          <button type="button" data-forge-import title="Импорт пресетов"><i class="fa-solid fa-file-import"></i></button>
+          <input type="file" accept="application/json,.json" hidden data-forge-import-file>
+        </div>
+        <div class="cyberpunk-forge-history">
+          {{#if recentHistory.length}}
+            {{#each recentHistory}}
+            <div><strong>{{name}}</strong><span>ур. {{level}}</span><time>{{createdAt}}</time></div>
+            {{/each}}
+          {{else}}
+            <p class="cyberpunk-forge-muted">История пока пуста.</p>
+          {{/if}}
+        </div>
+        <button type="button" class="cyberpunk-forge-link-button" data-forge-create-macro>
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Создать макрос запуска
+        </button>
+      </section>
+    </main>
+
+    <aside class="cyberpunk-forge-preview-panel">
+      <div class="cyberpunk-forge-section-heading">
+        <div>
+          <span class="cyberpunk-forge-step">LIVE</span>
+          <h2>Предпросмотр</h2>
+        </div>
+        <button type="button" class="cyberpunk-forge-icon-button" data-forge-preview-button title="Обновить предпросмотр">
+          <i class="fa-solid fa-rotate"></i>
+        </button>
+      </div>
+      <div data-forge-preview>
+        <p class="cyberpunk-forge-muted">Подготовка каталога…</p>
+      </div>
+      <div class="cyberpunk-forge-preview-help">
+        <i class="fa-solid fa-circle-info"></i>
+        <p>Предпросмотр использует тот же seed, что и создание. Нажмите «Новый вариант», чтобы получить другое оружие, броню и хром внутри выбранного пресета.</p>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="cyberpunk-forge-footer">
+    <span><i class="fa-solid fa-shield-halved"></i> Humanity NPC не рассчитывается. Импланты создаются сразу установленными.</span>
+    <div>
+      <button type="button" class="cyberpunk-forge-primary" data-forge-submit>
+        <i class="fa-solid fa-microchip"></i> Создать NPC
+      </button>
+    </div>
+  </footer>
+</div>

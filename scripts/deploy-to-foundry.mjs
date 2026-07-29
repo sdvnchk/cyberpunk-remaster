@@ -63,6 +63,8 @@ const directories = [
   "content",
   "data",
   "docs",
+  "forge",
+  "licenses",
   "packs",
   "rule-elements",
   "runtime",
