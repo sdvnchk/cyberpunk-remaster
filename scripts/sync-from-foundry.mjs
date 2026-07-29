@@ -10,6 +10,7 @@ import {
   transformMacros,
 } from "./lib/content.mjs";
 import { organizeIconLibrary } from "./lib/icon-library.mjs";
+import { requireAuthorPath, resolveAuthorPaths } from "./lib/author-paths.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const readJson = async (relative) =>
@@ -21,16 +22,10 @@ const writeJson = async (relative, value) =>
     "utf8",
   );
 const manifest = await readJson("module.json");
-const defaultInstallation = path.resolve(
-  "D:/Workspaces/FoundryVTT_StarFinder_v14.361/Data/modules",
-  manifest.id,
-);
-const sourceModuleRoot = path.resolve(
-  process.env.FOUNDRY_MODULE_PATH ||
-    process.env.SOURCE_MODULE_ROOT ||
-    (process.env.FOUNDRY_DATA_PATH
-      ? path.join(process.env.FOUNDRY_DATA_PATH, "modules", manifest.id)
-      : defaultInstallation),
+const authorPaths = await resolveAuthorPaths(root, manifest.id);
+const sourceModuleRoot = requireAuthorPath(
+  authorPaths.foundryModuleRoot,
+  "Папка установленного модуля Foundry",
 );
 if (sourceModuleRoot === root) {
   throw new Error("The Foundry source module must differ from the workspace.");
@@ -88,16 +83,25 @@ function mergeDocuments(
         String(left.name ?? keyOf(left)).localeCompare(
           String(right.name ?? keyOf(right)),
           "ru",
-        )
+        ),
       ),
   );
   return merged;
 }
 
 function cleanPktModel(model) {
-  const cleanEntry = ({ uuid, ...entry }) => entry;
-  const cleanChoice = ({ itemUuids, ...choice }) => choice;
-  const { requiredBodyUuid, ...cleaned } = structuredClone(model);
+  const cleanEntry = (source) => {
+    const entry = structuredClone(source);
+    delete entry.uuid;
+    return entry;
+  };
+  const cleanChoice = (source) => {
+    const choice = structuredClone(source);
+    delete choice.itemUuids;
+    return choice;
+  };
+  const cleaned = structuredClone(model);
+  delete cleaned.requiredBodyUuid;
   cleaned.unique = (cleaned.unique ?? []).map(cleanEntry);
   cleaned.components = (cleaned.components ?? []).map(cleanEntry);
   cleaned.choices = (cleaned.choices ?? []).map(cleanChoice);
@@ -111,9 +115,11 @@ function summarize(existing, imported, keyOf = (value) => value._id) {
     existing: existing.length,
     imported: imported.length,
     added: imported.filter((value) => !existingById.has(keyOf(value))).length,
-    changed: imported.filter((value) =>
-      existingById.has(keyOf(value)) &&
-      JSON.stringify(existingById.get(keyOf(value))) !== JSON.stringify(value)
+    changed: imported.filter(
+      (value) =>
+        existingById.has(keyOf(value)) &&
+        JSON.stringify(existingById.get(keyOf(value))) !==
+          JSON.stringify(value),
     ).length,
     absent: existing.filter((value) => !importedById.has(keyOf(value))).length,
   };
@@ -156,19 +162,17 @@ try {
     currentModels,
     pktComponents,
   ] = await Promise.all([
-    readJson("items-export.json"),
+    readJson("content/exports/items.json"),
     readJson("data/item-folders.json"),
-    readJson("journals-export.json"),
-    readJson("macros-export.json"),
+    readJson("content/exports/journals.json"),
+    readJson("content/exports/macros.json"),
     readJson("data/pkt-models.json"),
     readJson("data/pkt-components.json"),
   ]);
   const allowDeletions = process.env.SYNC_ALLOW_DELETIONS === "1";
   const activeModels = importedJournals
     .flatMap((journal) =>
-      (journal.pages ?? []).map((page) =>
-        page.flags?.[manifest.id]?.pktModel
-      )
+      (journal.pages ?? []).map((page) => page.flags?.[manifest.id]?.pktModel),
     )
     .filter(Boolean)
     .map(cleanPktModel);
@@ -199,26 +203,22 @@ try {
   );
 
   await Promise.all([
-    writeJson("items-export.json", items),
+    writeJson("content/exports/items.json", items),
     writeJson("data/item-folders.json", folders),
-    writeJson("journals-export.json", journals),
-    writeJson("macros-export.json", macros),
+    writeJson("content/exports/journals.json", journals),
+    writeJson("content/exports/macros.json", macros),
     writeJson("data/pkt-models.json", models),
-    fs.cp(
-      path.join(sourceModuleRoot, "assets", "icons"),
-      path.join(root, "assets", "icons"),
-      { recursive: true, force: true },
-    ),
   ]);
 
-  const iconResult = process.env.SYNC_ORGANIZE_ICONS === "0"
-    ? null
-    : await organizeIconLibrary({
-      root,
-      sourceModuleRoot,
-      foundryDataRoot: process.env.FOUNDRY_DATA_PATH,
-      foundryAppRoot: process.env.FOUNDRY_APP_PATH,
-    });
+  const iconResult =
+    process.env.SYNC_ORGANIZE_ICONS === "0"
+      ? null
+      : await organizeIconLibrary({
+          root,
+          sourceModuleRoot,
+          foundryDataRoot: authorPaths.foundryDataRoot,
+          foundryAppRoot: authorPaths.foundryAppRoot,
+        });
   console.table({
     items: summarize(currentItems, items),
     folders: summarize(currentFolders, folders),

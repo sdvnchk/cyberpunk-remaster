@@ -55,17 +55,19 @@ function itemCategory(item, folderById) {
     return "abilities";
   }
 
-  return {
-    action: "abilities",
-    ammo: "ammo",
-    armor: "armor",
-    class: "abilities",
-    consumable: "consumables",
-    effect: "abilities",
-    feat: "abilities",
-    spell: "programs",
-    weapon: "weapons",
-  }[item.type] ?? "items";
+  return (
+    {
+      action: "abilities",
+      ammo: "ammo",
+      armor: "armor",
+      class: "abilities",
+      consumable: "consumables",
+      effect: "abilities",
+      feat: "abilities",
+      spell: "programs",
+      weapon: "weapons",
+    }[item.type] ?? "items"
+  );
 }
 
 function subitemCategory(subitem, parentCategory) {
@@ -74,16 +76,18 @@ function subitemCategory(subitem, parentCategory) {
   if (/\/ammo|ammunition\//i.test(current) || subitem.type === "ammo") {
     return "ammo";
   }
-  return {
-    action: "abilities",
-    ammo: "ammo",
-    armor: "armor",
-    consumable: "consumables",
-    effect: "abilities",
-    feat: "abilities",
-    spell: "programs",
-    weapon: "weapons",
-  }[subitem.type] ?? parentCategory;
+  return (
+    {
+      action: "abilities",
+      ammo: "ammo",
+      armor: "armor",
+      consumable: "consumables",
+      effect: "abilities",
+      feat: "abilities",
+      spell: "programs",
+      weapon: "weapons",
+    }[subitem.type] ?? parentCategory
+  );
 }
 
 function documentTarget(category, document) {
@@ -143,7 +147,10 @@ function isOrganizableIcon(icon) {
 }
 
 async function exists(file) {
-  return fs.access(file).then(() => true).catch(() => false);
+  return fs
+    .access(file)
+    .then(() => true)
+    .catch(() => false);
 }
 
 async function sameFileContent(first, second) {
@@ -189,7 +196,9 @@ function synchronizeClassItemIcons(items) {
   const byId = new Map(items.map((item) => [item._id, item]));
   for (const classItem of items.filter((item) => item.type === "class")) {
     for (const grant of Object.values(classItem.system?.items ?? {})) {
-      const targetId = String(grant.uuid ?? "").split(".").at(-1);
+      const targetId = String(grant.uuid ?? "")
+        .split(".")
+        .at(-1);
       const target = byId.get(targetId);
       if (!target) continue;
       grant.name = target.name;
@@ -204,9 +213,9 @@ export async function organizeIconLibrary({
   foundryDataRoot,
   foundryAppRoot,
 }) {
-  const itemsPath = path.join(root, "items-export.json");
+  const itemsPath = path.join(root, "content", "exports", "items.json");
   const foldersPath = path.join(root, "data", "item-folders.json");
-  const macrosPath = path.join(root, "macros-export.json");
+  const macrosPath = path.join(root, "content", "exports", "macros.json");
   const iconRoot = path.join(root, "assets", "icons");
   const [items, folders, macros] = await Promise.all([
     fs.readFile(itemsPath, "utf8").then(JSON.parse),
@@ -214,9 +223,10 @@ export async function organizeIconLibrary({
     fs.readFile(macrosPath, "utf8").then(JSON.parse),
   ]);
   const folderById = new Map(folders.map((folder) => [folder._id, folder]));
-  const dataRoot = foundryDataRoot ??
-    path.resolve(sourceModuleRoot, "..", "..");
-  const appRoot = foundryAppRoot ??
+  const dataRoot =
+    foundryDataRoot ?? path.resolve(sourceModuleRoot, "..", "..");
+  const appRoot =
+    foundryAppRoot ??
     process.env.FOUNDRY_APP_PATH ??
     path.resolve(dataRoot, "..", "App");
   const roots = { iconRoot, dataRoot, appRoot };
@@ -243,10 +253,7 @@ export async function organizeIconLibrary({
       throw new Error(`Unsupported icon category ${category}.`);
     }
     const relativeTarget = documentTarget(category, document);
-    const absoluteTarget = path.resolve(
-      iconRoot,
-      ...relativeTarget.split("/"),
-    );
+    const absoluteTarget = path.resolve(iconRoot, ...relativeTarget.split("/"));
     if (!absoluteTarget.startsWith(`${iconRoot}${path.sep}`)) {
       throw new Error(`Unsafe icon destination: ${relativeTarget}`);
     }
@@ -292,7 +299,7 @@ export async function organizeIconLibrary({
     await fs.mkdir(path.dirname(operation.absoluteTarget), { recursive: true });
     if (path.resolve(operation.absoluteSource) !== operation.absoluteTarget) {
       if (
-        await exists(operation.absoluteTarget) &&
+        (await exists(operation.absoluteTarget)) &&
         !(await sameFileContent(
           operation.absoluteSource,
           operation.absoluteTarget,
@@ -308,8 +315,7 @@ export async function organizeIconLibrary({
     } else {
       unchanged++;
     }
-    operation.document.img =
-      `${MODULE_ICON_PREFIX}${operation.relativeTarget}`;
+    operation.document.img = `${MODULE_ICON_PREFIX}${operation.relativeTarget}`;
   }
 
   const referenced = new Set(
@@ -319,10 +325,7 @@ export async function organizeIconLibrary({
   for (const relative of oldModuleSources) {
     if (referenced.has(relative)) continue;
     const target = path.resolve(iconRoot, ...relative.split("/"));
-    if (
-      target.startsWith(`${iconRoot}${path.sep}`) &&
-      await exists(target)
-    ) {
+    if (target.startsWith(`${iconRoot}${path.sep}`) && (await exists(target))) {
       await fs.rm(target);
       removed++;
     }
@@ -339,7 +342,7 @@ export async function organizeIconLibrary({
     [...FINAL_CATEGORIES].map((category) => [
       category,
       operations.filter((operation) =>
-        operation.relativeTarget.startsWith(`${category}/`)
+        operation.relativeTarget.startsWith(`${category}/`),
       ).length,
     ]),
   );

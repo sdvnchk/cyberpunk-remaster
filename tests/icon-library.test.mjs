@@ -14,6 +14,7 @@ async function fixture(t, itemImages) {
   await Promise.all([
     fs.mkdir(iconRoot, { recursive: true }),
     fs.mkdir(path.join(root, "data"), { recursive: true }),
+    fs.mkdir(path.join(root, "content", "exports"), { recursive: true }),
   ]);
   const items = itemImages.map((img, index) => ({
     _id: `item-${index}`,
@@ -25,18 +26,20 @@ async function fixture(t, itemImages) {
   }));
   await Promise.all([
     fs.writeFile(
-      path.join(root, "items-export.json"),
+      path.join(root, "content", "exports", "items.json"),
       JSON.stringify(items),
     ),
     fs.writeFile(
       path.join(root, "data", "item-folders.json"),
-      JSON.stringify([{
-        _id: "pkt-folder",
-        name: "ПКТ",
-        folder: null,
-      }]),
+      JSON.stringify([
+        {
+          _id: "pkt-folder",
+          name: "ПКТ",
+          folder: null,
+        },
+      ]),
     ),
-    fs.writeFile(path.join(root, "macros-export.json"), "[]"),
+    fs.writeFile(path.join(root, "content", "exports", "macros.json"), "[]"),
   ]);
   return { root, iconRoot };
 }
@@ -52,21 +55,22 @@ test("icon organizer moves PKT to implants without renaming files", async (t) =>
   });
 
   const [item] = JSON.parse(
-    await fs.readFile(path.join(root, "items-export.json"), "utf8"),
+    await fs.readFile(
+      path.join(root, "content", "exports", "items.json"),
+      "utf8",
+    ),
   );
   assert.equal(
     item.img,
     "modules/cyberpunk-remaster/assets/icons/implants/File.png",
   );
   assert.equal(
-    await fs.readFile(
-      path.join(iconRoot, "implants", "File.png"),
-      "utf8",
-    ),
+    await fs.readFile(path.join(iconRoot, "implants", "File.png"), "utf8"),
     "original",
   );
   assert.equal(
-    await fs.access(path.join(iconRoot, "pkt", "File.png"))
+    await fs
+      .access(path.join(iconRoot, "pkt", "File.png"))
       .then(() => true)
       .catch(() => false),
     false,
@@ -117,7 +121,7 @@ test("icon organizer preserves core and system icon paths", async (t) => {
     },
   ];
   await fs.writeFile(
-    path.join(root, "items-export.json"),
+    path.join(root, "content", "exports", "items.json"),
     JSON.stringify(items),
   );
 
@@ -126,13 +130,13 @@ test("icon organizer preserves core and system icon paths", async (t) => {
     sourceModuleRoot: path.join(root, "source-module"),
   });
   const restored = JSON.parse(
-    await fs.readFile(path.join(root, "items-export.json"), "utf8"),
+    await fs.readFile(
+      path.join(root, "content", "exports", "items.json"),
+      "utf8",
+    ),
   );
 
-  assert.equal(
-    restored[0].img,
-    "systems/sf2e/icons/actions/OneAction.webp",
-  );
+  assert.equal(restored[0].img, "systems/sf2e/icons/actions/OneAction.webp");
   assert.equal(restored[1].img, "icons/svg/item-bag.svg");
   assert.equal(result.documents, 0);
   assert.deepEqual(await fs.readdir(iconRoot), []);
@@ -145,15 +149,17 @@ test("icon organizer imports the user Data assets icon library", async (t) => {
   await fs.mkdir(path.dirname(source), { recursive: true });
   await fs.writeFile(source, "user-authored");
   await fs.writeFile(
-    path.join(root, "items-export.json"),
-    JSON.stringify([{
-      _id: "user-icon",
-      name: "Пользовательская иконка",
-      type: "equipment",
-      folder: "pkt-folder",
-      img: "assets/icons/UserIcon.png",
-      system: { subitems: [] },
-    }]),
+    path.join(root, "content", "exports", "items.json"),
+    JSON.stringify([
+      {
+        _id: "user-icon",
+        name: "Пользовательская иконка",
+        type: "equipment",
+        folder: "pkt-folder",
+        img: "assets/icons/UserIcon.png",
+        system: { subitems: [] },
+      },
+    ]),
   );
 
   await organizeIconLibrary({
@@ -162,7 +168,10 @@ test("icon organizer imports the user Data assets icon library", async (t) => {
     foundryDataRoot: dataRoot,
   });
   const [item] = JSON.parse(
-    await fs.readFile(path.join(root, "items-export.json"), "utf8"),
+    await fs.readFile(
+      path.join(root, "content", "exports", "items.json"),
+      "utf8",
+    ),
   );
 
   assert.equal(
@@ -170,10 +179,7 @@ test("icon organizer imports the user Data assets icon library", async (t) => {
     "modules/cyberpunk-remaster/assets/icons/implants/UserIcon.png",
   );
   assert.equal(
-    await fs.readFile(
-      path.join(iconRoot, "implants", "UserIcon.png"),
-      "utf8",
-    ),
+    await fs.readFile(path.join(iconRoot, "implants", "UserIcon.png"), "utf8"),
     "user-authored",
   );
 });

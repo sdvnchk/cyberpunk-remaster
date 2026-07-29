@@ -5,9 +5,12 @@ export function addHumanityAdjustment(
   actor,
   { mode = "add", value = 0, label = "", source = null } = {},
 ) {
+  const numericValue = Number(value);
+  if (!actor || !Number.isFinite(numericValue)) return false;
+
   actor.synthetics ??= {};
-  const namespace = actor.synthetics[HUMANITY_SYNTHETIC_KEY] ??= {};
-  const adjustments = namespace.humanityAdjustments ??= [];
+  const namespace = (actor.synthetics[HUMANITY_SYNTHETIC_KEY] ??= {});
+  const adjustments = (namespace.humanityAdjustments ??= []);
   if (
     source &&
     adjustments.some((adjustment) => adjustment.source === source)
@@ -16,17 +19,14 @@ export function addHumanityAdjustment(
   }
   adjustments.push({
     mode: mode === "override" ? "override" : "add",
-    value: Math.trunc(Number(value)),
+    value: Math.trunc(numericValue),
     label: String(label ?? ""),
     source,
   });
   return true;
 }
 
-export function createHumanityRuleElement(
-  BaseRuleElement,
-  fields,
-) {
+export function createHumanityRuleElement(BaseRuleElement, fields) {
   if (!BaseRuleElement || !fields?.NumberField || !fields?.StringField) {
     return null;
   }
@@ -104,8 +104,7 @@ export function registerHumanityRuleElement() {
   if (translations) {
     translations.PF2E ??= {};
     translations.PF2E.RuleElement ??= {};
-    translations.PF2E.RuleElement[HUMANITY_RULE_KEY] =
-      "Предел человечности";
+    translations.PF2E.RuleElement[HUMANITY_RULE_KEY] = "Предел человечности";
   }
 
   const module = globalThis.game?.modules?.get?.("cyberpunk-remaster");

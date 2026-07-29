@@ -1,29 +1,38 @@
 {
   "name": "sf2e-cyberpunk-remaster",
   "private": true,
-  "version": "2.5.1",
+  "version": "2.6.0",
   "type": "module",
   "description": "Build and validation tooling for the SF2E Cyberpunk Remaster Foundry module.",
   "scripts": {
-    "extract:folders": "node scripts/extract-pack-folders.mjs",
-    "import:items": "node scripts/import-items-from-pack.mjs",
     "sync:from-foundry": "node scripts/sync-from-foundry.mjs",
     "icons:organize": "node scripts/organize-icons.mjs",
-    "icons:restore-names": "node scripts/restore-icon-filenames.mjs",
-    "icons:restore-external": "node scripts/restore-external-icons.mjs",
     "deploy": "node scripts/deploy-to-foundry.mjs",
     "author:update": "node scripts/author-update.mjs",
-    "author:update:workspace": "npm run sync:from-foundry && npm run build && npm test && npm run deploy",
-    "content:add-red-pkt": "node scripts/add-red-pkt-content.mjs",
-    "content:cyberpunkify-programs": "node scripts/cyberpunkify-programs.mjs",
-    "content:add-interface-scan": "node scripts/add-netrunner-interface-scan.mjs",
+    "author:update:workspace": "npm run sync:from-foundry && npm run check && npm run deploy",
+    "maintenance:extract-folders": "node scripts/maintenance/extract-pack-folders.mjs",
+    "maintenance:import-items": "node scripts/maintenance/import-items-from-pack.mjs",
+    "maintenance:restore-icon-names": "node scripts/maintenance/restore-icon-filenames.mjs",
+    "maintenance:restore-external-icons": "node scripts/maintenance/restore-external-icons.mjs",
+    "maintenance:add-red-pkt": "node scripts/maintenance/add-red-pkt-content.mjs",
+    "maintenance:cyberpunkify-programs": "node scripts/maintenance/cyberpunkify-programs.mjs",
+    "maintenance:add-obsolete-interface-scan": "node scripts/maintenance/add-netrunner-interface-scan.mjs",
     "audit:pkt": "node scripts/audit-pkt-bonuses.mjs",
     "build": "node scripts/build-packs.mjs",
+    "clean:build": "node scripts/prune-build-artifacts.mjs",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "validate": "node scripts/validate-packs.mjs",
-    "test": "node --test tests/*.test.mjs && npm run validate"
+    "test:unit": "node --test tests/*.test.mjs",
+    "test:coverage": "node --experimental-test-coverage --test --test-coverage-lines=70 --test-coverage-branches=65 --test-coverage-functions=75 tests/*.test.mjs",
+    "test": "npm run test:unit && npm run validate && npm run audit:pkt",
+    "check": "npm run lint && npm run format:check && npm run build && npm test"
   },
   "devDependencies": {
-    "classic-level": "3.0.0"
+    "classic-level": "3.0.0",
+    "eslint": "10.8.0",
+    "prettier": "3.9.6"
   },
   "engines": {
     "node": ">=20"

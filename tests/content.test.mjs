@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
+import { execFile } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import test from "node:test";
+import { promisify } from "node:util";
 import {
   calculatePktModelPrices,
   MODULE_ITEM_PREFIX,
@@ -93,8 +98,7 @@ test("slot values are finite, integral and bounded", () => {
 
 test("cyberware description wins over stale structured flags", () => {
   const item = fakeItem({
-    description:
-      "<p>Тип импланта: База</p><p>Слоты: 4</p><p>Hard Cost: 3</p>",
+    description: "<p>Тип импланта: База</p><p>Слоты: 4</p><p>Hard Cost: 3</p>",
     flags: {
       "cyberpunk-remaster": {
         implantType: "module",
@@ -227,6 +231,14 @@ test("Humanity Rule Element adjustments apply before installed Hard Cost", () =>
     }),
     false,
   );
+  assert.equal(
+    addHumanityAdjustment(actor, {
+      mode: "add",
+      value: Number.NaN,
+      source: "feat:nan",
+    }),
+    false,
+  );
 });
 
 test("CyberpunkHumanity Rule Element resolves and registers an adjustment", () => {
@@ -279,18 +291,20 @@ test("CyberpunkHumanity Rule Element resolves and registers an adjustment", () =
   );
 
   rule.beforePrepareData();
-  assert.deepEqual(
-    actor.synthetics["cyberpunk-remaster"].humanityAdjustments,
-    [{
+  assert.deepEqual(actor.synthetics["cyberpunk-remaster"].humanityAdjustments, [
+    {
       mode: "add",
       value: 15,
       label: "Человеческая стойкость",
       source: "feat:1",
-    }],
+    },
+  ]);
+  assert.equal(
+    CyberwareTab.hasHumanityRule({
+      system: { rules: [{ key: HUMANITY_RULE_KEY }] },
+    }),
+    true,
   );
-  assert.equal(CyberwareTab.hasHumanityRule({
-    system: { rules: [{ key: HUMANITY_RULE_KEY }] },
-  }), true);
 });
 
 test("CyberpunkHumanity registers through the public SF2e custom registry", () => {
@@ -336,10 +350,7 @@ test("CyberpunkHumanity registers through the public SF2e custom registry", () =
       globalThis.CONFIG.PF2E.ruleElementTypes[HUMANITY_RULE_KEY],
       "Предел человечности",
     );
-    assert.equal(
-      module.api.HumanityRuleElement,
-      custom[HUMANITY_RULE_KEY],
-    );
+    assert.equal(module.api.HumanityRuleElement, custom[HUMANITY_RULE_KEY]);
   } finally {
     for (const [key, value] of Object.entries(previous)) {
       if (value === undefined) delete globalThis[key];
@@ -824,10 +835,7 @@ test("PKT body installation requires an installed Biosystem", () => {
     /Биосистем/,
   );
   assert.equal(
-    CyberwareTab.installationValidation(
-      { items: [body, biosystem] },
-      body,
-    ),
+    CyberwareTab.installationValidation({ items: [body, biosystem] }, body),
     null,
   );
 });
@@ -853,10 +861,7 @@ test("installed Biosystem cannot be removed before the PKT body", () => {
     },
   });
   assert.match(
-    CyberwareTab.removalValidation(
-      { items: [body, biosystem] },
-      biosystem,
-    ),
+    CyberwareTab.removalValidation({ items: [body, biosystem] }, biosystem),
     /Сначала извлеките корпус/,
   );
 });
@@ -895,25 +900,16 @@ test("PKT model readiness accepts a body of equal or higher quality", () => {
     /Биосистем/,
   );
   assert.equal(
-    CyberwareTab.pktModelValidation(
-      { items: [biosystem, body] },
-      model,
-    ),
+    CyberwareTab.pktModelValidation({ items: [biosystem, body] }, model),
     null,
   );
   assert.match(
-    CyberwareTab.pktModelView(
-      { items: [biosystem, body] },
-      model,
-    ).priceLabel,
+    CyberwareTab.pktModelView({ items: [biosystem, body] }, model).priceLabel,
     /6.400/u,
   );
   body.flags["cyberpunk-remaster"].pktQuality = 1;
   assert.equal(
-    CyberwareTab.pktModelValidation(
-      { items: [biosystem, body] },
-      model,
-    ),
+    CyberwareTab.pktModelValidation({ items: [biosystem, body] }, model),
     null,
   );
   assert.match(
@@ -967,43 +963,45 @@ test("PKT model cards require Biosystem and hide other installed models", () => 
   actor.items.push(biosystem);
   view = CyberwareTab.prepareData(actor, { pktModels: models });
   assert.equal(view.showPktModels, true);
-  assert.deepEqual(view.pktModels.map((model) => model.key), [
-    "first",
-    "second",
-  ]);
+  assert.deepEqual(
+    view.pktModels.map((model) => model.key),
+    ["first", "second"],
+  );
 
-  actor.items.push(fakeItem({
-    id: "installed-model-component",
-    flags: {
-      "cyberpunk-remaster": {
-        installed: true,
-        implantType: "internal",
-        pktModelKey: "second",
+  actor.items.push(
+    fakeItem({
+      id: "installed-model-component",
+      flags: {
+        "cyberpunk-remaster": {
+          installed: true,
+          implantType: "internal",
+          pktModelKey: "second",
+        },
       },
-    },
-  }));
+    }),
+  );
   view = CyberwareTab.prepareData(actor, { pktModels: models });
-  assert.deepEqual(view.pktModels.map((model) => model.key), ["second"]);
+  assert.deepEqual(
+    view.pktModels.map((model) => model.key),
+    ["second"],
+  );
 });
 
 test("Chrome bases and dock are sorted alphabetically in Russian", () => {
-  const base = (id, name) => fakeItem({
-    id,
-    name,
-    flags: {
-      "cyberpunk-remaster": {
-        installed: true,
-        implantType: "base",
-        slots: 2,
+  const base = (id, name) =>
+    fakeItem({
+      id,
+      name,
+      flags: {
+        "cyberpunk-remaster": {
+          installed: true,
+          implantType: "base",
+          slots: 2,
+        },
       },
-    },
-  });
+    });
   const actor = {
-    items: [
-      base("zeta", "Ядро"),
-      base("alpha", "Альфа"),
-      base("beta", "Бета"),
-    ],
+    items: [base("zeta", "Ядро"), base("alpha", "Альфа"), base("beta", "Бета")],
     flags: {},
     system: { abilities: { wis: { mod: 0 } } },
   };
@@ -1022,22 +1020,26 @@ test("Chrome bases and dock are sorted alphabetically in Russian", () => {
 test("PKT model plan expands quantities and validates choices", () => {
   const model = {
     unique: [{ itemId: "unique", quantity: 1, stress: "waived" }],
-    components: [{
-      key: "arms",
-      itemId: "arm",
-      quantity: 2,
-      stress: "waived",
-    }],
-    choices: [{
-      key: "appearance",
-      choose: 1,
-      itemIds: ["a", "b"],
-      options: [
-        { itemId: "a", name: "A" },
-        { itemId: "b", name: "B" },
-      ],
-      stress: "normal",
-    }],
+    components: [
+      {
+        key: "arms",
+        itemId: "arm",
+        quantity: 2,
+        stress: "waived",
+      },
+    ],
+    choices: [
+      {
+        key: "appearance",
+        choose: 1,
+        itemIds: ["a", "b"],
+        options: [
+          { itemId: "a", name: "A" },
+          { itemId: "b", name: "B" },
+        ],
+        stress: "normal",
+      },
+    ],
   };
   const plan = CyberwareTab.pktInstallationPlan(model, {
     appearance: "b",
@@ -1045,7 +1047,8 @@ test("PKT model plan expands quantities and validates choices", () => {
 
   assert.equal(plan.length, 4);
   assert.deepEqual(
-    plan.filter((entry) => entry.componentKey === "arms")
+    plan
+      .filter((entry) => entry.componentKey === "arms")
       .map((entry) => entry.quantityIndex),
     [0, 1],
   );
@@ -1061,45 +1064,52 @@ test("declared shipped PKT prices equal the component sums without bodies", () =
     readFileSync(new URL("../data/pkt-models.json", import.meta.url), "utf8"),
   );
   const items = JSON.parse(
-    readFileSync(new URL("../items-export.json", import.meta.url), "utf8"),
+    readFileSync(
+      new URL("../content/exports/items.json", import.meta.url),
+      "utf8",
+    ),
   );
   assert.deepEqual(
-    models.map((model) => ({
-      key: model.key,
-      declared: model.priceEddies,
-      calculated: calculatePktModelPrices(items, model),
-    })).every(
-      (entry) =>
-        entry.calculated.length === 1 &&
-        entry.calculated[0] === entry.declared,
-    ),
+    models
+      .map((model) => ({
+        key: model.key,
+        declared: model.priceEddies,
+        calculated: calculatePktModelPrices(items, model),
+      }))
+      .every(
+        (entry) =>
+          entry.calculated.length === 1 &&
+          entry.calculated[0] === entry.declared,
+      ),
     true,
   );
 });
 
 test("PKT modules are distributed across compatible bases with slot checks", () => {
-  const base = (id) => fakeItem({
-    id,
-    flags: {
-      "cyberpunk-remaster": {
-        installed: true,
-        implantType: "base",
-        pktFamily: "eye",
-        slots: 1,
+  const base = (id) =>
+    fakeItem({
+      id,
+      flags: {
+        "cyberpunk-remaster": {
+          installed: true,
+          implantType: "base",
+          pktFamily: "eye",
+          slots: 1,
+        },
       },
-    },
-  });
-  const module = (id) => fakeItem({
-    id,
-    flags: {
-      "cyberpunk-remaster": {
-        installed: true,
-        implantType: "module",
-        pktParentFamily: "eye",
-        slotsUsed: 1,
+    });
+  const module = (id) =>
+    fakeItem({
+      id,
+      flags: {
+        "cyberpunk-remaster": {
+          installed: true,
+          implantType: "module",
+          pktParentFamily: "eye",
+          slotsUsed: 1,
+        },
       },
-    },
-  });
+    });
   const updates = CyberwareTab.pktModuleLinkUpdates([
     base("left"),
     base("right"),
@@ -1112,11 +1122,12 @@ test("PKT modules are distributed across compatible bases with slot checks", () 
     ["left", "right"],
   );
   assert.throws(
-    () => CyberwareTab.pktModuleLinkUpdates([
-      base("only"),
-      module("first"),
-      module("second"),
-    ]),
+    () =>
+      CyberwareTab.pktModuleLinkUpdates([
+        base("only"),
+        module("first"),
+        module("second"),
+      ]),
     /не хватает слотов/,
   );
 });
@@ -1242,18 +1253,16 @@ test("PKT base replacement transfers modules and keeps model locks", async (t) =
     ]),
   };
 
-  const options = CyberwareTab.pktBaseReplacementOptions(
-    actor,
-    oldBase,
-    [{
+  const options = CyberwareTab.pktBaseReplacementOptions(actor, oldBase, [
+    {
       itemId: "new-source",
       name: replacementSource.name,
       family: "cyber-eye",
       quality: 1,
       replaceable: true,
       slots: 2,
-    }],
-  );
+    },
+  ]);
   assert.equal(options[0].canUse, true);
 
   const result = await CyberwareTab.replacePktBase(
@@ -1262,19 +1271,16 @@ test("PKT base replacement transfers modules and keeps model locks", async (t) =
     "new-source",
   );
   assert.equal(result.transferredModules, 1);
-  assert.equal(actor.items.some((item) => item.id === "old-base"), false);
   assert.equal(
-    module.flags["cyberpunk-remaster"].parentId,
-    "new-base",
+    actor.items.some((item) => item.id === "old-base"),
+    false,
   );
+  assert.equal(module.flags["cyberpunk-remaster"].parentId, "new-base");
   const newBase = actor.items.find((item) => item.id === "new-base");
   assert.equal(newBase.flags["cyberpunk-remaster"].pktModelKey, "test-model");
   assert.equal(newBase.flags["cyberpunk-remaster"].pktLocked, true);
   assert.equal(newBase.flags["cyberpunk-remaster"].pktStress, "normal");
-  assert.equal(
-    newBase.flags["cyberpunk-remaster"].pktReplaceableBase,
-    true,
-  );
+  assert.equal(newBase.flags["cyberpunk-remaster"].pktReplaceableBase, true);
 
   const tooGood = {
     ...replacementSource,
@@ -1396,14 +1402,16 @@ test("failed PKT model linking rolls back every created component", async (t) =>
     requiredBodyName: "Body",
     bodyQuality: 0,
     unique: [],
-    components: [{
-      key: "orphan",
-      itemId: "module-source",
-      quantity: 1,
-      parentFamily: "missing-base",
-      locked: true,
-      stress: "normal",
-    }],
+    components: [
+      {
+        key: "orphan",
+        itemId: "module-source",
+        quantity: 1,
+        parentFamily: "missing-base",
+        locked: true,
+        stress: "normal",
+      },
+    ],
     choices: [],
   };
 
@@ -1429,7 +1437,10 @@ test("all shipped PKT models install with their real component data", async (t) 
     readFileSync(new URL("../data/pkt-models.json", import.meta.url), "utf8"),
   );
   const exportedItems = JSON.parse(
-    readFileSync(new URL("../items-export.json", import.meta.url), "utf8"),
+    readFileSync(
+      new URL("../content/exports/items.json", import.meta.url),
+      "utf8",
+    ),
   );
   const sourceById = new Map(
     exportedItems.map((source) => [
@@ -1524,15 +1535,9 @@ test("all shipped PKT models install with their real component data", async (t) 
       },
     };
     const selections = Object.fromEntries(
-      (model.choices ?? []).map((choice) => [
-        choice.key,
-        choice.itemIds[0],
-      ]),
+      (model.choices ?? []).map((choice) => [choice.key, choice.itemIds[0]]),
     );
-    const expected = CyberwareTab.pktInstallationPlan(
-      model,
-      selections,
-    ).length;
+    const expected = CyberwareTab.pktInstallationPlan(model, selections).length;
 
     const result = await CyberwareTab.installPktModel(
       actor,
@@ -1541,19 +1546,15 @@ test("all shipped PKT models install with their real component data", async (t) 
     );
     assert.equal(result.created.length, expected, model.key);
     assert.ok(
-      result.created.every((item) =>
-        item.flags["cyberpunk-remaster"].installed === true
+      result.created.every(
+        (item) => item.flags["cyberpunk-remaster"].installed === true,
       ),
       model.key,
     );
     assert.ok(
       result.created
-        .filter((item) =>
-          item.flags["cyberpunk-remaster"].pktParentFamily
-        )
-        .every((item) =>
-          item.flags["cyberpunk-remaster"].parentId
-        ),
+        .filter((item) => item.flags["cyberpunk-remaster"].pktParentFamily)
+        .every((item) => item.flags["cyberpunk-remaster"].parentId),
       model.key,
     );
 
@@ -1687,16 +1688,13 @@ test("native implanted carry transition records and applies system state", () =>
   assert.equal(changes["system.containerId"], null);
   assert.equal(changes["system.equipped.handsHeld"], 0);
   assert.equal(changes["system.equipped.invested"], true);
-  assert.deepEqual(
-    changes["flags.cyberpunk-remaster.previousCarryState"],
-    {
-      carryType: "stowed",
-      handsHeld: 1,
-      inSlot: true,
-      invested: false,
-      containerId: "backpack",
-    },
-  );
+  assert.deepEqual(changes["flags.cyberpunk-remaster.previousCarryState"], {
+    carryType: "stowed",
+    handsHeld: 1,
+    inSlot: true,
+    invested: false,
+    containerId: "backpack",
+  });
 });
 
 test("native carry transition away from implanted clears stale state", () => {
@@ -1726,10 +1724,7 @@ test("native carry transition away from implanted clears stale state", () => {
   assert.equal(changes["system.equipped.carryType"], "worn");
   assert.equal(changes["flags.cyberpunk-remaster.installed"], false);
   assert.equal(changes["flags.cyberpunk-remaster.-=parentId"], null);
-  assert.equal(
-    changes["flags.cyberpunk-remaster.-=previousCarryState"],
-    null,
-  );
+  assert.equal(changes["flags.cyberpunk-remaster.-=previousCarryState"], null);
   assert.equal(changes["system.equipped.invested"], false);
 });
 
@@ -1862,10 +1857,7 @@ test("PKT component catalog derives family and quality idempotently", () => {
   ];
 
   const [first] = transformItems([source], [], catalog);
-  assert.equal(
-    first.flags["cyberpunk-remaster"].pktFamily,
-    "cyber-arm",
-  );
+  assert.equal(first.flags["cyberpunk-remaster"].pktFamily, "cyber-arm");
   assert.equal(first.flags["cyberpunk-remaster"].pktComponentQuality, 0);
   assert.equal(first.flags["cyberpunk-remaster"].pktReplaceable, true);
   assert.equal(first.flags["cyberpunk-remaster"].pktQuality, undefined);
@@ -1913,11 +1905,13 @@ test("all six PKT body qualities are recognized", () => {
     ["tVLVycxfLpejAKaO", 5],
   ]);
   for (const [id, quality] of expected) {
-    const parsed = parseCyberware(fakeItem({
-      id,
-      name: `Body ${quality}`,
-      usage: { value: "worn" },
-    }));
+    const parsed = parseCyberware(
+      fakeItem({
+        id,
+        name: `Body ${quality}`,
+        usage: { value: "worn" },
+      }),
+    );
     assert.equal(parsed.pktBody, true, id);
     assert.equal(parsed.pktQuality, quality, id);
   }
@@ -1977,18 +1971,11 @@ test("PKT journal placeholders are replaced and stale models are cleared", () =>
   };
 
   const [first] = transformJournals([source], models);
-  const overview = first.pages.find(
-    (page) => page._id === "ylsMSP9weB5au75z",
-  );
-  const hammer = first.pages.find(
-    (page) => page._id === "HnzffVt4NYaOy28t",
-  );
+  const overview = first.pages.find((page) => page._id === "ylsMSP9weB5au75z");
+  const hammer = first.pages.find((page) => page._id === "HnzffVt4NYaOy28t");
   assert.match(overview.text.content, /z1FeeMMP0HblK71h/);
   assert.doesNotMatch(overview.text.content, /<h1\b/i);
-  assert.equal(
-    overview.flags["cyberpunk-remaster"]?.pktModel,
-    undefined,
-  );
+  assert.equal(overview.flags["cyberpunk-remaster"]?.pktModel, undefined);
   assert.doesNotMatch(hammer.text.content, /Тут описание!/);
 
   const [second] = transformJournals([first], models);
@@ -1997,10 +1984,16 @@ test("PKT journal placeholders are replaced and stale models are cleared", () =>
 
 test("core and SF2e icons keep canonical external paths", () => {
   const items = JSON.parse(
-    readFileSync(new URL("../items-export.json", import.meta.url), "utf8"),
+    readFileSync(
+      new URL("../content/exports/items.json", import.meta.url),
+      "utf8",
+    ),
   );
   const macros = JSON.parse(
-    readFileSync(new URL("../macros-export.json", import.meta.url), "utf8"),
+    readFileSync(
+      new URL("../content/exports/macros.json", import.meta.url),
+      "utf8",
+    ),
   );
   const byName = new Map(items.map((item) => [item.name, item]));
 
@@ -2040,21 +2033,82 @@ test("core and SF2e icons keep canonical external paths", () => {
   }
 });
 
-test("author update delegates installed-module runs to the workspace", () => {
-  const packageJson = JSON.parse(
-    readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+test("author update delegates an installed-module run to the workspace", async (t) => {
+  const temporaryRoot = await fs.mkdtemp(
+    path.join(os.tmpdir(), "cyberpunk-author-update-"),
   );
-  const script = readFileSync(
-    new URL("../scripts/author-update.mjs", import.meta.url),
-    "utf8",
+  t.after(() => fs.rm(temporaryRoot, { recursive: true, force: true }));
+  const workspace = path.join(temporaryRoot, "workspace");
+  const installed = path.join(
+    temporaryRoot,
+    "Data",
+    "modules",
+    "cyberpunk-remaster",
   );
+  const marker = path.join(temporaryRoot, "delegated.json");
+  await Promise.all([
+    fs.mkdir(path.join(installed, "scripts", "lib"), { recursive: true }),
+    fs.mkdir(workspace, { recursive: true }),
+  ]);
+  await Promise.all([
+    fs.copyFile(
+      new URL("../scripts/author-update.mjs", import.meta.url),
+      path.join(installed, "scripts", "author-update.mjs"),
+    ),
+    fs.copyFile(
+      new URL("../scripts/lib/author-paths.mjs", import.meta.url),
+      path.join(installed, "scripts", "lib", "author-paths.mjs"),
+    ),
+    fs.writeFile(
+      path.join(installed, "module.json"),
+      JSON.stringify({ id: "cyberpunk-remaster" }),
+    ),
+    fs.writeFile(
+      path.join(workspace, "module.json"),
+      JSON.stringify({ id: "cyberpunk-remaster" }),
+    ),
+    fs.writeFile(
+      path.join(workspace, "package.json"),
+      JSON.stringify({
+        private: true,
+        type: "module",
+        scripts: { "author:update:workspace": "node verify-env.mjs" },
+      }),
+    ),
+    fs.writeFile(
+      path.join(workspace, "verify-env.mjs"),
+      "import fs from 'node:fs';" +
+        `fs.writeFileSync(${JSON.stringify(marker)}, ` +
+        "JSON.stringify({cwd:process.cwd(),source:process.env.FOUNDRY_MODULE_PATH}));",
+    ),
+    fs.writeFile(
+      path.join(installed, ".author-paths.local.json"),
+      JSON.stringify({
+        workspaceRoot: workspace,
+        foundryDataRoot: path.join(temporaryRoot, "Data"),
+      }),
+    ),
+  ]);
 
-  assert.equal(
-    packageJson.scripts["author:update"],
-    "node scripts/author-update.mjs",
+  const isolatedEnv = { ...process.env };
+  for (const variable of [
+    "CYBERPUNK_WORKSPACE_PATH",
+    "MODULE_WORKSPACE_PATH",
+    "FOUNDRY_DATA_PATH",
+    "FOUNDRY_APP_PATH",
+    "FOUNDRY_MODULE_PATH",
+    "SOURCE_MODULE_ROOT",
+    "TARGET_MODULE_ROOT",
+  ]) {
+    delete isolatedEnv[variable];
+  }
+
+  await promisify(execFile)(
+    process.execPath,
+    [path.join(installed, "scripts", "author-update.mjs")],
+    { env: isolatedEnv, timeout: 30_000 },
   );
-  assert.match(script, /CYBERPUNK_WORKSPACE_PATH/u);
-  assert.match(script, /author:update:workspace/u);
-  assert.match(script, /FOUNDRY_MODULE_PATH/u);
-  assert.match(script, /process\.env\.ComSpec/u);
+  const delegated = JSON.parse(await fs.readFile(marker, "utf8"));
+  assert.equal(path.resolve(delegated.cwd), path.resolve(workspace));
+  assert.equal(path.resolve(delegated.source), path.resolve(installed));
 });

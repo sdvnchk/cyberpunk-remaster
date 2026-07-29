@@ -2,55 +2,45 @@ import {
   HUMANITY_RULE_KEY,
   HUMANITY_SYNTHETIC_KEY,
 } from "../rule-elements/HumanityRuleElement.js";
-
-export const MODULE_ID = "cyberpunk-remaster";
-export const LEGACY_MODULE_ID = "cyberpunk-cyberware";
-export const RULE_SETTING_DEFAULTS = Object.freeze({
-  allowMultipleCyberdecks: false,
-  allowMultipleNeuralAccelerators: false,
-  allowMultiplePktBodies: false,
-  allowPktWithoutBody: false,
-  allowPktBodyWithoutBiosystem: false,
-  ignoreSlotLimits: false,
-  ignorePktQualityLimits: false,
-  hardCostMultiplier: 1,
-});
+import {
+  IMPLANT_TYPE_LABELS as TYPE_LABELS,
+  KNOWN_IMPLANT_TYPES as KNOWN_TYPES,
+  LEGACY_MODULE_ID,
+  MAX_SLOT_DOTS,
+  MAX_SLOTS,
+  MODULE_ID,
+  RULE_SETTING_DEFAULTS,
+  descriptionText as schemaDescriptionText,
+  isKnownPktBiosystem,
+  isKnownPktBody,
+  itemSourceId as schemaItemSourceId,
+  parseCyberwareDescription,
+  pktBodyQuality,
+  safeInt,
+} from "../runtime/cyberware-schema.mjs";
+import { enqueueActorOperation } from "../runtime/actor-operation-queue.mjs";
+import {
+  applyHumanityAdjustments as applyHumanityAdjustmentList,
+  calculateHumanity,
+  humanityState,
+} from "../runtime/humanity.mjs";
+import {
+  clearPktCatalogCache,
+  loadPktCatalog,
+} from "../runtime/pkt-catalog.mjs";
+import {
+  buildPktInstallationPlan,
+  parseStressDice,
+  summarizePktHumanityLoss,
+} from "../runtime/pkt-model.mjs";
 
 const activeTabs = new Set();
 const scrollPositions = new Map();
-const actorMutationQueues = new Map();
-let pktContentPromise = null;
 
 const renderTemplate =
   globalThis.foundry?.applications?.handlebars?.renderTemplate ??
   globalThis.renderTemplate;
 
-const KNOWN_TYPES = ["base", "internal", "external", "fashion", "module"];
-const TYPE_LABELS = {
-  base: "База",
-  internal: "Внутренний",
-  external: "Внешний",
-  fashion: "Стилевой",
-  module: "Модуль",
-};
-
-const LABEL_TO_TYPE = Object.fromEntries(
-  Object.entries(TYPE_LABELS).flatMap(([key, label]) => [
-    [key, key],
-    [label.toLocaleLowerCase("ru"), key],
-  ]),
-);
-
-const PKT_BODY_QUALITIES = new Map([
-  ["uvmhsMeuPT9EsaH8", 0],
-  ["tg2eHjiZMoKUxtTR", 1],
-  ["tkeQt2AZwYxlo0G4", 2],
-  ["Y6CGkTe62Gray49S", 3],
-  ["Ozh4qKfrpO3vIyXD", 4],
-  ["tVLVycxfLpejAKaO", 5],
-]);
-const PKT_BODY_IDS = new Set(PKT_BODY_QUALITIES.keys());
-const PKT_BIOSYSTEM_ID = "CNILbId2Wtv3BJm6";
 const PKT_ITEM_PACK = `${MODULE_ID}.cyberpunk-items`;
 const PKT_JOURNAL_PACK = `${MODULE_ID}.cyberpunk-journals`;
 
@@ -65,16 +55,6 @@ const PHYSICAL_TYPES = new Set([
   "weapon",
 ]);
 
-const MAX_SLOTS = 1000;
-const MAX_SLOT_DOTS = 20;
-
-function safeInt(value, { max = MAX_SLOTS } = {}) {
-  const number = Number(value);
-  return Number.isFinite(number)
-    ? Math.min(max, Math.max(0, Math.trunc(number)))
-    : 0;
-}
-
 function hasOwn(object, key) {
   return Object.prototype.hasOwnProperty.call(object ?? {}, key);
 }
@@ -85,13 +65,17 @@ function getChange(changes, path) {
 }
 
 function hasChange(changes, path) {
-  return hasOwn(changes, path) ||
-    globalThis.foundry?.utils?.hasProperty?.(changes, path) === true;
+  return (
+    hasOwn(changes, path) ||
+    globalThis.foundry?.utils?.hasProperty?.(changes, path) === true
+  );
 }
 
 function isInvestedItem(item) {
-  return item.traits?.has?.("invested") ||
-    item.system?.traits?.value?.includes?.("invested") === true;
+  return (
+    item.traits?.has?.("invested") ||
+    item.system?.traits?.value?.includes?.("invested") === true
+  );
 }
 
 function notifyError(error, fallback) {
@@ -104,7 +88,7 @@ function collectionValues(collection) {
   if (Array.isArray(collection)) return collection;
   if (Array.isArray(collection.contents)) return collection.contents;
   return [...collection].map((value) =>
-    Array.isArray(value) && value.length === 2 ? value[1] : value
+    Array.isArray(value) && value.length === 2 ? value[1] : value,
   );
 }
 
@@ -194,7 +178,8 @@ export class CyberwareTab {
     navItem.setAttribute("aria-label", label);
     navItem.setAttribute("role", "tab");
     navItem.setAttribute("tabindex", "0");
-    navItem.innerHTML = '<i class="fa-solid fa-microchip" aria-hidden="true"></i>';
+    navItem.innerHTML =
+      '<i class="fa-solid fa-microchip" aria-hidden="true"></i>';
 
     const manageButton = nav.querySelector(
       ".manage-tabs, [data-action='manage-tabs']",
@@ -399,8 +384,7 @@ export class CyberwareTab {
         pktModelBase: Boolean(this.getFlag(base, "pktModelKey")),
         replacementAllowed,
         replacementLocked:
-          Boolean(this.getFlag(base, "pktModelKey")) &&
-          !replacementAllowed,
+          Boolean(this.getFlag(base, "pktModelKey")) && !replacementAllowed,
         replacementOptions,
         hasUsableReplacement: replacementOptions.some(
           (option) => option.canUse,
@@ -423,10 +407,7 @@ export class CyberwareTab {
       .filter((item) => !this.isInstalled(item))
       .map((item) => {
         const type = typeOf(item);
-        const options =
-          type === "module"
-            ? baseOptions(item)
-            : [];
+        const options = type === "module" ? baseOptions(item) : [];
         return {
           id: item.id,
           name: item.name,
@@ -434,7 +415,7 @@ export class CyberwareTab {
           type,
           typeLabel: this.isPktBody(item)
             ? "Корпус ПКТ"
-            : TYPE_LABELS[type] ?? "",
+            : (TYPE_LABELS[type] ?? ""),
           hardCost: this.getHardCost(item),
           draggableModule: type === "module",
           baseOptions: options,
@@ -453,12 +434,16 @@ export class CyberwareTab {
 
     const humanity = this.getHumanity(actor, installed);
     const hardCostMultiplier = this.getHardCostMultiplier();
-    const humanityPercent =
+    const humanityStatePercent =
       humanity.maxPossible > 0
         ? Math.min(
             100,
             Math.round((humanity.current / humanity.maxPossible) * 100),
           )
+        : 0;
+    const humanityCapacityPercent =
+      humanity.max > 0
+        ? Math.min(100, Math.round((humanity.current / humanity.max) * 100))
         : 0;
     const installedPktModelKey = collectionValues(actor.items)
       .map((item) => this.getFlag(item, "pktModelKey"))
@@ -472,7 +457,7 @@ export class CyberwareTab {
       this.pktModelView(actor, model, { editable }),
     );
     const hasInstalledPktBiosystem = installed.some((item) =>
-      this.isPktBiosystem(item)
+      this.isPktBiosystem(item),
     );
 
     return {
@@ -486,8 +471,10 @@ export class CyberwareTab {
             new Intl.NumberFormat("ru-RU", {
               maximumFractionDigits: 1,
             }).format(hardCostMultiplier),
-      humanityPercent,
-      humanityState: this.getHumanityState(humanityPercent),
+      humanityPercent: humanityStatePercent,
+      humanityStatePercent,
+      humanityCapacityPercent,
+      humanityState: this.getHumanityState(humanityStatePercent),
       hasCyberware: cyberware.length > 0,
       unconfigured,
       notInstalled,
@@ -509,10 +496,8 @@ export class CyberwareTab {
       hasPktModels: pktModelViews.length > 0,
       showPktModels:
         hasInstalledPktBiosystem ||
-        (
-          this.getRuleSetting("allowPktBodyWithoutBiosystem") === true &&
-          pktBodies.length > 0
-        ),
+        (this.getRuleSetting("allowPktBodyWithoutBiosystem") === true &&
+          pktBodies.length > 0),
       pktImplants: installed
         .filter((item) => this.isPktOnly(item))
         .map((item) => ({ id: item.id, name: item.name, img: item.img })),
@@ -535,141 +520,20 @@ export class CyberwareTab {
   }
 
   static clearPktContentCache() {
-    pktContentPromise = null;
+    clearPktCatalogCache();
   }
 
   static async loadPktContent({ refresh = false } = {}) {
-    if (refresh) pktContentPromise = null;
-    if (pktContentPromise) return pktContentPromise;
-
-    pktContentPromise = (async () => {
-      const journalPack = globalThis.game?.packs?.get?.(PKT_JOURNAL_PACK);
-      const itemPack = globalThis.game?.packs?.get?.(PKT_ITEM_PACK);
-      if (!journalPack || !itemPack) {
-        throw new Error("Компендии моделей или предметов ПКТ недоступны.");
-      }
-
-      const [journals, index] = await Promise.all([
-        journalPack.getDocuments(),
-        itemPack.getIndex({
-          fields: [
-            "name",
-            "img",
-            "system.description.value",
-            `flags.${MODULE_ID}.pktFamily`,
-            `flags.${MODULE_ID}.pktComponentQuality`,
-            `flags.${MODULE_ID}.pktReplaceable`,
-            `flags.${MODULE_ID}.implantType`,
-            `flags.${MODULE_ID}.slots`,
-            `flags.${MODULE_ID}.hardCost`,
-            `flags.${MODULE_ID}.stressFormula`,
-            `flags.${LEGACY_MODULE_ID}.implantType`,
-            `flags.${LEGACY_MODULE_ID}.slots`,
-            `flags.${LEGACY_MODULE_ID}.hardCost`,
-            `flags.${LEGACY_MODULE_ID}.stressFormula`,
-          ],
-        }),
-      ]);
-      const itemIndex = new Map(
-        collectionValues(index).map((entry) => [
-          entry._id ?? entry.id,
-          entry,
-        ]),
-      );
-      const models = collectionValues(journals).flatMap((journal) =>
-        collectionValues(journal.pages)
-          .map((page) => page.flags?.[MODULE_ID]?.pktModel)
-          .filter((model) => model?.key),
-      );
-      if (!models.length) {
-        throw new Error("В журнале не найдены структурированные модели ПКТ.");
-      }
-
-      const itemInfo = (itemId) => {
-        const entry = itemIndex.get(itemId);
-        const described = entry
-          ? this.readCyberwareDescription(entry)
-          : {};
-        const flaggedHardCost = entry
-          ? this.getFlag(entry, "hardCost")
-          : null;
-        const flaggedStressFormula = entry
-          ? this.getFlag(entry, "stressFormula")
-          : null;
-        const hardCost = described.hardCost ??
-          (flaggedHardCost === undefined || flaggedHardCost === null
-            ? null
-            : safeInt(flaggedHardCost));
-        const stressFormula = described.stressFormula ??
-          (
-            typeof flaggedStressFormula === "string" &&
-              flaggedStressFormula
-              ? flaggedStressFormula
-              : null
-          );
-        return {
-          itemId,
-          name: entry?.name ?? `Предмет ${itemId}`,
-          img: entry?.img ?? "icons/svg/item-bag.svg",
-          ...(hardCost === null
-            ? {}
-            : { hardCost: safeInt(hardCost) }),
-          ...(typeof stressFormula === "string" && stressFormula
-            ? { stressFormula }
-            : {}),
-        };
-      };
-      const enrich = (entry, fallbackKey) => ({
-        ...entry,
-        ...itemInfo(entry.itemId),
-        key: entry.key ?? fallbackKey,
-      });
-
-      const enrichedModels = models.map((source) => {
-        const model = JSON.parse(JSON.stringify(source));
-        return {
-          ...model,
-          requiredBodyName: itemInfo(model.requiredBodyId).name,
-          unique: (model.unique ?? []).map((entry, index) =>
-            enrich(entry, `unique-${index + 1}`),
-          ),
-          components: (model.components ?? []).map((entry, index) =>
-            enrich(entry, `component-${index + 1}`),
-          ),
-          choices: (model.choices ?? []).map((choice) => ({
-            ...choice,
-            options: (choice.itemIds ?? []).map(itemInfo),
-          })),
-        };
-      });
-      const replacements = collectionValues(index)
-        .map((entry) => {
-          const flags = entry.flags?.[MODULE_ID] ?? {};
-          return {
-            itemId: entry._id ?? entry.id,
-            name: entry.name,
-            img: entry.img,
-            family: flags.pktFamily ?? null,
-            quality: Number(flags.pktComponentQuality),
-            replaceable: flags.pktReplaceable === true,
-            slots: this.getSlots(entry),
-            implantType: this.getImplantType(entry),
-          };
-        })
-        .filter(
-          (entry) =>
-            entry.implantType === "base" &&
-            entry.family &&
-            entry.replaceable &&
-            Number.isFinite(entry.quality),
-        )
-        .sort(compareByName);
-      return { models: enrichedModels, replacements };
-    })().catch((error) => {
-      pktContentPromise = null;
-      throw error;
+    return loadPktCatalog({
+      game: globalThis.game,
+      itemPackId: PKT_ITEM_PACK,
+      journalPackId: PKT_JOURNAL_PACK,
+      getFlag: (item, key) => this.getFlag(item, key),
+      getImplantType: (item) => this.getImplantType(item),
+      getSlots: (item) => this.getSlots(item),
+      readCyberwareDescription: (item) => this.readCyberwareDescription(item),
+      refresh,
     });
-    return pktContentPromise;
   }
 
   static async loadPktModels(options = {}) {
@@ -677,12 +541,7 @@ export class CyberwareTab {
   }
 
   static itemSourceId(item) {
-    const source =
-      item?._stats?.compendiumSource ??
-      item?.sourceId ??
-      this.getFlag(item, "sourceId") ??
-      "";
-    return String(source).split(".").at(-1);
+    return schemaItemSourceId(item) ?? this.getFlag(item, "sourceId") ?? "";
   }
 
   static pktModelValidation(actor, model) {
@@ -725,10 +584,7 @@ export class CyberwareTab {
     const bodyQuality = this.getPktBodyQuality(body);
     return (
       this.itemSourceId(body) === model.requiredBodyId ||
-      (
-        Number.isFinite(bodyQuality) &&
-        bodyQuality >= Number(model.bodyQuality)
-      )
+      (Number.isFinite(bodyQuality) && bodyQuality >= Number(model.bodyQuality))
     );
   }
 
@@ -779,125 +635,25 @@ export class CyberwareTab {
   }
 
   static stressDiceForFormula(formula) {
-    const normalized = String(formula ?? "")
-      .toLocaleLowerCase("en")
-      .replace(/\s+/g, "");
-    if (normalized === "0") return { d4: 0, d6: 0 };
-    let d4 = 0;
-    let d6 = 0;
-    for (const term of normalized.split("+")) {
-      const match = term.match(/^(\d*)d(4|6)$/);
-      if (!match) {
-        throw new Error(
-          `Формулу Stress Cost «${formula}» нельзя объединить автоматически.`,
-        );
-      }
-      const count = match[1] ? safeInt(match[1]) : 1;
-      if (match[2] === "4") d4 += count;
-      else d6 += count;
-    }
-    return { d4, d6 };
+    return parseStressDice(formula);
   }
 
   static pktHumanityLossSummary(plan, sources = null) {
-    let d4 = 0;
-    let d6 = 0;
-    let complete = true;
-    for (const entry of plan) {
-      if (entry.stress !== "normal") continue;
-      let stressFormula;
-      if (sources) {
-        const source = sources.get(entry.itemId);
-        if (!source) {
-          throw new Error(
-            `Не найден источник Stress Cost для ${entry.itemId}.`,
-          );
-        }
-        stressFormula = this.getStressFormula(
-          typeof source.toObject === "function" ? source.toObject() : source,
-        );
-      } else if (
-        typeof entry.stressFormula === "string" &&
-        entry.stressFormula
-      ) {
-        stressFormula = entry.stressFormula;
-      } else {
-        complete = false;
-        continue;
-      }
-      if (!stressFormula) {
-        throw new Error(
-          `У компонента ${entry.itemId} не указан Stress Cost.`,
-        );
-      }
-      const dice = this.stressDiceForFormula(stressFormula);
-      d4 += dice.d4;
-      d6 += dice.d6;
-    }
-    const formula = [
-      d6 ? `${d6}d6` : "",
-      d4 ? `${d4}d4` : "",
-    ].filter(Boolean).join(" + ") || "0";
-    return {
-      complete,
-      d4,
-      d6,
-      formula,
-      average: d6 * 3.5 + d4 * 2.5,
-    };
+    return summarizePktHumanityLoss(plan, {
+      sources,
+      getStressFormula: (item) => this.getStressFormula(item),
+      parseStressDice: (formula) => this.stressDiceForFormula(formula),
+    });
   }
 
   static pktInstallationPlan(model, selections = {}) {
-    const plan = [];
-    const addEntry = (entry, componentKey) => {
-      const quantity = Math.max(1, safeInt(entry.quantity));
-      for (let index = 0; index < quantity; index++) {
-        plan.push({
-          ...entry,
-          componentKey,
-          quantityIndex: index,
-        });
-      }
-    };
-
-    for (const [index, entry] of (model.unique ?? []).entries()) {
-      addEntry(entry, entry.key ?? `unique-${index + 1}`);
-    }
-    for (const [index, entry] of (model.components ?? []).entries()) {
-      addEntry(entry, entry.key ?? `component-${index + 1}`);
-    }
-    for (const choice of model.choices ?? []) {
-      const choose = Math.max(1, safeInt(choice.choose));
-      const selected = Array.isArray(selections[choice.key])
-        ? selections[choice.key]
-        : [selections[choice.key]].filter(Boolean);
-      const allowed = new Set(choice.itemIds ?? []);
-      if (
-        selected.length !== choose ||
-        selected.some((itemId) => !allowed.has(itemId))
-      ) {
-        throw new Error(`Выберите ${choose} вариант для «${choice.key}».`);
-      }
-      for (const [index, itemId] of selected.entries()) {
-        const option = (choice.options ?? []).find(
-          (candidate) => candidate.itemId === itemId,
-        );
-        plan.push({
-          ...choice,
-          ...option,
-          itemId,
-          componentKey: `choice-${choice.key}`,
-          quantityIndex: index,
-          quantity: 1,
-        });
-      }
-    }
-    return plan;
+    return buildPktInstallationPlan(model, selections);
   }
 
   static getFlag(item, key) {
-    return item.flags?.[MODULE_ID]?.[key] ??
-      item.flags?.[LEGACY_MODULE_ID]?.[key];
+    return (
+      item.flags?.[MODULE_ID]?.[key] ?? item.flags?.[LEGACY_MODULE_ID]?.[key]
+    );
   }
 
   static getGrantItemUuids(item) {
@@ -932,9 +688,7 @@ export class CyberwareTab {
         },
         equipped: {
           ...(item.system?.equipped ?? {}),
-          carryType: installed
-            ? "implanted"
-            : item.system?.equipped?.carryType,
+          carryType: installed ? "implanted" : item.system?.equipped?.carryType,
         },
         traits: {
           value: [...(item.system?.traits?.value ?? [])],
@@ -945,45 +699,11 @@ export class CyberwareTab {
   }
 
   static descriptionText(item) {
-    const raw = String(item.system?.description?.value ?? "");
-    if (!raw) return "";
-
-    let text;
-    if (globalThis.document?.createElement) {
-      const element = document.createElement("div");
-      element.innerHTML = raw;
-      text = element.textContent ?? "";
-    } else {
-      text = raw
-        .replace(/<[^>]*>/g, " ")
-        .replace(/&nbsp;|&#160;/gi, " ")
-        .replace(/&quot;/gi, '"')
-        .replace(/&amp;/gi, "&");
-    }
-    return text.replace(/[\u00a0\u202f]/g, " ").replace(/\s+/g, " ").trim();
+    return schemaDescriptionText(item);
   }
 
   static readCyberwareDescription(item) {
-    const text = this.descriptionText(item);
-    const typeMatch = text.match(
-      /Тип\s*импланта\s*:?\s*([А-Яа-яЁёA-Za-z]+)/i,
-    );
-    const hardCostMatch = text.match(/\bHard\s*Cost\s*:?\s*(\d+)/i);
-    const stressFormulaMatch = text.match(
-      /\bStress\s*Cost\s*:?\s*(?:\[\[\/r\s*)?(\d*d(?:4|6)|0)/i,
-    );
-    const slotsMatch = text.match(/Слот[А-Яа-яЁё]*\s*:?\s*(\d+)/i);
-
-    return {
-      implantType: typeMatch
-        ? LABEL_TO_TYPE[typeMatch[1].toLocaleLowerCase("ru")] ?? null
-        : null,
-      hardCost: hardCostMatch ? safeInt(hardCostMatch[1]) : null,
-      stressFormula: stressFormulaMatch
-        ? stressFormulaMatch[1].toLocaleLowerCase("en")
-        : null,
-      slots: slotsMatch ? safeInt(slotsMatch[1]) : null,
-    };
+    return parseCyberwareDescription(item);
   }
 
   static getHardCost(item) {
@@ -1027,16 +747,15 @@ export class CyberwareTab {
   }
 
   static isPktBody(item) {
-    return this.getFlag(item, "pktBody") === true ||
-      PKT_BODY_IDS.has(item.id) ||
-      PKT_BODY_IDS.has(this.itemSourceId(item)) ||
-      /^Полная\s+Конверсия\s+Тела\b/i.test(item.name ?? "");
+    return (
+      this.getFlag(item, "pktBody") === true ||
+      isKnownPktBody(item) ||
+      /^Полная\s+Конверсия\s+Тела\b/i.test(item.name ?? "")
+    );
   }
 
   static getPktBodyQuality(item) {
-    const known =
-      PKT_BODY_QUALITIES.get(this.itemSourceId(item)) ??
-      PKT_BODY_QUALITIES.get(item?.id);
+    const known = pktBodyQuality(item);
     if (known !== undefined) return known;
 
     const name = String(item?.name ?? "");
@@ -1053,9 +772,7 @@ export class CyberwareTab {
 
     const flagged = this.getFlag(item, "pktQuality");
     const quality = Number(flagged);
-    return flagged !== undefined &&
-      flagged !== null &&
-      Number.isFinite(quality)
+    return flagged !== undefined && flagged !== null && Number.isFinite(quality)
       ? quality
       : Number.NaN;
   }
@@ -1076,34 +793,29 @@ export class CyberwareTab {
     return this.getFlag(item, "pktReplaceable") === true;
   }
 
-  static pktBaseReplacementOptions(
-    actor,
-    base,
-    catalog,
-    usedSlots = null,
-  ) {
+  static pktBaseReplacementOptions(actor, base, catalog, usedSlots = null) {
     if (!this.isPktModelBaseReplaceable(base)) return [];
     const boundBodyId = this.getFlag(base, "pktBodyId");
     const bodies = collectionValues(actor?.items).filter(
       (item) => this.isPktBody(item) && this.isInstalled(item),
     );
-    const body =
-      bodies.find((item) => item.id === boundBodyId) ??
-      bodies[0];
+    const body = bodies.find((item) => item.id === boundBodyId) ?? bodies[0];
     const bodyQuality = this.getPktBodyQuality(body);
     const family = this.getFlag(base, "pktFamily");
     if (!family || !Number.isFinite(bodyQuality)) return [];
 
     const currentSourceId =
       this.getFlag(base, "pktModelSourceId") || this.itemSourceId(base);
-    const occupied = usedSlots ?? collectionValues(actor?.items)
-      .filter(
-        (item) =>
-          this.isInstalled(item) &&
-          this.getImplantType(item) === "module" &&
-          this.getFlag(item, "parentId") === base.id,
-      )
-      .reduce((sum, item) => sum + this.getSlotsUsed(item), 0);
+    const occupied =
+      usedSlots ??
+      collectionValues(actor?.items)
+        .filter(
+          (item) =>
+            this.isInstalled(item) &&
+            this.getImplantType(item) === "module" &&
+            this.getFlag(item, "parentId") === base.id,
+        )
+        .reduce((sum, item) => sum + this.getSlotsUsed(item), 0);
     const ignoreQuality =
       this.getRuleSetting("ignorePktQualityLimits") === true;
     const ignoreSlots = this.getRuleSetting("ignoreSlotLimits") === true;
@@ -1126,15 +838,19 @@ export class CyberwareTab {
   }
 
   static isPktBiosystem(item) {
-    return this.getFlag(item, "pktBiosystem") === true ||
-      item.id === PKT_BIOSYSTEM_ID ||
-      /^Биосистема$/iu.test(item.name ?? "");
+    return (
+      this.getFlag(item, "pktBiosystem") === true ||
+      isKnownPktBiosystem(item) ||
+      /^Биосистема$/iu.test(item.name ?? "")
+    );
   }
 
   static isPktOnly(item) {
-    return this.getFlag(item, "pktOnly") === true ||
+    return (
+      this.getFlag(item, "pktOnly") === true ||
       item.traits?.has?.("pkt") ||
-      item.system?.traits?.value?.includes?.("pkt") === true;
+      item.system?.traits?.value?.includes?.("pkt") === true
+    );
   }
 
   static isCyberware(item) {
@@ -1148,9 +864,12 @@ export class CyberwareTab {
     }
     if (this.isPktBody(item) || this.isPktBiosystem(item)) return true;
     const usage = item.system?.usage;
-    if (usage?.type === "implanted" || usage?.value === "implanted") return true;
-    return this.getFlag(item, "cyberware") === true ||
-      this.getImplantType(item) !== null;
+    if (usage?.type === "implanted" || usage?.value === "implanted")
+      return true;
+    return (
+      this.getFlag(item, "cyberware") === true ||
+      this.getImplantType(item) !== null
+    );
   }
 
   static isInstalled(item) {
@@ -1165,45 +884,20 @@ export class CyberwareTab {
       actor.items.filter(
         (item) => this.isCyberware(item) && this.isInstalled(item),
       );
-    const wisdomModifier = Number(actor.system?.abilities?.wis?.mod ?? 0);
-    const baseMaxPossible = Math.trunc(
-      40 + (Number.isFinite(wisdomModifier) ? wisdomModifier : 0) * 10,
-    );
-    const maxPossible = this.applyHumanityAdjustments(
+    return calculateHumanity({
       actor,
-      baseMaxPossible,
-    );
-    const totalHardCost = implanted.reduce(
-      (sum, item) => sum + this.getHardCost(item),
-      0,
-    );
-    const hardCostMultiplier = this.getHardCostMultiplier();
-    const effectiveHardCost = Math.ceil(totalHardCost * hardCostMultiplier);
-    const max = Math.max(0, maxPossible - effectiveHardCost);
-    const stored =
-      actor.flags?.[MODULE_ID]?.humanity ??
-      actor.flags?.[LEGACY_MODULE_ID]?.humanity ??
-      {};
-    const rawCurrent = Number(stored.current);
-    const current = Math.min(
-      max,
-      Math.max(0, Number.isFinite(rawCurrent) ? Math.trunc(rawCurrent) : max),
-    );
-    return { current, max, maxPossible };
+      installed: implanted,
+      adjustments:
+        actor?.synthetics?.[HUMANITY_SYNTHETIC_KEY]?.humanityAdjustments,
+      getHardCost: (item) => this.getHardCost(item),
+      hardCostMultiplier: this.getHardCostMultiplier(),
+    });
   }
 
   static applyHumanityAdjustments(actor, baseValue) {
     const adjustments =
       actor?.synthetics?.[HUMANITY_SYNTHETIC_KEY]?.humanityAdjustments ?? [];
-    let value = Number(baseValue);
-    for (const adjustment of adjustments) {
-      const change = Number(adjustment?.value);
-      if (!Number.isFinite(change)) continue;
-      value = adjustment.mode === "override"
-        ? change
-        : value + change;
-    }
-    return Math.max(0, Math.trunc(Number.isFinite(value) ? value : 0));
+    return applyHumanityAdjustmentList(adjustments, baseValue);
   }
 
   static hasHumanityRule(item) {
@@ -1218,8 +912,10 @@ export class CyberwareTab {
       actor.flags?.[MODULE_ID]?.humanity ??
       actor.flags?.[LEGACY_MODULE_ID]?.humanity ??
       {};
-    if (stored.current === humanity.current &&
-        actor.flags?.[MODULE_ID]?.humanity) {
+    if (
+      stored.current === humanity.current &&
+      actor.flags?.[MODULE_ID]?.humanity
+    ) {
       return;
     }
     await actor.setFlag(MODULE_ID, "humanity", {
@@ -1311,19 +1007,7 @@ export class CyberwareTab {
   }
 
   static getHumanityState(percent) {
-    if (percent >= 70) {
-      return { label: "Человек", cssClass: "cw-state-stable" };
-    }
-    if (percent >= 40) {
-      return { label: "Отчуждение", cssClass: "cw-state-controlled" };
-    }
-    if (percent >= 25) {
-      return { label: "Диссоциация", cssClass: "cw-state-edgy" };
-    }
-    if (percent > 0) {
-      return { label: "Пре-Психоз", cssClass: "cw-state-danger" };
-    }
-    return { label: "Киберпсихоз", cssClass: "cw-state-psychosis" };
+    return humanityState(percent);
   }
 
   static installationValidation(actor, item) {
@@ -1401,10 +1085,7 @@ export class CyberwareTab {
           this.isPktBody(candidate) &&
           this.isInstalled(candidate),
       );
-      if (
-        otherBody &&
-        this.getRuleSetting("allowMultiplePktBodies") !== true
-      ) {
+      if (otherBody && this.getRuleSetting("allowMultiplePktBodies") !== true) {
         return `Уже установлен корпус ПКТ «${otherBody.name}». Сначала извлеките его.`;
       }
     }
@@ -1421,8 +1102,8 @@ export class CyberwareTab {
     if (
       this.isPktBody(item) &&
       this.isInstalled(item) &&
-      collectionValues(actor?.items).some(
-        (candidate) => this.getFlag(candidate, "pktModelKey"),
+      collectionValues(actor?.items).some((candidate) =>
+        this.getFlag(candidate, "pktModelKey"),
       )
     ) {
       return "Сначала демонтируйте установленную модель ПКТ во вкладке «Хром».";
@@ -1481,14 +1162,13 @@ export class CyberwareTab {
       }
     } else {
       update[`flags.${MODULE_ID}.-=parentId`] = null;
-      const previous =
-        this.getFlag(item, "previousCarryState") ?? {
-          carryType: item.type === "equipment" ? "worn" : undefined,
-          handsHeld: 0,
-          inSlot: false,
-          invested: false,
-          containerId: null,
-        };
+      const previous = this.getFlag(item, "previousCarryState") ?? {
+        carryType: item.type === "equipment" ? "worn" : undefined,
+        handsHeld: 0,
+        inSlot: false,
+        invested: false,
+        containerId: null,
+      };
 
       if (item.type === "equipment") {
         const containerExists =
@@ -1501,14 +1181,12 @@ export class CyberwareTab {
           previous.carryType && previous.carryType !== "implanted"
             ? previous.carryType
             : "worn";
-        update["system.equipped.handsHeld"] = safeInt(
-          previous.handsHeld,
-          { max: 2 },
-        );
+        update["system.equipped.handsHeld"] = safeInt(previous.handsHeld, {
+          max: 2,
+        });
         update["system.equipped.inSlot"] = previous.inSlot === true;
         if (isInvestedItem(item)) {
-          update["system.equipped.invested"] =
-            previous.invested === true;
+          update["system.equipped.invested"] = previous.invested === true;
         }
       }
       update[`flags.${MODULE_ID}.-=previousCarryState`] = null;
@@ -1589,7 +1267,9 @@ export class CyberwareTab {
   static async detachModules(actor, baseId) {
     const updates = this.moduleDetachUpdates(actor, baseId);
     if (updates.length) {
-      await actor.updateEmbeddedDocuments("Item", updates);
+      await actor.updateEmbeddedDocuments("Item", updates, {
+        cyberpunkRemasterManaged: true,
+      });
     }
   }
 
@@ -1599,9 +1279,7 @@ export class CyberwareTab {
       bodyId &&
       actor.items.some(
         (item) =>
-          item.id !== bodyId &&
-          this.isPktBody(item) &&
-          this.isInstalled(item),
+          item.id !== bodyId && this.isPktBody(item) && this.isInstalled(item),
       );
     return actor.items
       .filter(
@@ -1609,14 +1287,9 @@ export class CyberwareTab {
           this.isPktOnly(item) &&
           this.isInstalled(item) &&
           !this.isPktBody(item) &&
-          (
-            !bodyId ||
+          (!bodyId ||
             this.getFlag(item, "pktBodyId") === bodyId ||
-            (
-              !this.getFlag(item, "pktBodyId") &&
-              !anotherBodyRemains
-            )
-          ),
+            (!this.getFlag(item, "pktBodyId") && !anotherBodyRemains)),
       )
       .map((item) => this.installationUpdate(item, false));
   }
@@ -1624,7 +1297,9 @@ export class CyberwareTab {
   static async ejectPktComponents(actor, bodyId = null) {
     const updates = this.pktEjectionUpdates(actor, bodyId);
     if (updates.length) {
-      await actor.updateEmbeddedDocuments("Item", updates);
+      await actor.updateEmbeddedDocuments("Item", updates, {
+        cyberpunkRemasterManaged: true,
+      });
     }
     return updates.length;
   }
@@ -1677,8 +1352,9 @@ export class CyberwareTab {
     const update = this.installationUpdate(liveModule, true);
     delete update._id;
     update[`flags.${MODULE_ID}.parentId`] = liveBase.id;
-    await liveModule.update(update);
+    await liveModule.update(update, { cyberpunkRemasterManaged: true });
     await this.reconcileHumanity(actor);
+    await this.reconcileGrantedItems(actor);
     return true;
   }
 
@@ -1736,10 +1412,7 @@ export class CyberwareTab {
         );
       }
       selected.candidate.used += slots;
-      nextBaseByFamily.set(
-        parentFamily,
-        (selected.index + 1) % bases.length,
-      );
+      nextBaseByFamily.set(parentFamily, (selected.index + 1) % bases.length);
       updates.push({
         _id: item.id,
         [`flags.${MODULE_ID}.parentId`]: selected.candidate.item.id,
@@ -1773,9 +1446,7 @@ export class CyberwareTab {
     const bodies = collectionValues(actor?.items).filter(
       (item) => this.isPktBody(item) && this.isInstalled(item),
     );
-    const body =
-      bodies.find((item) => item.id === boundBodyId) ??
-      bodies[0];
+    const body = bodies.find((item) => item.id === boundBodyId) ?? bodies[0];
     const bodyQuality = this.getPktBodyQuality(body);
     const replacementQuality = Number(
       this.getFlag(replacement, "pktComponentQuality"),
@@ -1785,10 +1456,8 @@ export class CyberwareTab {
     }
     if (
       this.getRuleSetting("ignorePktQualityLimits") !== true &&
-      (
-        !Number.isFinite(replacementQuality) ||
-        replacementQuality > bodyQuality + 1
-      )
+      (!Number.isFinite(replacementQuality) ||
+        replacementQuality > bodyQuality + 1)
     ) {
       return "Качество новой базы может быть максимум на одну ступень выше качества корпуса ПКТ.";
     }
@@ -1826,8 +1495,7 @@ export class CyberwareTab {
     delete source.folder;
     delete source.ownership;
     source._stats ??= {};
-    source._stats.compendiumSource =
-      `Compendium.${PKT_ITEM_PACK}.Item.${sourceId}`;
+    source._stats.compendiumSource = `Compendium.${PKT_ITEM_PACK}.Item.${sourceId}`;
     source.flags ??= {};
     source.flags[MODULE_ID] = {
       ...(source.flags[MODULE_ID] ?? {}),
@@ -1860,7 +1528,7 @@ export class CyberwareTab {
 
     const itemPack = globalThis.game?.packs?.get?.(PKT_ITEM_PACK);
     const replacement =
-      sourceDocument ?? await itemPack?.getDocument?.(replacementId);
+      sourceDocument ?? (await itemPack?.getDocument?.(replacementId));
     if (!replacement) {
       throw new Error(`В компендии не найдена база ${replacementId}.`);
     }
@@ -1875,9 +1543,7 @@ export class CyberwareTab {
     const bodies = collectionValues(actor.items).filter(
       (item) => this.isPktBody(item) && this.isInstalled(item),
     );
-    const body =
-      bodies.find((item) => item.id === boundBodyId) ??
-      bodies[0];
+    const body = bodies.find((item) => item.id === boundBodyId) ?? bodies[0];
     const attached = collectionValues(actor.items).filter(
       (item) =>
         this.isInstalled(item) &&
@@ -1896,11 +1562,7 @@ export class CyberwareTab {
         { cyberpunkRemasterModelOperation: true },
       );
       created = createdItems[0] ?? null;
-      if (
-        createdItems.length !== 1 ||
-        !created ||
-        !this.isInstalled(created)
-      ) {
+      if (createdItems.length !== 1 || !created || !this.isInstalled(created)) {
         throw new Error(
           "Foundry не создал новую базу в установленном состоянии.",
         );
@@ -1917,11 +1579,9 @@ export class CyberwareTab {
         );
         modulesRelinked = true;
       }
-      await actor.deleteEmbeddedDocuments(
-        "Item",
-        [liveBase.id],
-        { cyberpunkRemasterModelOperation: true },
-      );
+      await actor.deleteEmbeddedDocuments("Item", [liveBase.id], {
+        cyberpunkRemasterModelOperation: true,
+      });
     } catch (error) {
       const rollbackErrors = [];
       if (modulesRelinked) {
@@ -1940,11 +1600,9 @@ export class CyberwareTab {
       }
       if (created) {
         try {
-          await actor.deleteEmbeddedDocuments(
-            "Item",
-            [created.id],
-            { cyberpunkRemasterModelOperation: true },
-          );
+          await actor.deleteEmbeddedDocuments("Item", [created.id], {
+            cyberpunkRemasterModelOperation: true,
+          });
         } catch (rollbackError) {
           rollbackErrors.push(rollbackError.message);
         }
@@ -1958,17 +1616,26 @@ export class CyberwareTab {
       throw error;
     }
 
+    let reconciliationError = null;
     try {
       await this.reconcileHumanity(actor);
+      await this.reconcileGrantedItems(actor);
     } catch (error) {
+      reconciliationError = error;
       console.error(
-        `${MODULE_ID} | Humanity reconciliation after base replacement failed`,
+        `${MODULE_ID} | Reconciliation after base replacement failed`,
         error,
+      );
+      globalThis.ui?.notifications?.warn?.(
+        "База заменена, но итоговое состояние Человечности или выданных " +
+          "эффектов не удалось сохранить. Повторно откройте лист; если " +
+          "проблема останется, сообщите ведущему.",
       );
     }
     return {
       replacement: created,
       transferredModules: attached.length,
+      reconciliationError,
     };
   }
 
@@ -1978,16 +1645,14 @@ export class CyberwareTab {
     delete source.folder;
     delete source.ownership;
     source._stats ??= {};
-    source._stats.compendiumSource =
-      `Compendium.${PKT_ITEM_PACK}.Item.${entry.itemId}`;
+    source._stats.compendiumSource = `Compendium.${PKT_ITEM_PACK}.Item.${entry.itemId}`;
     source.flags ??= {};
     source.flags[MODULE_ID] = {
       ...(source.flags[MODULE_ID] ?? {}),
       pktModelKey: model.key,
       pktComponentKey: entry.componentKey,
       pktModelSourceId: entry.itemId,
-      pktFamily:
-        entry.family ?? source.flags[MODULE_ID]?.pktFamily ?? null,
+      pktFamily: entry.family ?? source.flags[MODULE_ID]?.pktFamily ?? null,
       pktLocked: entry.locked !== false,
       pktStress: entry.stress ?? "normal",
       pktBodyId: body.id,
@@ -2125,10 +1790,7 @@ export class CyberwareTab {
       counts.set(key, current);
     }
     const rows = [...counts.values()]
-      .map(
-        (entry) =>
-          `<li>${escapeHtml(entry.name)} × ${entry.count}</li>`,
-      )
+      .map((entry) => `<li>${escapeHtml(entry.name)} × ${entry.count}</li>`)
       .join("");
     const price = new Intl.NumberFormat("ru-RU").format(
       safeInt(model.priceEddies, { max: Number.MAX_SAFE_INTEGER }),
@@ -2177,20 +1839,11 @@ export class CyberwareTab {
 
   static async runMutation(control, callback, actor = null) {
     if (control) control.disabled = true;
-    const key = actor?.uuid ?? actor?.id ?? null;
-    const previous = key
-      ? actorMutationQueues.get(key) ?? Promise.resolve()
-      : Promise.resolve();
-    const operation = previous.catch(() => undefined).then(callback);
-    if (key) actorMutationQueues.set(key, operation);
     try {
-      await operation;
+      await enqueueActorOperation(actor, callback);
     } catch (error) {
       notifyError(error, "Операция с имплантом не выполнена.");
     } finally {
-      if (key && actorMutationQueues.get(key) === operation) {
-        actorMutationQueues.delete(key);
-      }
       if (control?.isConnected) control.disabled = false;
     }
   }
@@ -2198,16 +1851,24 @@ export class CyberwareTab {
   static activateListeners(app, container) {
     const actor = app.actor;
     const scroller = container.querySelector(".cw-tab");
-    scroller?.addEventListener("scroll", () => {
-      scrollPositions.set(this.sheetKey(app), scroller.scrollTop);
-    }, { passive: true });
+    scroller?.addEventListener(
+      "scroll",
+      () => {
+        scrollPositions.set(this.sheetKey(app), scroller.scrollTop);
+      },
+      { passive: true },
+    );
 
-    container.querySelectorAll(".cw-item-name[data-item-id]").forEach((control) => {
-      control.addEventListener("click", (event) => {
-        event.preventDefault();
-        actor.items.get(event.currentTarget.dataset.itemId)?.sheet?.render(true);
+    container
+      .querySelectorAll(".cw-item-name[data-item-id]")
+      .forEach((control) => {
+        control.addEventListener("click", (event) => {
+          event.preventDefault();
+          actor.items
+            .get(event.currentTarget.dataset.itemId)
+            ?.sheet?.render(true);
+        });
       });
-    });
 
     if (!this.canMutate(app)) return;
 
@@ -2215,15 +1876,19 @@ export class CyberwareTab {
       .querySelectorAll(".cw-humanity-input[data-field='current']")
       .forEach((input) => {
         input.addEventListener("change", (event) => {
-          void this.runMutation(input, async () => {
-            if (!this.canMutate(app)) return;
-            const maximum = safeInt(event.currentTarget.max);
-            const value = Math.min(
-              maximum,
-              safeInt(event.currentTarget.value),
-            );
-            await actor.setFlag(MODULE_ID, "humanity", { current: value });
-          }, actor);
+          void this.runMutation(
+            input,
+            async () => {
+              if (!this.canMutate(app)) return;
+              const maximum = safeInt(event.currentTarget.max);
+              const value = Math.min(
+                maximum,
+                safeInt(event.currentTarget.value),
+              );
+              await actor.setFlag(MODULE_ID, "humanity", { current: value });
+            },
+            actor,
+          );
         });
       });
 
@@ -2231,11 +1896,15 @@ export class CyberwareTab {
       button.addEventListener("click", (event) => {
         event.preventDefault();
         event.stopPropagation();
-        void this.runMutation(button, async () => {
-          if (!this.canMutate(app)) return;
-          const item = actor.items.get(button.dataset.itemId);
-          if (item) await item.unsetFlag(MODULE_ID, "parentId");
-        }, actor);
+        void this.runMutation(
+          button,
+          async () => {
+            if (!this.canMutate(app)) return;
+            const item = actor.items.get(button.dataset.itemId);
+            if (item) await item.unsetFlag(MODULE_ID, "parentId");
+          },
+          actor,
+        );
       });
     });
 
@@ -2243,35 +1912,40 @@ export class CyberwareTab {
       button.addEventListener("click", (event) => {
         event.preventDefault();
         event.stopPropagation();
-        void this.runMutation(button, async () => {
-          if (!this.canMutate(app)) return;
-          const models = await this.loadPktModels();
-          const model = models.find(
-            (candidate) => candidate.key === button.dataset.modelKey,
-          );
-          if (!model) throw new Error("Выбранная модель ПКТ не найдена.");
-          const selections = {};
-          container.querySelectorAll(".cw-pkt-choice").forEach((select) => {
-            if (select.dataset.modelKey === model.key) {
-              selections[select.dataset.choiceKey] = select.value;
-            }
-          });
-          const plan = this.pktInstallationPlan(model, selections);
-          const confirmed = await this.confirmDialog({
-            title: "Установить модель ПКТ",
-            content: this.pktConfirmationContent(model, plan),
-          });
-          if (!confirmed) return;
+        void this.runMutation(
+          button,
+          async () => {
+            if (!this.canMutate(app)) return;
+            const models = await this.loadPktModels();
+            const model = models.find(
+              (candidate) => candidate.key === button.dataset.modelKey,
+            );
+            if (!model) throw new Error("Выбранная модель ПКТ не найдена.");
+            const selections = {};
+            container.querySelectorAll(".cw-pkt-choice").forEach((select) => {
+              if (select.dataset.modelKey === model.key) {
+                selections[select.dataset.choiceKey] = select.value;
+              }
+            });
+            const plan = this.pktInstallationPlan(model, selections);
+            const confirmed = await this.confirmDialog({
+              title: "Установить модель ПКТ",
+              content: this.pktConfirmationContent(model, plan),
+            });
+            if (!confirmed) return;
 
-          const result = await this.installPktModel(actor, model, selections);
-          const loss = result.humanityLoss;
-          const lossText = loss.formula === "0"
-            ? " Потери Человечности нет."
-            : ` Бросок Потери Человечности ${loss.formula} находится в журнале модели.`;
-          globalThis.ui?.notifications?.info?.(
-            `Модель «${model.name}» установлена.${lossText}`,
-          );
-        }, actor);
+            const result = await this.installPktModel(actor, model, selections);
+            const loss = result.humanityLoss;
+            const lossText =
+              loss.formula === "0"
+                ? " Потери Человечности нет."
+                : ` Бросок Потери Человечности ${loss.formula} находится в журнале модели.`;
+            globalThis.ui?.notifications?.info?.(
+              `Модель «${model.name}» установлена.${lossText}`,
+            );
+          },
+          actor,
+        );
       });
     });
 
@@ -2279,25 +1953,30 @@ export class CyberwareTab {
       button.addEventListener("click", (event) => {
         event.preventDefault();
         event.stopPropagation();
-        void this.runMutation(button, async () => {
-          if (!this.canMutate(app)) return;
-          const modelName = button.dataset.modelName ?? button.dataset.modelKey;
-          const confirmed = await this.confirmDialog({
-            title: "Демонтировать модель ПКТ",
-            content:
-              `<p>Удалить все компоненты модели ` +
-              `<strong>${escapeHtml(modelName)}</strong>?</p>` +
-              "<p>Корпус и Биосистема останутся у персонажа.</p>",
-          });
-          if (!confirmed) return;
-          const count = await this.removePktModel(
-            actor,
-            button.dataset.modelKey,
-          );
-          globalThis.ui?.notifications?.info?.(
-            `Модель «${modelName}» демонтирована: удалено компонентов — ${count}.`,
-          );
-        }, actor);
+        void this.runMutation(
+          button,
+          async () => {
+            if (!this.canMutate(app)) return;
+            const modelName =
+              button.dataset.modelName ?? button.dataset.modelKey;
+            const confirmed = await this.confirmDialog({
+              title: "Демонтировать модель ПКТ",
+              content:
+                `<p>Удалить все компоненты модели ` +
+                `<strong>${escapeHtml(modelName)}</strong>?</p>` +
+                "<p>Корпус и Биосистема останутся у персонажа.</p>",
+            });
+            if (!confirmed) return;
+            const count = await this.removePktModel(
+              actor,
+              button.dataset.modelKey,
+            );
+            globalThis.ui?.notifications?.info?.(
+              `Модель «${modelName}» демонтирована: удалено компонентов — ${count}.`,
+            );
+          },
+          actor,
+        );
       });
     });
 
@@ -2306,43 +1985,47 @@ export class CyberwareTab {
         const replacementId = event.currentTarget.value;
         event.currentTarget.value = "";
         if (!replacementId) return;
-        void this.runMutation(select, async () => {
-          if (!this.canMutate(app)) return;
-          const base = actor.items.get(select.dataset.itemId);
-          if (!base) throw new Error("Заменяемая база не найдена.");
-          const itemPack = globalThis.game?.packs?.get?.(PKT_ITEM_PACK);
-          const replacement = await itemPack?.getDocument?.(replacementId);
-          if (!replacement) {
-            throw new Error(`В компендии не найдена база ${replacementId}.`);
-          }
-          const validation = this.pktBaseReplacementValidation(
-            actor,
-            base,
-            replacement,
-          );
-          if (validation) throw new Error(validation);
-          const confirmed = await this.confirmDialog({
-            title: "Заменить базу ПКТ",
-            content: this.pktBaseReplacementConfirmationContent(
+        void this.runMutation(
+          select,
+          async () => {
+            if (!this.canMutate(app)) return;
+            const base = actor.items.get(select.dataset.itemId);
+            if (!base) throw new Error("Заменяемая база не найдена.");
+            const itemPack = globalThis.game?.packs?.get?.(PKT_ITEM_PACK);
+            const replacement = await itemPack?.getDocument?.(replacementId);
+            if (!replacement) {
+              throw new Error(`В компендии не найдена база ${replacementId}.`);
+            }
+            const validation = this.pktBaseReplacementValidation(
+              actor,
               base,
               replacement,
-              actor,
-            ),
-          });
-          if (!confirmed) return;
+            );
+            if (validation) throw new Error(validation);
+            const confirmed = await this.confirmDialog({
+              title: "Заменить базу ПКТ",
+              content: this.pktBaseReplacementConfirmationContent(
+                base,
+                replacement,
+                actor,
+              ),
+            });
+            if (!confirmed) return;
 
-          const result = await this.replacePktBase(
-            actor,
-            base,
-            replacementId,
-            { sourceDocument: replacement },
-          );
-          globalThis.ui?.notifications?.info?.(
-            `«${base.name}» заменена на «${result.replacement.name}». ` +
-              `Перенесено модулей: ${result.transferredModules}. ` +
-              "Примените обычный Stress Cost новой базы.",
-          );
-        }, actor);
+            const result = await this.replacePktBase(
+              actor,
+              base,
+              replacementId,
+              { sourceDocument: replacement },
+            );
+            globalThis.ui?.notifications?.info?.(
+              `«${base.name}» заменена на «${result.replacement.name}». ` +
+                `Перенесено модулей: ${result.transferredModules}. ` +
+                "Примените обычный Stress Cost новой базы.",
+            );
+          },
+          actor,
+        );
       });
     });
 
@@ -2350,12 +2033,16 @@ export class CyberwareTab {
       button.addEventListener("click", (event) => {
         event.preventDefault();
         event.stopPropagation();
-        void this.runMutation(button, async () => {
-          if (!this.canMutate(app)) return;
-          const item = actor.items.get(button.dataset.itemId);
-          if (!item) return;
-          await this.setInstalled(actor, item, !this.isInstalled(item));
-        }, actor);
+        void this.runMutation(
+          button,
+          async () => {
+            if (!this.canMutate(app)) return;
+            const item = actor.items.get(button.dataset.itemId);
+            if (!item) return;
+            await this.setInstalled(actor, item, !this.isInstalled(item));
+          },
+          actor,
+        );
       });
     });
 
@@ -2363,12 +2050,16 @@ export class CyberwareTab {
       select.addEventListener("change", (event) => {
         const baseId = event.currentTarget.value;
         if (!baseId) return;
-        void this.runMutation(select, async () => {
-          if (!this.canMutate(app)) return;
-          const item = actor.items.get(select.dataset.itemId);
-          const base = actor.items.get(baseId);
-          if (item && base) await this.attachModule(actor, item, base);
-        }, actor);
+        void this.runMutation(
+          select,
+          async () => {
+            if (!this.canMutate(app)) return;
+            const item = actor.items.get(select.dataset.itemId);
+            const base = actor.items.get(baseId);
+            if (item && base) await this.attachModule(actor, item, base);
+          },
+          actor,
+        );
       });
     });
 
@@ -2453,12 +2144,16 @@ export class CyberwareTab {
         );
         const baseId = zone.dataset.baseId;
         if (!itemId || !baseId) return;
-        void this.runMutation(zone, async () => {
-          if (!this.canMutate(app)) return;
-          const item = actor.items.get(itemId);
-          const base = actor.items.get(baseId);
-          if (item && base) await this.attachModule(actor, item, base);
-        }, actor);
+        void this.runMutation(
+          zone,
+          async () => {
+            if (!this.canMutate(app)) return;
+            const item = actor.items.get(itemId);
+            const base = actor.items.get(baseId);
+            if (item && base) await this.attachModule(actor, item, base);
+          },
+          actor,
+        );
       });
     });
   }
@@ -2490,4 +2185,12 @@ export class CyberwareTab {
   }
 }
 
-export { MAX_SLOT_DOTS, MAX_SLOTS, PHYSICAL_TYPES, safeInt };
+export {
+  LEGACY_MODULE_ID,
+  MAX_SLOT_DOTS,
+  MAX_SLOTS,
+  MODULE_ID,
+  PHYSICAL_TYPES,
+  RULE_SETTING_DEFAULTS,
+  safeInt,
+};

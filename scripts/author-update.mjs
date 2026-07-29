@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { requireAuthorPath, resolveAuthorPaths } from "./lib/author-paths.mjs";
 
 const currentRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -10,25 +11,18 @@ const currentRoot = path.resolve(
 const currentManifest = JSON.parse(
   await fs.readFile(path.join(currentRoot, "module.json"), "utf8"),
 );
-const defaultInstallation = path.resolve(
-  "D:/Workspaces/FoundryVTT_StarFinder_v14.361/Data/modules",
-  currentManifest.id,
-);
-const configuredWorkspace =
-  process.env.CYBERPUNK_WORKSPACE_PATH ??
-  process.env.MODULE_WORKSPACE_PATH ??
-  "E:/User/Documents/cyberpunk-remaster";
-const workspaceRoot = currentRoot === defaultInstallation
-  ? path.resolve(configuredWorkspace)
-  : currentRoot;
-const foundryModuleRoot = currentRoot === defaultInstallation
-  ? currentRoot
-  : path.resolve(
-      process.env.FOUNDRY_MODULE_PATH ??
-        process.env.SOURCE_MODULE_ROOT ??
-        process.env.TARGET_MODULE_ROOT ??
-        defaultInstallation,
-    );
+const configured = await resolveAuthorPaths(currentRoot, currentManifest.id);
+const workspaceRoot =
+  configured.foundryModuleRoot === currentRoot
+    ? requireAuthorPath(configured.workspaceRoot, "Рабочая папка")
+    : currentRoot;
+const foundryModuleRoot =
+  configured.foundryModuleRoot === currentRoot
+    ? currentRoot
+    : requireAuthorPath(
+        configured.foundryModuleRoot,
+        "Папка установленного модуля Foundry",
+      );
 
 if (workspaceRoot === foundryModuleRoot) {
   throw new Error(

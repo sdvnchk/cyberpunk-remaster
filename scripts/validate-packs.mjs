@@ -6,6 +6,10 @@ import { loadClassicLevel } from "./lib/classic-level.mjs";
 import {
   allStrings,
   plainText,
+  transformFolders,
+  transformItems,
+  transformJournals,
+  transformMacros,
   validateTransformedContent,
 } from "./lib/content.mjs";
 
@@ -34,9 +38,7 @@ const packSpecs = [
 async function listFiles(directory, prefix = "") {
   const files = [];
   for (const entry of await fs.readdir(directory, { withFileTypes: true })) {
-    const relative = prefix
-      ? `${prefix}/${entry.name}`
-      : entry.name;
+    const relative = prefix ? `${prefix}/${entry.name}` : entry.name;
     if (entry.isDirectory()) {
       files.push(
         ...(await listFiles(path.join(directory, entry.name), relative)),
@@ -48,6 +50,24 @@ async function listFiles(directory, prefix = "") {
   return files;
 }
 
+function canonicalValue(value) {
+  if (Array.isArray(value)) return value.map(canonicalValue);
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(
+    Object.entries(value)
+      .sort(([left], [right]) => left.localeCompare(right, "en"))
+      .map(([key, entry]) => [key, canonicalValue(entry)]),
+  );
+}
+
+function canonicalDocuments(documents) {
+  return [...documents]
+    .sort((left, right) =>
+      String(left._id).localeCompare(String(right._id), "en"),
+    )
+    .map(canonicalValue);
+}
+
 async function assertPackDirectory(spec) {
   const directory = path.join(packsRoot, spec.name);
   const stat = await fs.stat(directory);
@@ -55,8 +75,9 @@ async function assertPackDirectory(spec) {
     throw new Error(`${spec.name} is not a LevelDB directory.`);
   }
 
-  const current = (await fs.readFile(path.join(directory, "CURRENT"), "utf8"))
-    .trim();
+  const current = (
+    await fs.readFile(path.join(directory, "CURRENT"), "utf8")
+  ).trim();
   if (!/^MANIFEST-\d+$/.test(current)) {
     throw new Error(`${spec.name} has an invalid CURRENT pointer: ${current}`);
   }
@@ -150,16 +171,18 @@ try {
     sourceMacros,
     sourcePktModels,
     pktComponents,
-  ] = await Promise.all([
-    "items-export.json",
-    "data/item-folders.json",
-    "journals-export.json",
-    "macros-export.json",
-    "data/pkt-models.json",
-    "data/pkt-components.json",
-  ].map(async (relative) =>
-    JSON.parse(await fs.readFile(path.join(root, relative), "utf8"))
-  ));
+  ] = await Promise.all(
+    [
+      "content/exports/items.json",
+      "data/item-folders.json",
+      "content/exports/journals.json",
+      "content/exports/macros.json",
+      "data/pkt-models.json",
+      "data/pkt-components.json",
+    ].map(async (relative) =>
+      JSON.parse(await fs.readFile(path.join(root, relative), "utf8")),
+    ),
+  );
   const expected = {
     items: sourceItems.length,
     folders: sourceFolders.length,
@@ -183,9 +206,7 @@ try {
     }
   }
 
-  const pageByKey = new Map(
-    pageEntries.map(({ key, value }) => [key, value]),
-  );
+  const pageByKey = new Map(pageEntries.map(({ key, value }) => [key, value]));
   const referencedPageKeys = new Set();
   const journals = journalRoots.map((journal) => ({
     ...journal,
@@ -208,6 +229,25 @@ try {
     );
   }
 
+  const expectedDocuments = {
+    items: transformItems(sourceItems, sourcePktModels, pktComponents, {}),
+    folders: transformFolders(sourceFolders, {}),
+    journals: transformJournals(sourceJournals, sourcePktModels, {}),
+    macros: transformMacros(sourceMacros, {}),
+  };
+  const packedDocuments = { items, folders, journals, macros };
+  for (const key of Object.keys(expectedDocuments)) {
+    const expectedJson = JSON.stringify(
+      canonicalDocuments(expectedDocuments[key]),
+    );
+    const packedJson = JSON.stringify(canonicalDocuments(packedDocuments[key]));
+    if (expectedJson !== packedJson) {
+      throw new Error(
+        `Pack ${key} differs from its canonical source export. Rebuild packs.`,
+      );
+    }
+  }
+
   const pktModels = pages
     .map((page) => page.flags?.["cyberpunk-remaster"]?.pktModel)
     .filter(Boolean);
@@ -223,6 +263,14 @@ try {
   const manifest = JSON.parse(
     await fs.readFile(path.join(root, "module.json"), "utf8"),
   );
+  const packageJson = JSON.parse(
+    await fs.readFile(path.join(root, "package.json"), "utf8"),
+  );
+  if (manifest.version !== packageJson.version) {
+    throw new Error(
+      `Version mismatch: module ${manifest.version}, package ${packageJson.version}.`,
+    );
+  }
   if (manifest.title !== "SF2E Cyberpunk Remaster") {
     throw new Error("Incorrect module title.");
   }
@@ -234,12 +282,14 @@ try {
   const declaredPacks = manifest.packs ?? [];
   if (
     JSON.stringify(declaredPacks.map((pack) => pack.name)) !==
-      JSON.stringify(expectedPackNames)
+    JSON.stringify(expectedPackNames)
   ) {
     throw new Error("Manifest pack declarations are incorrect.");
   }
   for (const spec of packSpecs) {
-    const pack = declaredPacks.find((candidate) => candidate.name === spec.name);
+    const pack = declaredPacks.find(
+      (candidate) => candidate.name === spec.name,
+    );
     if (
       pack?.label !== spec.label ||
       pack?.type !== spec.type ||
@@ -259,12 +309,12 @@ try {
 
   const canonicalExports = await Promise.all(
     [
-      "items-export.json",
-      "journals-export.json",
-      "macros-export.json",
+      "content/exports/items.json",
+      "content/exports/journals.json",
+      "content/exports/macros.json",
       "data/item-folders.json",
     ].map(async (file) =>
-      JSON.parse(await fs.readFile(path.join(root, file), "utf8"))
+      JSON.parse(await fs.readFile(path.join(root, file), "utf8")),
     ),
   );
   for (const string of allStrings(canonicalExports)) {
@@ -298,7 +348,7 @@ try {
   const iconDirectory = path.join(root, "assets", "icons");
   const iconFiles = new Set(
     (await listFiles(iconDirectory)).filter((file) =>
-      /\.(?:avif|gif|jpe?g|png|svg|webp)$/i.test(file)
+      /\.(?:avif|gif|jpe?g|png|svg|webp)$/i.test(file),
     ),
   );
   const missingIcons = [...iconPaths].filter((file) => !iconFiles.has(file));
@@ -309,10 +359,7 @@ try {
     throw new Error(`Missing icons: ${missingIcons.join(", ")}`);
   }
   if (unreferencedIcons.length) {
-    console.warn(
-      `${unreferencedIcons.length} unreferenced icon files retained ` +
-        "for future Foundry authoring.",
-    );
+    throw new Error(`Unreferenced icon files: ${unreferencedIcons.join(", ")}`);
   }
 
   if (pktModels.length !== sourcePktModels.length) {
@@ -348,13 +395,9 @@ try {
     throw new Error("The PKT Hammer page still contains placeholder text.");
   }
 
-  const traceMacro = macros.find(
-    (macro) => macro.name === "Счётчик следа",
-  );
+  const traceMacro = macros.find((macro) => macro.name === "Счётчик следа");
   if (
-    !traceMacro?.command.includes(
-      "flags.cyberpunk-remaster.netrunnerTrace",
-    )
+    !traceMacro?.command.includes("flags.cyberpunk-remaster.netrunnerTrace")
   ) {
     throw new Error("The trace macro still uses a world-scoped flag.");
   }

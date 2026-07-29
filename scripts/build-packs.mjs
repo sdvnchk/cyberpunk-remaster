@@ -18,9 +18,9 @@ const readJson = async (relativePath) =>
 
 const [rawItems, rawJournals, rawMacros, rawFolders, pktModels, pktComponents] =
   await Promise.all([
-    readJson("items-export.json"),
-    readJson("journals-export.json"),
-    readJson("macros-export.json"),
+    readJson("content/exports/items.json"),
+    readJson("content/exports/journals.json"),
+    readJson("content/exports/macros.json"),
     readJson("data/item-folders.json"),
     readJson("data/pkt-models.json"),
     readJson("data/pkt-components.json"),
@@ -39,32 +39,6 @@ validateTransformedContent({
   pktComponents,
   pktModels,
 });
-
-// Keep the exported JSON documents canonical as well as the compiled LevelDB
-// packs. The transforms are intentionally idempotent, so a second build does
-// not duplicate module paths or flags.
-await Promise.all([
-  fs.writeFile(
-    path.join(root, "items-export.json"),
-    `${JSON.stringify(items, null, 2)}\n`,
-    "utf8",
-  ),
-  fs.writeFile(
-    path.join(root, "journals-export.json"),
-    `${JSON.stringify(journals, null, 2)}\n`,
-    "utf8",
-  ),
-  fs.writeFile(
-    path.join(root, "macros-export.json"),
-    `${JSON.stringify(macros, null, 2)}\n`,
-    "utf8",
-  ),
-  fs.writeFile(
-    path.join(root, "data", "item-folders.json"),
-    `${JSON.stringify(folders, null, 2)}\n`,
-    "utf8",
-  ),
-]);
 
 const iconPaths = new Set([
   ...collectCustomIconPaths(items),
@@ -200,7 +174,7 @@ await recreatePack("cyberpunk-journals", async (database) => {
     journal.pages.map((page) => ({
       key: `${journal._id}.${page._id}`,
       value: page,
-    }))
+    })),
   );
   await journalLevel.batch(
     roots.map((journal) => ({
@@ -209,9 +183,7 @@ await recreatePack("cyberpunk-journals", async (database) => {
       value: journal,
     })),
   );
-  await pageLevel.batch(
-    pages.map((page) => ({ type: "put", ...page })),
-  );
+  await pageLevel.batch(pages.map((page) => ({ type: "put", ...page })));
 });
 
 await recreatePack("cyberpunk-macros", async (database) => {

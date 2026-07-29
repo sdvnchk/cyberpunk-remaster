@@ -4,8 +4,6 @@ import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 
 export function loadClassicLevel() {
-  const defaultFoundryApp =
-    "D:/Workspaces/FoundryVTT_StarFinder_v14.361/App";
   const candidates = [
     process.env.CLASSIC_LEVEL_PATH,
     process.env.FOUNDRY_APP_PATH
@@ -17,13 +15,6 @@ export function loadClassicLevel() {
           "classic-level",
         )
       : null,
-    path.join(
-      defaultFoundryApp,
-      "resources",
-      "app",
-      "node_modules",
-      "classic-level",
-    ),
     "classic-level",
   ].filter(Boolean);
 

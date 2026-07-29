@@ -1,37 +1,19 @@
-export const MODULE_ID = "cyberpunk-remaster";
+import {
+  MODULE_ID,
+  PKT_BIOSYSTEM_ID,
+  PKT_BODY_QUALITIES,
+  descriptionText,
+  parseCyberwareDescription,
+} from "../../runtime/cyberware-schema.mjs";
+
+export { MODULE_ID };
 export const ITEM_PACK = "cyberpunk-items";
 export const JOURNAL_PACK = "cyberpunk-journals";
 export const MACRO_PACK = "cyberpunk-macros";
 
-export const MODULE_ITEM_PREFIX =
-  `Compendium.${MODULE_ID}.${ITEM_PACK}`;
-export const MODULE_JOURNAL_PREFIX =
-  `Compendium.${MODULE_ID}.${JOURNAL_PACK}`;
-export const MODULE_MACRO_PREFIX =
-  `Compendium.${MODULE_ID}.${MACRO_PACK}`;
-
-const IMPLANT_TYPES = {
-  "база": "base",
-  "внутренний": "internal",
-  "внешний": "external",
-  "стилевой": "fashion",
-  "модуль": "module",
-  base: "base",
-  internal: "internal",
-  external: "external",
-  fashion: "fashion",
-  module: "module",
-};
-
-const PKT_BODIES = new Map([
-  ["uvmhsMeuPT9EsaH8", 0],
-  ["tg2eHjiZMoKUxtTR", 1],
-  ["tkeQt2AZwYxlo0G4", 2],
-  ["Y6CGkTe62Gray49S", 3],
-  ["Ozh4qKfrpO3vIyXD", 4],
-  ["tVLVycxfLpejAKaO", 5],
-]);
-const PKT_BIOSYSTEM_ID = "CNILbId2Wtv3BJm6";
+export const MODULE_ITEM_PREFIX = `Compendium.${MODULE_ID}.${ITEM_PACK}`;
+export const MODULE_JOURNAL_PREFIX = `Compendium.${MODULE_ID}.${JOURNAL_PACK}`;
+export const MODULE_MACRO_PREFIX = `Compendium.${MODULE_ID}.${MACRO_PACK}`;
 
 const DERIVED_ITEM_FLAGS = new Set([
   "schema",
@@ -105,14 +87,7 @@ const EXTERNAL_PACK_REWRITES = new Map([
 ]);
 
 export function plainText(html) {
-  return String(html ?? "")
-    .replace(/<[^>]*>/g, " ")
-    .replace(/&nbsp;|&#160;/gi, " ")
-    .replace(/&quot;/gi, '"')
-    .replace(/&amp;/gi, "&")
-    .replace(/[\u00a0\u202f]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  return descriptionText(html);
 }
 
 function itemPriceEddies(item) {
@@ -136,18 +111,16 @@ function combinationSums(values, count, start = 0) {
 }
 
 export function calculatePktModelPrices(items, model) {
-  const itemById = items instanceof Map
-    ? items
-    : new Map(items.map((item) => [item._id, item]));
+  const itemById =
+    items instanceof Map
+      ? items
+      : new Map(items.map((item) => [item._id, item]));
   const priceOf = (itemId) => {
     const item = itemById.get(itemId);
     if (!item) throw new Error(`PKT component ${itemId} is missing.`);
     return itemPriceEddies(item);
   };
-  const fixedEntries = [
-    ...(model.unique ?? []),
-    ...(model.components ?? []),
-  ];
+  const fixedEntries = [...(model.unique ?? []), ...(model.components ?? [])];
   const fixed = fixedEntries.reduce(
     (sum, entry) =>
       sum + priceOf(entry.itemId) * Math.max(1, Number(entry.quantity) || 1),
@@ -160,37 +133,25 @@ export function calculatePktModelPrices(items, model) {
     const prices = (choice.itemIds ?? []).map(priceOf);
     const choiceSums = combinationSums(prices, choose);
     if (!choiceSums.length) {
-      throw new Error(`PKT choice ${choice.key} cannot select ${choose} items.`);
+      throw new Error(
+        `PKT choice ${choice.key} cannot select ${choose} items.`,
+      );
     }
     totals = totals.flatMap((total) =>
-      choiceSums.map((choiceTotal) => total + choiceTotal)
+      choiceSums.map((choiceTotal) => total + choiceTotal),
     );
   }
   return [...new Set(totals)].sort((left, right) => left - right);
 }
 
 export function parseCyberware(item) {
-  const text = plainText(item.system?.description?.value);
-  const typeMatch = text.match(
-    /Тип\s*импланта\s*:?\s*([А-Яа-яЁёA-Za-z]+)/i,
-  );
-  let implantType = typeMatch
-    ? IMPLANT_TYPES[typeMatch[1].toLocaleLowerCase("ru")] ?? null
-    : null;
+  const described = parseCyberwareDescription(item);
+  let implantType = described.implantType;
   if (item._id === PKT_BIOSYSTEM_ID) implantType = "internal";
 
-  const hardCostMatch = text.match(/\bHard\s*Cost\s*:?\s*(\d+)/i);
-  const stressFormulaMatch = text.match(
-    /\bStress\s*Cost\s*:?\s*(?:\[\[\/r\s*)?(\d*d(?:4|6)|0)/i,
-  );
-  const slotsMatch = text.match(/Слот[А-Яа-яЁё]*\s*:?\s*(\d+)/i);
-  const hardCost = hardCostMatch ? Number(hardCostMatch[1]) : null;
-  const stressFormula = stressFormulaMatch
-    ? stressFormulaMatch[1].toLocaleLowerCase("en")
-    : null;
-  const slots = slotsMatch ? Number(slotsMatch[1]) : null;
+  const { hardCost, stressFormula, slots } = described;
   const usage = item.system?.usage;
-  const pktBody = PKT_BODIES.has(item._id);
+  const pktBody = PKT_BODY_QUALITIES.has(item._id);
   const pktBiosystem = item._id === PKT_BIOSYSTEM_ID;
   const pktOnly = item.system?.traits?.value?.includes?.("pkt") === true;
   const cyberware =
@@ -208,7 +169,7 @@ export function parseCyberware(item) {
     stressFormula,
     slots,
     pktBody,
-    pktQuality: PKT_BODIES.get(item._id) ?? null,
+    pktQuality: PKT_BODY_QUALITIES.get(item._id) ?? null,
     pktBiosystem,
     pktOnly,
   };
@@ -427,7 +388,7 @@ export function transformItems(
         structuralFlags.pktReplaceable = component.replaceable !== false;
       }
       if (Object.keys(structuralFlags).length > 0) {
-        Object.assign(item.flags[MODULE_ID] ??= {}, structuralFlags);
+        Object.assign((item.flags[MODULE_ID] ??= {}), structuralFlags);
       }
     }
 
@@ -449,7 +410,9 @@ export function transformItems(
 
   for (const classItem of items.filter((item) => item.type === "class")) {
     for (const grant of Object.values(classItem.system?.items ?? {})) {
-      const targetId = String(grant.uuid ?? "").split(".").at(-1);
+      const targetId = String(grant.uuid ?? "")
+        .split(".")
+        .at(-1);
       const target = byId.get(targetId);
       if (!target) continue;
       grant.name = target.name;
@@ -546,10 +509,7 @@ export function transformFolders(source, counters = {}) {
   return source.map((raw) => {
     const folder = rewriteDeep(structuredClone(raw), counters);
     cleanFlags(folder);
-    cleanStats(
-      folder,
-      `${MODULE_ITEM_PREFIX}.Folder.${folder._id}`,
-    );
+    cleanStats(folder, `${MODULE_ITEM_PREFIX}.Folder.${folder._id}`);
     delete folder.ownership;
     return folder;
   });
@@ -592,7 +552,7 @@ export function validateTransformedContent({
   const journalIds = new Set(journals.map((journal) => journal._id));
   const pageIds = new Set(
     journals.flatMap((journal) =>
-      journal.pages.map((page) => `${journal._id}.${page._id}`)
+      journal.pages.map((page) => `${journal._id}.${page._id}`),
     ),
   );
 
@@ -607,17 +567,17 @@ export function validateTransformedContent({
 
   for (const { item, embedded } of itemSources) {
     if (item.folder && !folderIds.has(item.folder)) {
-      failures.push(`Item ${item._id} references missing folder ${item.folder}`);
-    }
-    if (item.system?.publication?.title !== "SF2E Cyberpunk Remaster" ||
-        item.system?.publication?.authors !== "Ogorodnik") {
-      failures.push(`Item ${item._id} has incorrect publication metadata`);
+      failures.push(
+        `Item ${item._id} references missing folder ${item.folder}`,
+      );
     }
     if (
-      Object.keys(item.ownership ?? {}).some(
-        (key) => key !== "default",
-      )
+      item.system?.publication?.title !== "SF2E Cyberpunk Remaster" ||
+      item.system?.publication?.authors !== "Ogorodnik"
     ) {
+      failures.push(`Item ${item._id} has incorrect publication metadata`);
+    }
+    if (Object.keys(item.ownership ?? {}).some((key) => key !== "default")) {
       failures.push(`Item ${item._id} retains user-specific ownership`);
     }
     if (
@@ -629,6 +589,31 @@ export function validateTransformedContent({
     }
     if (embedded && item.folder) {
       failures.push(`Subitem ${item._id} retains a pack folder`);
+    }
+    const cyberware = parseCyberware(item);
+    if (cyberware.cyberware && !cyberware.pktBody && !cyberware.pktBiosystem) {
+      const described = parseCyberwareDescription(item);
+      if (described.fallbackFields.length) {
+        failures.push(
+          `Cyberware ${item._id} has non-canonical description fields: ` +
+            described.fallbackFields.join(", "),
+        );
+      }
+      if (
+        !described.implantType ||
+        described.hardCost === null ||
+        described.stressFormula === null
+      ) {
+        failures.push(
+          `Cyberware ${item._id} is missing type, Hard Cost, or Stress Cost`,
+        );
+      }
+      if (
+        ["base", "module"].includes(described.implantType) &&
+        described.slots === null
+      ) {
+        failures.push(`Cyberware ${item._id} is missing its slot line`);
+      }
     }
   }
 
@@ -698,15 +683,10 @@ export function validateTransformedContent({
   if (biosystem?.flags?.[MODULE_ID]?.pktBiosystem !== true) {
     failures.push(`PKT Biosystem ${PKT_BIOSYSTEM_ID} is not marked`);
   }
-  for (const [bodyId, quality] of PKT_BODIES) {
+  for (const [bodyId, quality] of PKT_BODY_QUALITIES) {
     const bodyFlags = itemById.get(bodyId)?.flags?.[MODULE_ID] ?? {};
-    if (
-      bodyFlags.pktBody !== true ||
-      bodyFlags.pktQuality !== quality
-    ) {
-      failures.push(
-        `PKT body ${bodyId} does not have quality ${quality}`,
-      );
+    if (bodyFlags.pktBody !== true || bodyFlags.pktQuality !== quality) {
+      failures.push(`PKT body ${bodyId} does not have quality ${quality}`);
     }
   }
   for (const model of pktModels) {
@@ -744,17 +724,16 @@ export function validateTransformedContent({
     }
     try {
       const totals = calculatePktModelPrices(itemById, model);
-      if (
-        totals.length !== 1 ||
-        totals[0] !== Number(model.priceEddies)
-      ) {
+      if (totals.length !== 1 || totals[0] !== Number(model.priceEddies)) {
         failures.push(
           `PKT model ${model.key} price ${model.priceEddies} ` +
             `does not match component total(s): ${totals.join(", ")}`,
         );
       }
     } catch (error) {
-      failures.push(`PKT model ${model.key} price check failed: ${error.message}`);
+      failures.push(
+        `PKT model ${model.key} price check failed: ${error.message}`,
+      );
     }
   }
 
@@ -768,10 +747,10 @@ export function validateTransformedContent({
 
   const documents = [...items, ...folders, ...journals, ...macros];
   for (const string of allStrings(documents)) {
-    if (
-      /Compendium\.world\.sf2e-cyberpunk-|Compendium\.pf2e\./.test(string)
-    ) {
-      failures.push(`Legacy Compendium reference remains: ${string.slice(0, 180)}`);
+    if (/Compendium\.world\.sf2e-cyberpunk-|Compendium\.pf2e\./.test(string)) {
+      failures.push(
+        `Legacy Compendium reference remains: ${string.slice(0, 180)}`,
+      );
     }
     if (/@UUID\[(?:Item|JournalEntry)\./.test(string)) {
       failures.push(`Relative UUID remains: ${string.slice(0, 180)}`);
@@ -819,9 +798,7 @@ export function validateTransformedContent({
     const key = `${item.type}:${item.system.slug}`;
     const existing = slugs.get(key);
     if (existing) {
-      failures.push(
-        `Duplicate slug ${key}: ${existing._id} and ${item._id}`,
-      );
+      failures.push(`Duplicate slug ${key}: ${existing._id} and ${item._id}`);
     } else {
       slugs.set(key, item);
     }

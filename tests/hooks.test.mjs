@@ -34,7 +34,7 @@ globalThis.ui = {
   },
 };
 
-const runtime = await import("../module.js?hook-tests");
+const runtime = await import("../runtime/cyberware-runtime.mjs?hook-tests");
 const { CyberwareTab } = await import("../sheets/CyberwareTab.js");
 
 function setPath(object, path, value) {
@@ -107,25 +107,46 @@ test("module registers configurable world rules", () => {
     "hardCostMultiplier",
   ];
   for (const key of keys) {
-    const definition = settingDefinitions.get(
-      `cyberpunk-remaster.${key}`,
-    );
+    const definition = settingDefinitions.get(`cyberpunk-remaster.${key}`);
     assert.ok(definition, `Missing setting ${key}`);
     assert.equal(definition.scope, "world");
     assert.equal(definition.config, true);
   }
   assert.equal(
-    settingDefinitions.get(
-      "cyberpunk-remaster.allowMultipleCyberdecks",
-    ).default,
+    settingDefinitions.get("cyberpunk-remaster.allowMultipleCyberdecks")
+      .default,
     false,
   );
   assert.equal(
-    settingDefinitions.get(
-      "cyberpunk-remaster.hardCostMultiplier",
-    ).default,
+    settingDefinitions.get("cyberpunk-remaster.hardCostMultiplier").default,
     1,
   );
+});
+
+test("compendium cache is cleared on every client, not only the acting client", () => {
+  let cleared = 0;
+  const original = CyberwareTab.clearPktContentCache;
+  CyberwareTab.clearPktContentCache = () => {
+    cleared++;
+  };
+  try {
+    hook("updateItem")(
+      {
+        id: "pack-item",
+        pack: "cyberpunk-remaster.cyberpunk-items",
+        actor: null,
+      },
+      {},
+      {},
+      "another-client",
+    );
+    hook("updateJournalEntryPage")({
+      pack: "cyberpunk-remaster.cyberpunk-journals",
+    });
+  } finally {
+    CyberwareTab.clearPktContentCache = original;
+  }
+  assert.equal(cleared, 2);
 });
 
 test("batch creation cannot install two neural accelerators", () => {
@@ -209,10 +230,7 @@ test("locked PKT component blocks manual deletion but permits model rollback", (
   component.actor = actor;
   const preDelete = hook("preDeleteItem");
 
-  assert.equal(
-    preDelete(component, {}, "test-user"),
-    false,
-  );
+  assert.equal(preDelete(component, {}, "test-user"), false);
   assert.equal(
     preDelete(
       component,
@@ -354,10 +372,7 @@ test("migration normalizes legacy conflicting installation state", async (t) => 
   assert.equal(firstDeck.getFlag("cyberpunk-remaster", "installed"), true);
   assert.equal(secondDeck.getFlag("cyberpunk-remaster", "installed"), false);
   assert.equal(stale.system.equipped.carryType, "worn");
-  assert.equal(
-    stale.flags["cyberpunk-remaster"].implantType,
-    undefined,
-  );
+  assert.equal(stale.flags["cyberpunk-remaster"].implantType, undefined);
   assert.equal(stale.flags["cyberpunk-remaster"].hardCost, undefined);
   assert.equal(stale.flags["cyberpunk-remaster"].slotsUsed, undefined);
   assert.equal(stale.flags["cyberpunk-remaster"].cyberware, undefined);
@@ -366,4 +381,25 @@ test("migration normalizes legacy conflicting installation state", async (t) => 
   assert.equal(stowed.system.equipped.carryType, "stowed");
   assert.equal(stowed.system.containerId, "backpack");
   assert.equal(actor.items.includes(interfaceScan), false);
+});
+
+test("completed migration versions are not rerun", async () => {
+  const actor = {
+    name: "Already migrated",
+    items: [],
+    updateEmbeddedDocuments() {
+      throw new Error("normalization must not run");
+    },
+    deleteEmbeddedDocuments() {
+      throw new Error("cleanup must not run");
+    },
+  };
+  assert.deepEqual(await runtime.migrateActor(actor, { fromVersion: 7 }), {
+    bodies: 0,
+    neuralAccelerators: 0,
+    exclusiveImplants: 0,
+    pktComponents: 0,
+    netrunnerActionsRemoved: 0,
+    descriptionMetadata: 0,
+  });
 });

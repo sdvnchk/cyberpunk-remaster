@@ -1,4 +1,5 @@
 node_modules/
 .build/
+.author-paths.local.json
 *.log
 !packs/**/*.log

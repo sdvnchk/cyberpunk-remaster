@@ -1,0 +1,30 @@
+{
+  "bonusOverlaps": [
+    "cybermatrix-copernicus|perception|item|nMrGBRnCHh0ovGw0|yNN1l6d0WprQumHm|possible",
+    "dynalar-aquarius|perception|item|QqRn625xdHY8xLaP|nMrGBRnCHh0ovGw0|possible",
+    "dynalar-sulfur|perception|item|QqRn625xdHY8xLaP|ZxPOaEPP0tLRu1lE|possible",
+    "dynalar-sulfur|perception|item|ZxPOaEPP0tLRu1lE|nMrGBRnCHh0ovGw0|possible",
+    "dynalar-sulfur|perception|item|QqRn625xdHY8xLaP|nMrGBRnCHh0ovGw0|possible",
+    "militech-dragoon|perception|item|QqRn625xdHY8xLaP|bPKRQDJZHKTiDlQX|definite",
+    "militech-dragoon|athletics|item|8S1Ma3b6ReGxwpvA|x9k8yGcrJmuIteIG|definite",
+    "militech-dragoon-2|perception|item|D2rA9gN6uE3kT8wP|QqRn625xdHY8xLaP|definite",
+    "militech-dragoon-2|athletics|item|8S1Ma3b6ReGxwpvA|x9k8yGcrJmuIteIG|definite",
+    "militech-eclipse|perception|item|ZxPOaEPP0tLRu1lE|yNN1l6d0WprQumHm|possible",
+    "militech-eclipse|perception|item|QqRn625xdHY8xLaP|yNN1l6d0WprQumHm|possible",
+    "militech-eclipse|perception|item|QqRn625xdHY8xLaP|ZxPOaEPP0tLRu1lE|possible",
+    "militech-lawman|perception|item|QqRn625xdHY8xLaP|yNN1l6d0WprQumHm|possible",
+    "militech-lawman|perception|item|LTKAV0EyBY3wpLaz|yNN1l6d0WprQumHm|possible",
+    "militech-lawman|perception|item|LTKAV0EyBY3wpLaz|QqRn625xdHY8xLaP|possible",
+    "militech-spider-2|perception|item|ZxPOaEPP0tLRu1lE|yNN1l6d0WprQumHm|possible",
+    "militech-spider-2|perception|item|QqRn625xdHY8xLaP|yNN1l6d0WprQumHm|possible",
+    "militech-spider-2|perception|item|QqRn625xdHY8xLaP|ZxPOaEPP0tLRu1lE|possible",
+    "noveltech-samson|crafting|item|rX7QvOjb8LN6FVnT|umS0qPQn3PYD0pLA|definite",
+    "trauma-team-kildare|perception|item|ZxPOaEPP0tLRu1lE|yNN1l6d0WprQumHm|possible",
+    "trauma-team-kildare|perception|item|QqRn625xdHY8xLaP|yNN1l6d0WprQumHm|possible",
+    "trauma-team-kildare|perception|item|QqRn625xdHY8xLaP|ZxPOaEPP0tLRu1lE|possible",
+    "trauma-team-kildare|crafting|item|rX7QvOjb8LN6FVnT|umS0qPQn3PYD0pLA|definite"
+  ],
+  "unassignedOptionalItems": [
+    "MCmnHgBnMIJBnHkj"
+  ]
+}

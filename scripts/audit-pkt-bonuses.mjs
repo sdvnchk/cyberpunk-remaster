@@ -7,20 +7,16 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const readJson = async (relative) =>
   JSON.parse(await fs.readFile(path.join(root, relative), "utf8"));
 
-const [items, models] = await Promise.all([
-  readJson("items-export.json"),
+const [items, models, allowlist] = await Promise.all([
+  readJson("content/exports/items.json"),
   readJson("data/pkt-models.json"),
+  readJson("data/pkt-audit-allowlist.json"),
 ]);
 const itemById = new Map(items.map((item) => [item._id, item]));
-const PKT_ITEM_FOLDERS = new Set([
-  "hAjxPF8rxyrHozYl",
-  "ahY6bGvcjTypaV6b",
-]);
+const PKT_ITEM_FOLDERS = new Set(["hAjxPF8rxyrHozYl", "ahY6bGvcjTypaV6b"]);
 
 function selectors(rule) {
-  const value = Array.isArray(rule.selector)
-    ? rule.selector
-    : [rule.selector];
+  const value = Array.isArray(rule.selector) ? rule.selector : [rule.selector];
   return value.filter((selector) => typeof selector === "string");
 }
 
@@ -51,13 +47,28 @@ function typedModifiers(item) {
 
 const rows = [];
 for (const model of models) {
-  const entries = [...(model.unique ?? []), ...(model.components ?? [])];
+  const entries = [
+    ...(model.unique ?? []).map((entry) => ({ ...entry, choice: null })),
+    ...(model.components ?? []).map((entry) => ({ ...entry, choice: null })),
+    ...(model.choices ?? []).flatMap((choice) =>
+      (choice.itemIds ?? []).map((itemId) => ({
+        itemId,
+        choice: choice.key,
+      })),
+    ),
+  ];
   const seenItems = new Set();
   const modifiers = [];
   for (const entry of entries) {
-    if (seenItems.has(entry.itemId)) continue;
-    seenItems.add(entry.itemId);
-    modifiers.push(...typedModifiers(itemById.get(entry.itemId)));
+    const entryKey = `${entry.choice ?? "fixed"}:${entry.itemId}`;
+    if (seenItems.has(entryKey)) continue;
+    seenItems.add(entryKey);
+    modifiers.push(
+      ...typedModifiers(itemById.get(entry.itemId)).map((modifier) => ({
+        ...modifier,
+        choice: entry.choice,
+      })),
+    );
   }
 
   for (let left = 0; left < modifiers.length; left++) {
@@ -66,6 +77,7 @@ for (const model of models) {
       const b = modifiers[right];
       if (
         a.itemId === b.itemId ||
+        (a.choice && a.choice === b.choice) ||
         a.selector !== b.selector ||
         a.type !== b.type
       ) {
@@ -75,7 +87,10 @@ for (const model of models) {
         a.predicate.length === 0 ||
         b.predicate.length === 0 ||
         a.predicateKey === b.predicateKey;
+      const overlap = definite ? "definite" : "possible";
+      const itemIds = [a.itemId, b.itemId].sort();
       rows.push({
+        key: [model.key, a.selector, a.type, ...itemIds, overlap].join("|"),
         model: model.name,
         selector: a.selector,
         type: a.type,
@@ -87,6 +102,27 @@ for (const model of models) {
   }
 }
 
+const allowedOverlaps = new Set(allowlist.bonusOverlaps ?? []);
+const actualOverlaps = new Set(rows.map((row) => row.key));
+const unexpectedOverlaps = rows.filter((row) => !allowedOverlaps.has(row.key));
+const staleOverlapAllowances = [...allowedOverlaps].filter(
+  (key) => !actualOverlaps.has(key),
+);
+if (unexpectedOverlaps.length || staleOverlapAllowances.length) {
+  console.error("Неожиданные или устаревшие разрешения пересечений ПКТ:");
+  console.table([
+    ...unexpectedOverlaps.map((row) => ({
+      status: "unexpected",
+      key: row.key,
+    })),
+    ...staleOverlapAllowances.map((key) => ({
+      status: "stale allowance",
+      key,
+    })),
+  ]);
+  process.exitCode = 1;
+}
+
 if (rows.length) {
   console.table(rows);
 } else {
@@ -95,7 +131,13 @@ if (rows.length) {
 
 const duplicateEntries = [];
 for (const model of models) {
-  const entries = [...(model.unique ?? []), ...(model.components ?? [])];
+  const entries = [
+    ...(model.unique ?? []),
+    ...(model.components ?? []),
+    ...(model.choices ?? []).flatMap((choice) =>
+      (choice.itemIds ?? []).map((itemId) => ({ itemId })),
+    ),
+  ];
   const counts = new Map();
   for (const entry of entries) {
     counts.set(entry.itemId, (counts.get(entry.itemId) ?? 0) + 1);
@@ -121,10 +163,7 @@ if (duplicateEntries.length) {
 const usedItemIds = new Set();
 for (const model of models) {
   if (model.requiredBodyId) usedItemIds.add(model.requiredBodyId);
-  for (const entry of [
-    ...(model.unique ?? []),
-    ...(model.components ?? []),
-  ]) {
+  for (const entry of [...(model.unique ?? []), ...(model.components ?? [])]) {
     usedItemIds.add(entry.itemId);
   }
   for (const choice of model.choices ?? []) {
@@ -138,10 +177,25 @@ const unusedPktItems = items
       PKT_ITEM_FOLDERS.has(item.folder) ||
       (item.system?.traits?.value ?? []).includes("pkt"),
   )
-  .filter((item) => !usedItemIds.has(item._id))
+  .filter(
+    (item) =>
+      !usedItemIds.has(item._id) &&
+      !(allowlist.unassignedOptionalItems ?? []).includes(item._id),
+  )
   .sort((left, right) =>
-    String(left.name).localeCompare(String(right.name), "ru")
+    String(left.name).localeCompare(String(right.name), "ru"),
   );
+const optionalItemIds = new Set(allowlist.unassignedOptionalItems ?? []);
+const staleOptionalAllowances = [...optionalItemIds].filter(
+  (itemId) => !itemById.has(itemId) || usedItemIds.has(itemId),
+);
+if (staleOptionalAllowances.length) {
+  console.error(
+    "Устаревшие разрешения универсальных ПКТ-предметов: " +
+      staleOptionalAllowances.join(", "),
+  );
+  process.exitCode = 1;
+}
 
 if (unusedPktItems.length) {
   console.log("Предметы библиотеки ПКТ, не входящие ни в одну модель:");
@@ -152,22 +206,22 @@ if (unusedPktItems.length) {
       id: item._id,
     })),
   );
+  process.exitCode = 1;
 } else {
-  console.log("Все предметы библиотеки ПКТ входят хотя бы в одну модель.");
+  console.log(
+    "Все обязательные предметы библиотеки ПКТ входят хотя бы в одну модель; " +
+      `универсальных необязательных: ${optionalItemIds.size}.`,
+  );
 }
 
 const humanityRows = models.map((model) => {
   const selections = Object.fromEntries(
-    (model.choices ?? []).map((choice) => [
-      choice.key,
-      choice.itemIds[0],
-    ]),
+    (model.choices ?? []).map((choice) => [choice.key, choice.itemIds[0]]),
   );
   const plan = CyberwareTab.pktInstallationPlan(model, selections);
   const humanity = CyberwareTab.pktHumanityLossSummary(plan, itemById);
   const hardCost = plan.reduce(
-    (sum, entry) =>
-      sum + CyberwareTab.getHardCost(itemById.get(entry.itemId)),
+    (sum, entry) => sum + CyberwareTab.getHardCost(itemById.get(entry.itemId)),
     0,
   );
   return {

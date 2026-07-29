@@ -2,19 +2,16 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadClassicLevel } from "./lib/classic-level.mjs";
+import { requireAuthorPath, resolveAuthorPaths } from "./lib/author-paths.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const manifest = JSON.parse(
   await fs.readFile(path.join(root, "module.json"), "utf8"),
 );
-const defaultInstallation = path.resolve(
-  "D:/Workspaces/FoundryVTT_StarFinder_v14.361/Data/modules",
-  manifest.id,
-);
-const targetRoot = path.resolve(
-  process.env.FOUNDRY_MODULE_PATH ||
-    process.env.TARGET_MODULE_ROOT ||
-    defaultInstallation,
+const authorPaths = await resolveAuthorPaths(root, manifest.id);
+const targetRoot = requireAuthorPath(
+  authorPaths.foundryModuleRoot,
+  "Папка установленного модуля Foundry",
 );
 if (targetRoot === root) {
   throw new Error("The Foundry target module must differ from the workspace.");
@@ -64,10 +61,12 @@ await fs.cp(targetRoot, backupRoot, { recursive: true });
 
 const directories = [
   "assets",
+  "content",
   "data",
   "docs",
   "packs",
   "rule-elements",
+  "runtime",
   "scripts",
   "sheets",
   "styles",
@@ -77,11 +76,6 @@ const directories = [
 const rootFiles = [
   ".gitignore",
   "CHANGELOG.md",
-  "items-export.json",
-  "journals-export.json",
-  "macros-export.json",
-  "main.mjs",
-  "module.js",
   "module.json",
   "package.json",
   "README.md",
@@ -98,6 +92,31 @@ for (const name of directories) {
 }
 for (const name of rootFiles) {
   await fs.copyFile(path.join(root, name), path.join(targetRoot, name));
+}
+const localAuthorConfig = path.join(root, ".author-paths.local.json");
+if (
+  await fs
+    .access(localAuthorConfig)
+    .then(() => true)
+    .catch(() => false)
+) {
+  await fs.copyFile(
+    localAuthorConfig,
+    path.join(targetRoot, ".author-paths.local.json"),
+  );
+}
+for (const obsoleteName of [
+  "items-export.json",
+  "journals-export.json",
+  "macros-export.json",
+  "main.mjs",
+  "module.js",
+]) {
+  const obsoleteTarget = path.resolve(targetRoot, obsoleteName);
+  if (path.dirname(obsoleteTarget) !== targetRoot) {
+    throw new Error(`Unsafe obsolete deployment target: ${obsoleteTarget}`);
+  }
+  await fs.rm(obsoleteTarget, { force: true });
 }
 await fs.rm(path.join(targetRoot, "ICON_DESIGN_RULES.md"), { force: true });
 

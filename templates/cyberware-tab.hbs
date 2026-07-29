@@ -11,12 +11,13 @@
     <div class="cw-humanity-body">
       <div class="cw-humanity-bar-track" role="progressbar"
            aria-valuemin="0" aria-valuemax="{{humanity.maxPossible}}"
-           aria-valuenow="{{humanity.current}}">
+           aria-valuenow="{{humanity.current}}"
+           title="Состояние считается от теоретического максимума; Hard Cost навсегда уменьшает доступный предел. Заполненность доступного предела: {{humanityCapacityPercent}}%.">
         <div class="cw-humanity-bar-fill {{humanityState.cssClass}}"
-             style="width: {{humanityPercent}}%;"></div>
+             style="width: {{humanityStatePercent}}%;"></div>
       </div>
       <span class="cw-humanity-state-label {{humanityState.cssClass}}">
-        {{humanityState.label}} · {{humanityPercent}}%
+        {{humanityState.label}} · {{humanityStatePercent}}%
       </span>
     </div>
 

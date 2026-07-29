@@ -17,8 +17,11 @@
   font-family: inherit;
   overflow-y: auto;
   background: #0e151c;
-  background-image:
-    radial-gradient(circle at 0% 0%, rgba(255, 46, 67, 0.06), transparent 60%);
+  background-image: radial-gradient(
+    circle at 0% 0%,
+    rgba(255, 46, 67, 0.06),
+    transparent 60%
+  );
   color: #d4e7e1;
   border: 1px solid rgba(255, 46, 67, 0.2);
   border-radius: 6px;
@@ -92,11 +95,21 @@ section.tab.cyberware {
   border-radius: 5px;
   transition: width 0.35s ease;
 }
-.cw-humanity-bar-fill.cw-state-stable     { background: #2ecc71; }
-.cw-humanity-bar-fill.cw-state-controlled { background: #3db8ff; }
-.cw-humanity-bar-fill.cw-state-edgy       { background: #f0b840; }
-.cw-humanity-bar-fill.cw-state-danger     { background: #f07040; }
-.cw-humanity-bar-fill.cw-state-psychosis  { background: #e03060; }
+.cw-humanity-bar-fill.cw-state-stable {
+  background: #2ecc71;
+}
+.cw-humanity-bar-fill.cw-state-controlled {
+  background: #3db8ff;
+}
+.cw-humanity-bar-fill.cw-state-edgy {
+  background: #f0b840;
+}
+.cw-humanity-bar-fill.cw-state-danger {
+  background: #f07040;
+}
+.cw-humanity-bar-fill.cw-state-psychosis {
+  background: #e03060;
+}
 
 .cw-humanity-state-label {
   font-size: 0.7rem;
@@ -105,19 +118,32 @@ section.tab.cyberware {
   letter-spacing: 0.06em;
   white-space: nowrap;
 }
-.cw-humanity-state-label.cw-state-stable     { color: #2ecc71; }
-.cw-humanity-state-label.cw-state-controlled { color: #3db8ff; }
-.cw-humanity-state-label.cw-state-edgy       { color: #f0b840; }
-.cw-humanity-state-label.cw-state-danger     { color: #f07040; }
-.cw-humanity-state-label.cw-state-psychosis  {
+.cw-humanity-state-label.cw-state-stable {
+  color: #2ecc71;
+}
+.cw-humanity-state-label.cw-state-controlled {
+  color: #3db8ff;
+}
+.cw-humanity-state-label.cw-state-edgy {
+  color: #f0b840;
+}
+.cw-humanity-state-label.cw-state-danger {
+  color: #f07040;
+}
+.cw-humanity-state-label.cw-state-psychosis {
   color: #e03060;
   text-shadow: 0 0 8px rgba(224, 48, 96, 0.7);
   animation: cw-pulse 1.5s ease-in-out infinite;
 }
 
 @keyframes cw-pulse {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.6; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
 }
 
 .cw-humanity-inputs {
@@ -155,7 +181,11 @@ section.tab.cyberware {
   outline: none;
   box-shadow: 0 0 0 2px rgba(255, 46, 67, 0.12);
 }
-.cw-slash { opacity: 0.3; font-size: 1rem; padding-bottom: 4px; }
+.cw-slash {
+  opacity: 0.3;
+  font-size: 1rem;
+  padding-bottom: 4px;
+}
 
 /* Derived (read-only) humanity values: МАКС and ПРЕДЕЛ */
 .cw-humanity-static {
@@ -256,7 +286,10 @@ section.tab.cyberware {
   min-width: 0;
   transition: color 0.15s;
 }
-.cw-item-name:hover { color: #ff2e43; text-decoration: underline; }
+.cw-item-name:hover {
+  color: #ff2e43;
+  text-decoration: underline;
+}
 .cw-item-name:focus-visible {
   outline: 1px solid #ff2e43;
   outline-offset: 2px;
@@ -275,7 +308,9 @@ section.tab.cyberware {
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.12);
   border: 1px solid rgba(255, 46, 67, 0.25);
-  transition: background 0.2s, box-shadow 0.2s;
+  transition:
+    background 0.2s,
+    box-shadow 0.2s;
 }
 .cw-slot-dot.filled {
   background: rgba(255, 46, 67, 0.75);
@@ -294,7 +329,11 @@ section.tab.cyberware {
   white-space: nowrap;
   flex-shrink: 0;
 }
-.cw-slots-text.cw-slots-full { color: #f07040; opacity: 1; font-weight: 600; }
+.cw-slots-text.cw-slots-full {
+  color: #f07040;
+  opacity: 1;
+  font-weight: 600;
+}
 
 /* ----------------------------------------------------------------
    Module rows
@@ -318,7 +357,9 @@ section.tab.cyberware {
   cursor: grab;
   transition: border-color 0.15s;
 }
-.cw-module-row:active { cursor: grabbing; }
+.cw-module-row:active {
+  cursor: grabbing;
+}
 .cw-module-row[draggable="true"]:hover {
   border-color: rgba(255, 46, 67, 0.35);
 }
@@ -353,7 +394,9 @@ section.tab.cyberware {
   font-size: 0.72rem;
   line-height: 1;
   border-radius: 3px;
-  transition: color 0.15s, background 0.15s;
+  transition:
+    color 0.15s,
+    background 0.15s;
 }
 .cw-unlink-btn:hover {
   color: #e03060;
@@ -370,7 +413,10 @@ section.tab.cyberware {
   text-align: center;
   font-size: 0.72rem;
   color: rgba(255, 46, 67, 0.35);
-  transition: border-color 0.2s, color 0.2s, background 0.2s;
+  transition:
+    border-color 0.2s,
+    color 0.2s,
+    background 0.2s;
 }
 .cw-drop-zone.cw-drop-hover {
   border-color: rgba(255, 46, 67, 0.75);
@@ -457,9 +503,19 @@ section.tab.cyberware {
   padding: 36px 16px;
   opacity: 0.38;
 }
-.cw-empty i        { font-size: 2.2rem; margin-bottom: 10px; display: block; }
-.cw-empty p        { margin: 4px 0; font-size: 0.85rem; }
-.cw-empty .cw-hint { font-size: 0.73rem; line-height: 1.6; }
+.cw-empty i {
+  font-size: 2.2rem;
+  margin-bottom: 10px;
+  display: block;
+}
+.cw-empty p {
+  margin: 4px 0;
+  font-size: 0.85rem;
+}
+.cw-empty .cw-hint {
+  font-size: 0.73rem;
+  line-height: 1.6;
+}
 .cw-empty code {
   background: rgba(0, 0, 0, 0.35);
   padding: 1px 5px;
@@ -505,7 +561,9 @@ section.tab.cyberware {
   padding: 2px 8px;
   color: #ff2e43;
   border: 1px solid rgba(255, 46, 67, 0.4);
-  transition: color 0.15s, background 0.15s;
+  transition:
+    color 0.15s,
+    background 0.15s;
 }
 .cw-tab .cw-install-btn:hover {
   color: #fff;
