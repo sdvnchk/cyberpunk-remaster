@@ -141,15 +141,7 @@ export const ROLE_PROFILES = Object.freeze({
     feature: {
       name: "Лёгкий шаг",
       description:
-        "<p>Застрельщик получает бонус состояния +5 футов к наземной Скорости.</p>",
-      rules: [
-        {
-          key: "FlatModifier",
-          selector: "land-speed",
-          type: "status",
-          value: 5,
-        },
-      ],
+        "<p>Первый раз за раунд после перемещения как минимум на 10 футов застрельщик может Шагнуть свободным действием.</p>",
     },
   }),
   infiltrator: role({
@@ -686,7 +678,11 @@ export function normalizeForgeForm(values = {}) {
     ? values.preset
     : DEFAULT_FORM.preset;
   const selected = resolvePreset(presetId);
-  return {
+  const tier = (value) =>
+    ["auto", "terrible", "low", "moderate", "high", "extreme"].includes(value)
+      ? value
+      : "auto";
+  const normalized = {
     ...DEFAULT_FORM,
     ...values,
     preset: presetId,
@@ -696,6 +692,15 @@ export function normalizeForgeForm(values = {}) {
     ),
     count: Math.max(1, Math.min(20, Math.trunc(Number(values.count) || 1))),
     quality: values.quality === "elite" ? "elite" : "standard",
+    tier_ac: tier(values.tier_ac),
+    tier_hp: tier(values.tier_hp),
+    tier_attack: tier(values.tier_attack),
+    tier_damage: tier(values.tier_damage),
+    tier_perception: tier(values.tier_perception),
+    tier_fortitude: tier(values.tier_fortitude),
+    tier_reflex: tier(values.tier_reflex),
+    tier_will: tier(values.tier_will),
+    tier_dc: tier(values.tier_dc),
     chromeIntensity: ["none", "light", "standard", "heavy"].includes(
       values.chromeIntensity,
     )
@@ -728,9 +733,10 @@ export function normalizeForgeForm(values = {}) {
     sendChatSummary: values.sendChatSummary === true,
     openSheet: values.openSheet !== false,
     name: String(values.name ?? "").trim(),
-    prompt: String(values.prompt ?? "").trim(),
     randomSeed: String(values.randomSeed ?? "")
       .trim()
       .slice(0, 120),
   };
+  delete normalized.prompt;
+  return normalized;
 }

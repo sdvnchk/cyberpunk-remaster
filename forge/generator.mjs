@@ -22,6 +22,7 @@ import {
   loadoutPreview,
   pickSecondaryWeapon,
 } from "./loadout.mjs";
+import { presetAbility } from "./preset-abilities.mjs";
 import { normalizeForgeForm, resolvePreset, resolveRole } from "./presets.mjs";
 import {
   deriveSeed,
@@ -30,6 +31,14 @@ import {
   randomSeed,
   seededRandom,
 } from "./random.mjs";
+import {
+  FALLBACK_LANGUAGE_SLUGS,
+  FALLBACK_SKILL_SLUGS,
+  buildNpcSkillTiers,
+  selectNpcDefenses,
+  selectNpcLanguages,
+  selectNpcSpeed,
+} from "./statblock-random.mjs";
 import { TIER_LABELS, eliteHpAdjustment, valueAt } from "./creature-tables.mjs";
 
 const PUBLICATION = Object.freeze({
@@ -39,33 +48,37 @@ const PUBLICATION = Object.freeze({
   title: "SF2E Cyberpunk Remaster",
 });
 
+function publicationSource() {
+  return { ...PUBLICATION };
+}
+
 const ANCESTRIES = Object.freeze({
   human: {
     label: "человек",
     trait: "human",
     speed: 25,
-    languages: ["common"],
+    languages: ["pact-common"],
     senses: [],
   },
   elf: {
     label: "эльф",
     trait: "elf",
     speed: 30,
-    languages: ["common"],
+    languages: ["pact-common", "elven"],
     senses: [{ type: "low-light-vision", acuity: "imprecise", range: null }],
   },
   dwarf: {
     label: "дварф",
     trait: "dwarf",
     speed: 20,
-    languages: ["common"],
+    languages: ["pact-common", "dwarven"],
     senses: [{ type: "darkvision", acuity: "precise", range: null }],
   },
   halfling: {
     label: "полурослик",
     trait: "halfling",
     speed: 25,
-    languages: ["common"],
+    languages: ["pact-common", "halfling"],
     senses: [],
   },
 });
@@ -108,7 +121,7 @@ function replaceDocumentData(data) {
 }
 
 function normalizeTier(table, tier) {
-  if (tier === "terrible") return "low";
+  if (tier === "terrible" && table !== "perception") return "low";
   if (table === "dc" && tier === "low") return "moderate";
   return tier;
 }
@@ -133,38 +146,88 @@ function resolveAbilities(role, level) {
   );
 }
 
-function validSkillSlugs() {
-  const configured = globalThis.CONFIG?.PF2E?.skills;
+function configuredSlugs(configured, fallback) {
   return configured && typeof configured === "object"
-    ? new Set(Object.keys(configured))
-    : null;
+    ? Object.keys(configured)
+    : [...fallback];
 }
 
-function resolveSkills(role, level, adjustment) {
+function validSkillSlugs() {
+  const configured = globalThis.CONFIG?.PF2E?.skills;
+  return configuredSlugs(configured, FALLBACK_SKILL_SLUGS);
+}
+
+function validLanguageSlugs() {
+  const configured = configuredSlugs(
+    globalThis.CONFIG?.PF2E?.languages,
+    FALLBACK_LANGUAGE_SLUGS,
+  );
+  let unavailable = new Set();
+  try {
+    const setting = globalThis.game?.settings?.get?.(
+      "sf2e",
+      "homebrew.languageRarities",
+    );
+    unavailable =
+      setting?.unavailable instanceof Set
+        ? setting.unavailable
+        : new Set(setting?.unavailable ?? []);
+  } catch {
+    unavailable = new Set();
+  }
+  return configured.filter((slug) => !unavailable.has(slug));
+}
+
+function terribleSkillValue(level) {
+  return valueAt("skill", level, "low") - 3;
+}
+
+function resolveSkills(role, preset, level, adjustment, random) {
   const valid = validSkillSlugs();
+  const tiers = buildNpcSkillTiers({
+    roleSkills: role.skills,
+    presetId: preset.id,
+    availableSkills: valid,
+    level,
+    random,
+  });
   return Object.fromEntries(
-    Object.entries(role.skills)
-      .filter(([slug]) => !valid || valid.has(slug))
-      .map(([slug, tier]) => [
-        slug,
-        {
-          base:
-            valueAt("skill", level, normalizeTier("skill", tier)) + adjustment,
-        },
-      ]),
+    Object.entries(tiers).map(([slug, tier]) => [
+      slug,
+      {
+        base:
+          (tier === "terrible"
+            ? terribleSkillValue(level)
+            : valueAt("skill", level, normalizeTier("skill", tier))) +
+          adjustment,
+      },
+    ]),
   );
 }
 
-function tierSummary(role) {
+function resolveTiers(form, role) {
+  return Object.fromEntries(
+    Object.keys(role.tiers).map((key) => {
+      const override = form[`tier_${key}`];
+      return [
+        key,
+        override && override !== "auto" ? override : role.tiers[key],
+      ];
+    }),
+  );
+}
+
+function tierSummary(tiers) {
   return [
-    ["КБ", role.tiers.ac],
-    ["ОЗ", role.tiers.hp],
-    ["Атака", role.tiers.attack],
-    ["Урон", role.tiers.damage],
-    ["Восприятие", role.tiers.perception],
-    ["Стойкость", role.tiers.fortitude],
-    ["Рефлекс", role.tiers.reflex],
-    ["Воля", role.tiers.will],
+    ["КБ", tiers.ac],
+    ["ОЗ", tiers.hp],
+    ["Атака", tiers.attack],
+    ["Урон", tiers.damage],
+    ["Восприятие", tiers.perception],
+    ["Стойкость", tiers.fortitude],
+    ["Рефлекс", tiers.reflex],
+    ["Воля", tiers.will],
+    ["КС", tiers.dc],
   ]
     .map(([label, tier]) => `${label}: ${TIER_LABELS[tier] ?? tier}`)
     .join("; ");
@@ -241,18 +304,54 @@ function roleTactics(roleId) {
   return tactics[roleId] ?? tactics.assault;
 }
 
-function buildActorSystem({ form, preset, role, ancestry, loadout }) {
+function validIwrEntries(entries, configKey) {
+  const configured = globalThis.CONFIG?.PF2E?.[configKey];
+  if (!configured || typeof configured !== "object") return entries;
+  const allowed = new Set(Object.keys(configured));
+  return entries.filter((entry) => allowed.has(entry.type));
+}
+
+function buildActorSystem({ form, preset, role, ancestry, loadout, random }) {
   const elite = form.quality === "elite";
   const adjustment = elite ? 2 : 0;
-  const hpBase = valueAt("hp", form.level, normalizeHpTier(role.tiers.hp));
+  const tiers = resolveTiers(form, role);
+  const hpBase = valueAt("hp", form.level, normalizeHpTier(tiers.hp));
   const hp = hpBase + (elite ? eliteHpAdjustment(form.level) : 0);
-  const skills = resolveSkills(role, form.level, adjustment);
+  const skills = resolveSkills(role, preset, form.level, adjustment, random);
   const tactics = roleTactics(role.id);
   const interfaceHtml = interfaceTraitsHtml(loadout.interfaceKeys);
   const hasFocusProgram = linkedFocusIds(loadout.entries).length > 0;
-  const prompt = form.prompt
-    ? `<p><strong>Концепт:</strong> ${escapeHtml(form.prompt)}</p>`
-    : "";
+  const languages = selectNpcLanguages({
+    ancestryLanguages: ancestry.languages,
+    presetId: preset.id,
+    intelligenceTier: role.abilities.int,
+    availableLanguages: validLanguageSlugs(),
+    random,
+  });
+  const rawDefenses = selectNpcDefenses({
+    presetId: preset.id,
+    level: form.level,
+    cyberwareCount:
+      loadout.cyberware.length +
+      (loadout.pkt ? loadout.pkt.components.length + 2 : 0),
+    random,
+  });
+  const defenses = {
+    ...rawDefenses,
+    immunities: validIwrEntries(rawDefenses.immunities, "immunityTypes"),
+    resistances: validIwrEntries(rawDefenses.resistances, "resistanceTypes"),
+    weaknesses: validIwrEntries(rawDefenses.weaknesses, "weaknessTypes"),
+  };
+  const speed = selectNpcSpeed({
+    baseSpeed: ancestry.speed,
+    roleId: role.id,
+    presetId: preset.id,
+    random,
+  });
+  const dc =
+    valueAt("dc", form.level, normalizeTier("dc", tiers.dc)) + adjustment;
+  const areaDamage = valueAt("areaDamage", form.level, "moderate");
+  const abilityDamage = elite ? `${areaDamage}+2` : areaDamage;
   const loadoutRows = loadoutPreview(loadout)
     .map(
       (row) =>
@@ -265,7 +364,6 @@ function buildActorSystem({ form, preset, role, ancestry, loadout }) {
     `<p><strong>Роль:</strong> ${escapeHtml(role.label)}. ${escapeHtml(
       role.description,
     )}</p>`,
-    prompt,
   ].join("");
   const privateNotes = [
     `<h2>Тактика</h2>`,
@@ -273,7 +371,8 @@ function buildActorSystem({ form, preset, role, ancestry, loadout }) {
     `<p><strong>Обычный цикл:</strong> ${escapeHtml(tactics.routine)}.</p>`,
     `<p><strong>Отступление:</strong> ${escapeHtml(tactics.retreat)}.</p>`,
     `<h2>Снаряжение Кузницы</h2><ul>${loadoutRows}</ul>`,
-    `<p><strong>Шкалы:</strong> ${escapeHtml(tierSummary(role))}.</p>`,
+    `<p><strong>Шкалы:</strong> ${escapeHtml(tierSummary(tiers))}.</p>`,
+    `<p><strong>Защитный профиль:</strong> ${escapeHtml(defenses.label)}.</p>`,
     loadout.warnings.length
       ? `<h3>Предупреждения</h3><ul>${loadout.warnings
           .map((warning) => `<li>${escapeHtml(warning)}</li>`)
@@ -289,39 +388,41 @@ function buildActorSystem({ form, preset, role, ancestry, loadout }) {
         ac: {
           details: loadout.armor?.name ?? "Без внешней брони",
           value:
-            valueAt("ac", form.level, normalizeTier("ac", role.tiers.ac)) +
+            valueAt("ac", form.level, normalizeTier("ac", tiers.ac)) +
             adjustment,
         },
         allSaves: { value: "" },
         hp: {
-          details: role.description,
+          details: "",
           max: Math.max(1, hp),
           temp: 0,
           value: Math.max(1, hp),
         },
+        immunities: defenses.immunities,
+        resistances: defenses.resistances,
         speed: {
           details: "",
           otherSpeeds: [],
-          value: ancestry.speed,
+          value: speed,
         },
+        weaknesses: defenses.weaknesses,
       },
       details: {
         alliance: "opposition",
         blurb: `${ancestry.label}, ${preset.faction}, роль «${role.label}»`,
         languages: {
-          details: "Языки кампании выбираются ведущим.",
-          value: ancestry.languages,
+          details: "",
+          value: languages,
         },
         level: { value: form.level },
-        publication: PUBLICATION,
+        publication: publicationSource(),
         publicNotes,
         privateNotes,
       },
       initiative: { statistic: role.initiative },
       perception: {
         details: "",
-        mod:
-          valueAt("perception", form.level, role.tiers.perception) + adjustment,
+        mod: valueAt("perception", form.level, tiers.perception) + adjustment,
         senses: ancestry.senses,
         vision: true,
       },
@@ -335,18 +436,15 @@ function buildActorSystem({ form, preset, role, ancestry, loadout }) {
         fortitude: {
           saveDetail: "",
           value:
-            valueAt("perception", form.level, role.tiers.fortitude) +
-            adjustment,
+            valueAt("perception", form.level, tiers.fortitude) + adjustment,
         },
         reflex: {
           saveDetail: "",
-          value:
-            valueAt("perception", form.level, role.tiers.reflex) + adjustment,
+          value: valueAt("perception", form.level, tiers.reflex) + adjustment,
         },
         will: {
           saveDetail: "",
-          value:
-            valueAt("perception", form.level, role.tiers.will) + adjustment,
+          value: valueAt("perception", form.level, tiers.will) + adjustment,
         },
       },
       skills,
@@ -357,8 +455,18 @@ function buildActorSystem({ form, preset, role, ancestry, loadout }) {
       },
     },
     adjustment,
+    abilityContext: {
+      damage: abilityDamage,
+      dc,
+      healing: areaDamage,
+      tempHp: Math.max(3, form.level + 3),
+    },
+    defenses,
+    languages,
     skills,
+    speed,
     tactics,
+    tiers,
   };
 }
 
@@ -411,7 +519,23 @@ function validNpcAttackTraits(traits) {
   return [...new Set(traits)].filter((trait) => !allowed || allowed.has(trait));
 }
 
-function strikeSource({ form, role, adjustment, weapon }) {
+function strikeDamageValue({ form, tiers, adjustment, weapon }) {
+  const ranged = Number(weapon?.document?.system?.range ?? 0) > 0;
+  const automaticExtreme = form.tier_damage === "auto";
+  const damageTier =
+    ranged && automaticExtreme && tiers.damage === "extreme"
+      ? "high"
+      : tiers.damage;
+  const formula = valueAt(
+    "damage",
+    form.level,
+    normalizeTier("damage", damageTier),
+    "moderate",
+  );
+  return adjustment ? `${formula}+2` : formula;
+}
+
+function strikeSource({ form, tiers, adjustment, weapon }) {
   const document = weapon?.document;
   const ranged = Number(document?.system?.range ?? 0) > 0;
   const range = ranged ? Number(document.system.range) : null;
@@ -419,15 +543,7 @@ function strikeSource({ form, role, adjustment, weapon }) {
     ? document.system.traits.value
     : [];
   const traits = validNpcAttackTraits(rawTraits);
-  const damageTier =
-    ranged && role.tiers.damage === "extreme" ? "high" : role.tiers.damage;
-  const formula = valueAt(
-    "damage",
-    form.level,
-    normalizeTier("damage", damageTier),
-    "moderate",
-  );
-  const damage = adjustment ? `${formula}+2` : formula;
+  const damage = strikeDamageValue({ form, tiers, adjustment, weapon });
   return {
     name: weapon?.name ?? "Безоружная атака",
     type: "melee",
@@ -442,11 +558,8 @@ function strikeSource({ form, role, adjustment, weapon }) {
       attackEffects: { value: [] },
       bonus: {
         value:
-          valueAt(
-            "attack",
-            form.level,
-            normalizeTier("attack", role.tiers.attack),
-          ) + adjustment,
+          valueAt("attack", form.level, normalizeTier("attack", tiers.attack)) +
+          adjustment,
       },
       damageRolls: {
         main: {
@@ -463,7 +576,7 @@ function strikeSource({ form, role, adjustment, weapon }) {
             )}}. Урон рассчитан по уровню и роли NPC; физический предмет сохранён в инвентаре без изменения.</p>`
           : "<p>Рабочая безоружная атака NPC.</p>",
       },
-      publication: PUBLICATION,
+      publication: publicationSource(),
       range: ranged ? { increment: range, max: null } : null,
       rules: [],
       slug: `cyberpunk-forge-strike-${slugify(weapon?.name ?? "unarmed")}`,
@@ -488,7 +601,7 @@ function roleFeatureSource(role) {
       actions: { value: null },
       category: "interaction",
       description: { gm: "", value: feature.description },
-      publication: PUBLICATION,
+      publication: publicationSource(),
       rules: feature.rules ?? [],
       slug: `cyberpunk-forge-${slugify(feature.name)}`,
       traits: { value: [], otherTags: [] },
@@ -496,34 +609,50 @@ function roleFeatureSource(role) {
   };
 }
 
-function skillPanelSource(role, skills) {
-  const labels = globalThis.CONFIG?.PF2E?.skills ?? {};
-  const checks = Object.keys(skills)
-    .map((slug) => {
-      const label =
-        typeof labels[slug] === "string"
-          ? labels[slug]
-          : (labels[slug]?.label ?? slug);
-      return `<li>@Check[${slug}]{${escapeHtml(label)}}</li>`;
-    })
-    .join("");
+function abilityIcon(actionType, actions) {
+  if (actionType === "reaction") {
+    return "systems/sf2e/icons/actions/Reaction.webp";
+  }
+  if (actionType === "free") {
+    return "systems/sf2e/icons/actions/FreeAction.webp";
+  }
+  if (actionType === "action") {
+    const icon =
+      { 1: "OneAction", 2: "TwoActions", 3: "ThreeActions" }[actions] ??
+      "OneAction";
+    return `systems/sf2e/icons/actions/${icon}.webp`;
+  }
+  return "systems/sf2e/icons/actions/Passive.webp";
+}
+
+function renderAbilityDescription(description, context) {
+  return Object.entries(context).reduce(
+    (result, [key, value]) =>
+      result.replaceAll(`{${key}}`, String(value ?? "")),
+    description,
+  );
+}
+
+function presetAbilitySource(presetId, context) {
+  const feature = presetAbility(presetId);
+  if (!feature) return null;
   return {
-    name: "Рабочие проверки навыков",
+    name: feature.name,
     type: "action",
-    img: "systems/sf2e/icons/actions/Passive.webp",
-    flags: forgeItemFlags("skill-panel", { role: role.id }),
+    img: abilityIcon(feature.actionType, feature.actions),
+    flags: forgeItemFlags("preset-feature", { preset: presetId }),
     system: {
-      actionType: { value: "passive" },
-      actions: { value: null },
-      category: "interaction",
+      actionType: { value: feature.actionType },
+      actions: { value: feature.actions },
+      category: feature.category,
       description: {
         gm: "",
-        value: `<p>Основные проверки этого NPC:</p><ul>${checks}</ul>`,
+        value: renderAbilityDescription(feature.description, context),
       },
-      publication: PUBLICATION,
-      rules: [],
-      slug: "cyberpunk-forge-skill-panel",
-      traits: { value: [], otherTags: [] },
+      publication: publicationSource(),
+      rules: structuredClone(feature.rules ?? []),
+      slug: `cyberpunk-forge-preset-${slugify(feature.name)}`,
+      traits: { value: [...feature.traits], otherTags: [] },
     },
   };
 }
@@ -550,7 +679,8 @@ function loadoutSources(loadout, secondaryWeapon) {
         loadoutKey: `loadout-${index + 1}`,
         installed: entry.cyberware,
         parentSourceId: entry.parentSourceId ?? null,
-        quantity: entry.category === "ammo" ? 3 : 1,
+        quantity:
+          entry.category === "ammo" ? Math.max(1, loadout.ammoQuantity) : 1,
       }),
     );
 }
@@ -608,7 +738,7 @@ function buildSpellEntry(name, prepared, dc, kind) {
       },
       prepared: { value: prepared, flexible: false },
       proficiency: { value: 0 },
-      publication: PUBLICATION,
+      publication: publicationSource(),
       rules: [],
       showSlotlessLevels: { value: false },
       slug: `cyberpunk-forge-${slugify(name)}`,
@@ -878,16 +1008,16 @@ async function createActorContent({
       ...strikeWeapons.map((weapon) =>
         strikeSource({
           form,
-          role,
+          tiers: built.tiers,
           adjustment: built.adjustment,
           weapon,
         }),
       ),
       roleFeatureSource(role),
-      skillPanelSource(role, built.skills),
+      presetAbilitySource(form.preset, built.abilityContext),
       ...loadoutSources(loadout, secondaryWeapon),
       ...pktBaseSources(loadout.pkt),
-    ];
+    ].filter(Boolean);
     const created = await actor.createEmbeddedDocuments("Item", baseSources, {
       cyberpunkForgeOperation: true,
     });
@@ -903,8 +1033,7 @@ async function createActorContent({
       actor,
       loadout,
       catalog,
-      valueAt("dc", form.level, normalizeTier("dc", role.tiers.dc)) +
-        built.adjustment,
+      built.abilityContext.dc,
       form.level,
     );
     await CyberwareTab.reconcileGrantedItems(actor);
@@ -928,13 +1057,14 @@ async function createActorContent({
   }
 }
 
-function resultConcept({ form, presetId, role, ancestry, seed }) {
+function resultConcept({ form, presetId, role, ancestry, seed, tiers }) {
   return {
     preset: presetId,
     role: role.id,
     ancestry: ancestry.id,
     level: form.level,
     quality: form.quality,
+    tiers,
     seed,
     chromeIntensity: form.chromeIntensity,
     loadoutIntensity: form.loadoutIntensity,
@@ -945,7 +1075,7 @@ async function prepareGeneration(formValues, { index = 0 } = {}) {
   const form = normalizeForgeForm(formValues);
   const seed = deriveSeed(form.randomSeed || randomSeed(), `npc-${index + 1}`);
   const random = seededRandom(seed);
-  const preset = resolvePreset(form.preset);
+  const preset = { id: form.preset, ...resolvePreset(form.preset) };
   const role = resolveRole(preset, random);
   const ancestryId = pick(ANCESTRY_POOL, random) ?? "human";
   const ancestry = { id: ancestryId, ...ANCESTRIES[ancestryId] };
@@ -988,6 +1118,7 @@ async function prepareGeneration(formValues, { index = 0 } = {}) {
     role,
     ancestry,
     loadout,
+    random,
   });
   return {
     form,
@@ -1006,6 +1137,7 @@ async function prepareGeneration(formValues, { index = 0 } = {}) {
       role,
       ancestry,
       seed,
+      tiers: built.tiers,
     }),
   };
 }
@@ -1029,15 +1161,21 @@ export async function previewNpc(formValues) {
         valueAt(
           "attack",
           prepared.form.level,
-          normalizeTier("attack", prepared.role.tiers.attack),
+          normalizeTier("attack", prepared.built.tiers.attack),
         ) + prepared.built.adjustment,
-      dc:
-        valueAt(
-          "dc",
-          prepared.form.level,
-          normalizeTier("dc", prepared.role.tiers.dc),
-        ) + prepared.built.adjustment,
+      dc: prepared.built.abilityContext.dc,
+      damage: strikeDamageValue({
+        form: prepared.form,
+        tiers: prepared.built.tiers,
+        adjustment: prepared.built.adjustment,
+        weapon: prepared.loadout.weapon,
+      }),
+      perception: prepared.built.system.perception.mod,
+      speed: prepared.built.speed,
     },
+    defenses: prepared.built.defenses,
+    languages: prepared.built.languages,
+    skillCount: Object.keys(prepared.built.skills).length,
   };
 }
 

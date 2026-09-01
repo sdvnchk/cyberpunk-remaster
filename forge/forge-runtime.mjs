@@ -21,6 +21,7 @@ import {
   selectedNpcInfo,
   summarizeResult,
 } from "./generator.mjs";
+import { TIER_LABELS } from "./creature-tables.mjs";
 import {
   CYBERPUNK_PRESETS,
   presetsByGroup,
@@ -39,6 +40,10 @@ import {
   saveCustomPreset,
   setLastForm,
 } from "./storage.mjs";
+import {
+  directoryRoot,
+  ensureDirectoryLauncherGroup,
+} from "../runtime/directory-launchers.mjs";
 
 const TEMPLATE = `modules/${MODULE_ID}/templates/cyberpunk-forge.hbs`;
 const WINDOW_SIZE_KEY = `${MODULE_ID}.forge-window-size.v1`;
@@ -187,6 +192,16 @@ function previewHtml(preview) {
         .map((warning) => `<li>${escapeHtml(warning)}</li>`)
         .join("")}</ul>`
     : "";
+  const languageLabels = preview.languages
+    .map((slug) => {
+      const configured = globalThis.CONFIG?.PF2E?.languages?.[slug];
+      const key =
+        typeof configured === "string"
+          ? configured
+          : (configured?.label ?? slug);
+      return globalThis.game?.i18n?.localize?.(key) ?? key;
+    })
+    .join(", ");
   return `
     <div class="cyberpunk-forge-preview-title">
       <strong>${escapeHtml(preview.name)}</strong>
@@ -199,8 +214,15 @@ function previewHtml(preview) {
       <span>КБ ${preview.stats.ac}</span>
       <span>ОЗ ${preview.stats.hp}</span>
       <span>Атака +${preview.stats.attack}</span>
+      <span>Урон ${escapeHtml(preview.stats.damage)}</span>
       <span>КС ${preview.stats.dc}</span>
+      <span>Скорость ${preview.stats.speed}</span>
     </div>
+    <p class="cyberpunk-forge-preview-meta"><strong>Навыки:</strong> ${
+      preview.skillCount
+    } · <strong>Защита:</strong> ${escapeHtml(
+      preview.defenses.label,
+    )}<br><strong>Языки:</strong> ${escapeHtml(languageLabels)}</p>
     <ul class="cyberpunk-forge-preview-loadout">${loadout}</ul>
     ${warnings}
     <small>Seed варианта: ${escapeHtml(preview.seed)}</small>
@@ -379,30 +401,9 @@ function attachListeners(app) {
     .querySelector("[data-forge-preview-button]")
     ?.addEventListener("click", () => refreshPreview(app));
   root
-    .querySelector("[data-forge-randomize]")
+    .querySelector("[data-forge-roll-seed]")
     ?.addEventListener("click", async () => {
       form.elements.namedItem("randomSeed").value = randomSeed();
-      await refreshPreview(app);
-    });
-  root
-    .querySelector("[data-forge-infer]")
-    ?.addEventListener("click", async () => {
-      const id = inferPresetFromPrompt(
-        form.elements.namedItem("prompt")?.value,
-      );
-      if (!id) {
-        globalThis.ui?.notifications?.warn?.(
-          "Описание не содержит достаточно явных киберпанковских ключевых слов.",
-        );
-        return;
-      }
-      const preset = CYBERPUNK_PRESETS[id];
-      form.elements.namedItem("preset").value = id;
-      form.elements.namedItem("level").value = preset.level;
-      form.elements.namedItem("includePrograms").checked =
-        preset.includePrograms;
-      form.elements.namedItem("randomSeed").value = randomSeed();
-      refreshPresetSelection(app);
       await refreshPreview(app);
     });
   root
@@ -553,6 +554,10 @@ function getForgeApplicationClass() {
       return {
         ...context,
         presetGroups: presetsByGroup(),
+        tiers: Object.entries(TIER_LABELS).map(([value, label]) => ({
+          value,
+          label,
+        })),
         deploymentModes: Object.entries(DEPLOYMENT_MODES).map(
           ([value, entry]) => ({ value, label: entry.label }),
         ),
@@ -653,32 +658,18 @@ export async function createLauncherMacro() {
   return macro;
 }
 
-function directoryRoot(app, html) {
-  const ElementClass = globalThis.HTMLElement;
-  if (ElementClass && html instanceof ElementClass) return html;
-  if (ElementClass && html?.[0] instanceof ElementClass) return html[0];
-  if (ElementClass && app?.element instanceof ElementClass) {
-    return app.element;
-  }
-  return app?.element?.[0] ?? null;
-}
-
 function addDirectoryButton(app, html) {
   if (!globalThis.game?.user?.isGM) return;
   const root = directoryRoot(app, html);
   if (!root || root.querySelector("[data-cyberpunk-forge-launcher]")) return;
-  const host =
-    root.querySelector(".header-actions") ??
-    root.querySelector(".directory-header") ??
-    root.querySelector("header");
-  if (!host) return;
+  const group = ensureDirectoryLauncherGroup(app, html);
+  if (!group) return;
   const button = globalThis.document.createElement("button");
   button.type = "button";
   button.dataset.cyberpunkForgeLauncher = "true";
-  button.className = "cyberpunk-forge-launcher";
   button.innerHTML = '<i class="fa-solid fa-microchip"></i> Киберпанк-Кузница';
   button.addEventListener("click", () => void openForge());
-  host.append(button);
+  group.append(button);
 }
 
 function clearCatalogForDocument(document) {

@@ -1,0 +1,299 @@
+/*
+ * Общая оболочка Кузницы и Нейро-Архива.
+ * Внутренние приложения задают только палитру через --cyber-*.
+ */
+:is(.cyberpunk-forge-application, .neuro-archive-application) {
+  --cyber-accent: #df2532;
+  --cyber-secondary: #46d9dc;
+  --cyber-background: #09070b;
+  --cyber-text: #f0e9df;
+  --cyber-accent-soft: rgba(223, 37, 50, 0.2);
+  --cyber-accent-strong: rgba(223, 37, 50, 0.7);
+  --cyber-secondary-soft: rgba(70, 217, 220, 0.15);
+  overflow: hidden;
+  border: 1px solid var(--cyber-accent-strong);
+  border-radius: 0;
+  color: var(--cyber-text);
+  background: var(--cyber-background);
+  box-shadow:
+    0 0 0 1px var(--cyber-secondary-soft),
+    0 0 34px var(--cyber-accent-soft),
+    0 26px 72px rgba(0, 0, 0, 0.76);
+  animation: cyber-window-boot 220ms cubic-bezier(0.2, 0.75, 0.25, 1);
+}
+
+:is(.cyberpunk-forge-application, .neuro-archive-application) .window-header {
+  position: relative;
+  min-height: 38px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--cyber-accent-strong);
+  color: var(--cyber-text);
+  background:
+    linear-gradient(90deg, var(--cyber-accent-soft), transparent 39%),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 17px,
+      var(--cyber-secondary-soft) 17px 18px
+    ),
+    var(--cyber-background);
+  font-family: Consolas, "Roboto Mono", "Courier New", monospace;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+:is(.cyberpunk-forge-application, .neuro-archive-application)
+  .window-header::before {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 35%;
+  height: 1px;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--cyber-accent),
+    transparent
+  );
+  animation: cyber-header-signal 3.6s ease-in-out infinite;
+}
+
+:is(.cyberpunk-forge-application, .neuro-archive-application)
+  .window-header::after {
+  width: 58px;
+  height: 3px;
+  margin-left: 8px;
+  content: "";
+  background: linear-gradient(
+    90deg,
+    var(--cyber-accent) 0 54%,
+    transparent 54% 62%,
+    var(--cyber-secondary) 62% 80%,
+    transparent 80% 87%,
+    var(--cyber-text) 87%
+  );
+  box-shadow: 0 0 8px var(--cyber-accent-soft);
+}
+
+:is(.cyberpunk-forge-application, .neuro-archive-application) .window-content {
+  position: relative;
+  background:
+    linear-gradient(var(--cyber-secondary-soft) 1px, transparent 1px),
+    linear-gradient(90deg, var(--cyber-secondary-soft) 1px, transparent 1px),
+    radial-gradient(
+      circle at 92% -8%,
+      var(--cyber-secondary-soft),
+      transparent 35%
+    ),
+    var(--cyber-background);
+  background-size:
+    30px 30px,
+    30px 30px,
+    auto,
+    auto;
+}
+
+.cyberpunk-forge-shell::after,
+#pcm-root .pcm-window::before {
+  animation: cyber-scan-drift 9s linear infinite;
+}
+
+.cyberpunk-forge-application button,
+#pcm-root button {
+  transition:
+    color 140ms ease,
+    border-color 140ms ease,
+    background-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 100ms ease;
+}
+
+.cyberpunk-forge-application button:hover:not(:disabled),
+#pcm-root button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.cyberpunk-forge-application button:active:not(:disabled),
+#pcm-root button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.cyberpunk-forge-primary,
+#pcm-root .primary {
+  border-radius: 0;
+  clip-path: polygon(
+    8px 0,
+    100% 0,
+    100% calc(100% - 8px),
+    calc(100% - 8px) 100%,
+    0 100%,
+    0 8px
+  );
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.07),
+    0 0 15px var(--cyber-accent-soft);
+}
+
+#pcm-root .pcm-window {
+  border-color: var(--accent-strong);
+  border-radius: 0;
+  background:
+    linear-gradient(var(--secondary-soft) 1px, transparent 1px),
+    linear-gradient(90deg, var(--secondary-soft) 1px, transparent 1px),
+    radial-gradient(circle at 92% -8%, var(--secondary-soft), transparent 35%),
+    var(--bg);
+  background-size:
+    30px 30px,
+    30px 30px,
+    auto,
+    auto;
+  box-shadow: none;
+}
+
+#pcm-root .pcm-top {
+  border-bottom-color: var(--accent-strong);
+  background:
+    linear-gradient(90deg, var(--accent-soft), transparent 46%),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 17px,
+      var(--secondary-soft) 17px 18px
+    ),
+    var(--chrome);
+}
+
+#pcm-root button {
+  border-radius: 3px;
+}
+
+#pcm-root :is(.pcm-brand img, .pcm-thumb, .pcm-welcome img) {
+  border-radius: 3px;
+}
+
+#pcm-root
+  :is(
+    .pcm-quick,
+    .pcm-recent,
+    .pcm-onboarding,
+    .pcm-card,
+    .pcm-location-card,
+    .pcm-detail-panel,
+    .pcm-editor-card .pcm-card-body
+  ) {
+  border-radius: 4px;
+}
+
+#pcm-root aside > button.active {
+  box-shadow:
+    inset 3px 0 0 var(--gold),
+    0 0 13px var(--accent-soft);
+}
+
+.cyberpunk-forge-kicker::before,
+#pcm-root .pcm-brand small::before {
+  animation: cyber-status-pulse 2.1s ease-in-out infinite;
+}
+
+#pcm-root .pcm-brand small::before {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 7px;
+  content: "";
+  background: var(--teal);
+  box-shadow: 0 0 8px var(--secondary-glow);
+  transform: rotate(45deg);
+}
+
+:is(
+  .cyberpunk-forge-panel,
+  .cyberpunk-forge-preview-panel,
+  #pcm-root .pcm-quick,
+  #pcm-root .pcm-recent,
+  #pcm-root .pcm-onboarding,
+  #pcm-root .pcm-card,
+  #pcm-root .pcm-location-card,
+  #pcm-root .pcm-detail-panel
+) {
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    background-color 150ms ease;
+}
+
+:is(
+  .cyberpunk-forge-panel,
+  .cyberpunk-forge-preview-panel,
+  #pcm-root .pcm-quick,
+  #pcm-root .pcm-recent,
+  #pcm-root .pcm-onboarding,
+  #pcm-root .pcm-card,
+  #pcm-root .pcm-location-card,
+  #pcm-root .pcm-detail-panel
+):hover {
+  border-color: var(--cyber-accent-strong);
+  box-shadow:
+    inset 2px 0 0 var(--cyber-accent),
+    0 0 18px var(--cyber-accent-soft);
+}
+
+@keyframes cyber-window-boot {
+  from {
+    opacity: 0;
+    filter: saturate(1.7) contrast(1.2);
+    transform: translateY(8px) scale(0.992);
+  }
+  to {
+    opacity: 1;
+    filter: saturate(1) contrast(1);
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes cyber-header-signal {
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: translateX(-55%);
+  }
+  50% {
+    opacity: 0.9;
+    transform: translateX(245%);
+  }
+}
+
+@keyframes cyber-scan-drift {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 0 48px;
+  }
+}
+
+@keyframes cyber-status-pulse {
+  0%,
+  100% {
+    opacity: 0.65;
+    filter: brightness(0.9);
+  }
+  50% {
+    opacity: 1;
+    filter: brightness(1.35);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(.cyberpunk-forge-application, .neuro-archive-application),
+  :is(.cyberpunk-forge-application, .neuro-archive-application)
+    .window-header::before,
+  .cyberpunk-forge-shell::after,
+  #pcm-root .pcm-window::before,
+  .cyberpunk-forge-kicker::before,
+  #pcm-root .pcm-brand small::before {
+    animation: none !important;
+  }
+}

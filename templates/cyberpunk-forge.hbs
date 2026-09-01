@@ -27,9 +27,6 @@
             <span class="cyberpunk-forge-step">01</span>
             <h2>Кто это</h2>
           </div>
-          <button type="button" class="cyberpunk-forge-ghost" data-forge-randomize>
-            <i class="fa-solid fa-shuffle"></i> Новый вариант
-          </button>
         </div>
 
         <div class="cyberpunk-forge-preset-groups">
@@ -76,21 +73,36 @@
             </select>
           </label>
           <label class="cyberpunk-forge-seed">
-            <span>Базовый seed <small>оставьте пустым для нового варианта</small></span>
-            <input type="text" name="randomSeed" maxlength="120" placeholder="Будет создан автоматически">
+            <span>Seed варианта</span>
+            <span class="cyberpunk-forge-seed-row">
+              <input type="text" name="randomSeed" maxlength="120" placeholder="Будет создан автоматически">
+              <button type="button" class="cyberpunk-forge-icon-button" data-forge-roll-seed title="Бросить новый seed">
+                <i class="fa-solid fa-dice"></i>
+              </button>
+            </span>
           </label>
         </div>
         <p class="cyberpunk-forge-note is-hidden" data-forge-batch-note>
           Каждый участник группы получит отдельный seed, роль и случайный набор предметов внутри стиля пресета.
         </p>
 
-        <label class="cyberpunk-forge-prompt">
-          <span>Свободное описание</span>
-          <textarea name="prompt" rows="3" maxlength="4000" placeholder="Например: корпоративный снайпер, который наблюдает за терминалом и не вступает в ближний бой"></textarea>
-        </label>
-        <button type="button" class="cyberpunk-forge-link-button" data-forge-infer>
-          <i class="fa-solid fa-wand-magic-sparkles"></i> Определить пресет по описанию
-        </button>
+        <details class="cyberpunk-forge-director">
+          <summary>
+            <span><i class="fa-solid fa-gauge-high"></i> Ручные боевые показатели</span>
+            <small>Авто использует профиль роли</small>
+          </summary>
+          <div class="cyberpunk-forge-tier-grid">
+            <label><span>КБ</span><select name="tier_ac">{{#each tiers}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
+            <label><span>ОЗ</span><select name="tier_hp">{{#each tiers}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
+            <label><span>Атака</span><select name="tier_attack">{{#each tiers}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
+            <label><span>Урон</span><select name="tier_damage">{{#each tiers}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
+            <label><span>Восприятие</span><select name="tier_perception">{{#each tiers}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
+            <label><span>Стойкость</span><select name="tier_fortitude">{{#each tiers}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
+            <label><span>Рефлекс</span><select name="tier_reflex">{{#each tiers}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
+            <label><span>Воля</span><select name="tier_will">{{#each tiers}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
+            <label><span>КС способностей</span><select name="tier_dc">{{#each tiers}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
+          </div>
+        </details>
       </section>
 
       <section class="cyberpunk-forge-panel">
@@ -259,7 +271,7 @@
       </div>
       <div class="cyberpunk-forge-preview-help">
         <i class="fa-solid fa-circle-info"></i>
-        <p>Предпросмотр использует тот же seed, что и создание. Нажмите «Новый вариант», чтобы получить другое оружие, броню и хром внутри выбранного пресета.</p>
+        <p>Предпросмотр использует тот же seed, что и создание. Нажмите кнопку с кубиком рядом с seed, чтобы получить другой вариант выбранного пресета.</p>
       </div>
     </aside>
   </div>

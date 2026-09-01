@@ -11,6 +11,7 @@ import {
   selectWeapon,
 } from "./catalog.mjs";
 import { randomInt } from "./random.mjs";
+import { ammunitionQuantity } from "./statblock-random.mjs";
 
 const GEAR_KEYWORDS = Object.freeze({
   assault: [
@@ -363,6 +364,7 @@ export async function buildLoadout({ catalog, form, preset, role, random }) {
     selectionOptions,
   );
   const ammo = compatibleAmmo(catalog, weapon, form.level, random);
+  const ammoQuantity = ammunitionQuantity(ammo, form.loadoutIntensity, random);
   const gear = selectGear(catalog, form.level, random, {
     count: gearCount(preset, form, random),
     keywords: GEAR_KEYWORDS[role.id] ?? [],
@@ -416,6 +418,7 @@ export async function buildLoadout({ catalog, form, preset, role, random }) {
     weapon,
     armor,
     ammo,
+    ammoQuantity,
     ...gear,
     ...cyberware,
     ...(pkt ? [pkt.biosystem, pkt.body, ...pkt.components] : []),
@@ -449,7 +452,9 @@ export function loadoutPreview(loadout) {
         : null,
     ]),
     row("Броня", [loadout.armor?.name]),
-    row("Боеприпасы", [loadout.ammo?.name]),
+    row("Боеприпасы", [
+      loadout.ammo ? `${loadout.ammo.name} × ${loadout.ammoQuantity}` : null,
+    ]),
     row(
       "Предметы",
       loadout.gear.map((entry) => entry.name),

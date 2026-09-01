@@ -13,6 +13,7 @@ import {
   selectPrograms,
 } from "../forge/catalog.mjs";
 import { FORGE_ITEM_TYPES, ITEM_PACK_ID } from "../forge/constants.mjs";
+import { valueAt } from "../forge/creature-tables.mjs";
 import { formationOffsets } from "../forge/deployment.mjs";
 import {
   generateNpc,
@@ -20,12 +21,20 @@ import {
   previewNpc,
   refreshNpcInterfaceSummary,
 } from "../forge/generator.mjs";
+import { PRESET_ABILITIES } from "../forge/preset-abilities.mjs";
 import {
   CYBERPUNK_PRESETS,
   ROLE_PROFILES,
   normalizeForgeForm,
 } from "../forge/presets.mjs";
 import { seededRandom } from "../forge/random.mjs";
+import {
+  FALLBACK_SKILL_SLUGS,
+  ammunitionQuantity,
+  buildNpcSkillTiers,
+  selectNpcDefenses,
+  selectNpcLanguages,
+} from "../forge/statblock-random.mjs";
 import { CyberwareTab } from "../sheets/CyberwareTab.js";
 
 function loadDocuments() {
@@ -222,6 +231,91 @@ test("preset previews are reproducible but different seeds vary the loadout", as
   assert.ok(variants.size >= 4);
 });
 
+test("manual combat tiers override the selected role and preview every core value", async () => {
+  clearCyberpunkCatalog();
+  globalThis.game = {
+    packs: new Map([
+      [
+        ITEM_PACK_ID,
+        {
+          async getDocuments() {
+            return documents;
+          },
+        },
+      ],
+    ]),
+  };
+  const preview = await previewNpc({
+    preset: "corporate-response",
+    level: 8,
+    randomSeed: "manual-stat-tiers",
+    tier_ac: "extreme",
+    tier_hp: "low",
+    tier_attack: "extreme",
+    tier_damage: "extreme",
+    tier_perception: "terrible",
+    tier_dc: "high",
+  });
+  assert.equal(preview.stats.ac, valueAt("ac", 8, "extreme"));
+  assert.equal(preview.stats.hp, valueAt("hp", 8, "low"));
+  assert.equal(preview.stats.attack, valueAt("attack", 8, "extreme"));
+  assert.equal(preview.stats.damage, valueAt("damage", 8, "extreme"));
+  assert.equal(preview.stats.perception, valueAt("perception", 8, "terrible"));
+  assert.equal(preview.stats.dc, valueAt("dc", 8, "high"));
+  assert.ok(preview.stats.speed >= 15);
+  assert.ok(preview.skillCount >= 7);
+});
+
+test("contextual statblock randomization adds useful weak skills, languages, defenses, and ammunition", () => {
+  const skills = buildNpcSkillTiers({
+    roleSkills: { computers: "extreme" },
+    presetId: "netrunner",
+    availableSkills: FALLBACK_SKILL_SLUGS,
+    level: 5,
+    random: seededRandom("extra-skills"),
+  });
+  assert.equal(skills.computers, "extreme");
+  assert.ok(Object.keys(skills).length >= 7);
+  assert.ok(
+    Object.values(skills).some((tier) => ["terrible", "low"].includes(tier)),
+  );
+
+  const allowedLanguages = [
+    "pact-common",
+    "trinary",
+    "vercite",
+    "aballonian",
+    "vesk",
+  ];
+  const languages = selectNpcLanguages({
+    ancestryLanguages: ["pact-common"],
+    presetId: "netrunner",
+    intelligenceTier: "extreme",
+    availableLanguages: allowedLanguages,
+    random: seededRandom("languages"),
+  });
+  assert.ok(languages.length >= 4);
+  assert.ok(languages.every((slug) => allowedLanguages.includes(slug)));
+
+  const defenses = selectNpcDefenses({
+    presetId: "pkt-operative",
+    level: 12,
+    cyberwareCount: 12,
+    random: seededRandom("pkt-defenses"),
+  });
+  assert.ok(defenses.immunities.length > 0);
+  assert.ok(defenses.resistances.length > 0);
+
+  const bullets = {
+    document: { system: { quantity: 10, baseItem: "pistoletnyye-patrony" } },
+  };
+  const battery = {
+    document: { system: { quantity: 1, baseItem: "battery" } },
+  };
+  assert.equal(ammunitionQuantity(bullets, "standard"), 20);
+  assert.equal(ammunitionQuantity(battery, "standard"), 2);
+});
+
 test("PKT preset resolves a real journal model and every component from the module pack", async () => {
   const journals = JSON.parse(
     readFileSync(new URL("../content/exports/journals.json", import.meta.url)),
@@ -313,6 +407,15 @@ test("created NPC receives installed compendium chrome but no Humanity state", a
     }
 
     async createEmbeddedDocuments(_type, sources) {
+      // Foundry/SF2E normalizes publication metadata while constructing Items.
+      // Generated sources therefore must not contain shared frozen objects.
+      for (const source of sources) {
+        if (source.system?.publication) {
+          source.system.publication.title = String(
+            source.system.publication.title ?? "",
+          );
+        }
+      }
       const created = sources.map((source) => new FakeItem(source, this));
       this.items.push(...created);
       return created;
@@ -397,6 +500,23 @@ test("created NPC receives installed compendium chrome but no Humanity state", a
   );
   assert.equal(result.actor.flags?.["cyberpunk-remaster"]?.humanity, undefined);
   assert.match(result.actor.system.details.publicNotes, /@Trait\[ustroystvo/iu);
+  assert.equal(result.actor.system.attributes.hp.details, "");
+  assert.equal(result.actor.system.details.languages.details, "");
+  assert.ok(result.actor.system.details.languages.value.length > 0);
+  assert.ok(Object.keys(result.actor.system.skills).length >= 7);
+  assert.equal(
+    result.actor.items.some(
+      (item) =>
+        item.flags?.["cyberpunk-remaster"]?.forge?.kind === "skill-panel",
+    ),
+    false,
+  );
+  const presetFeature = result.actor.items.find(
+    (item) =>
+      item.flags?.["cyberpunk-remaster"]?.forge?.kind === "preset-feature",
+  );
+  assert.ok(presetFeature);
+  assert.doesNotMatch(presetFeature.system.description.value, /\{dc\}/u);
 
   result.actor.system.details.publicNotes += "<p>Авторская заметка.</p>";
   result.actor.items = result.actor.items.filter(
@@ -411,6 +531,10 @@ test("created NPC receives installed compendium chrome but no Humanity state", a
 });
 
 test("all built-in presets reference complete role profiles", () => {
+  assert.deepEqual(
+    new Set(Object.keys(PRESET_ABILITIES)),
+    new Set(Object.keys(CYBERPUNK_PRESETS)),
+  );
   for (const preset of Object.values(CYBERPUNK_PRESETS)) {
     assert.ok(preset.roles.length > 0, preset.id);
     assert.ok(preset.weaponProfiles.length > 0, preset.id);
