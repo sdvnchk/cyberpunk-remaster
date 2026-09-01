@@ -1,0 +1,599 @@
+.cic-root { position: fixed; inset: 0; z-index: 100000; font-family: var(--font-primary, sans-serif); pointer-events:none; }
+.cic-backdrop { display:none; }
+.cic-window { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:1180px; height:780px; min-width:820px; min-height:500px; max-width:calc(100vw - 24px); max-height:calc(100vh - 24px); display:flex; flex-direction:column; overflow:hidden; resize:both; border:1px solid #7b1515; border-radius:8px; background:#151719; color:#e6e6e6; box-shadow:0 18px 70px #000; pointer-events:auto; }
+.cic-header { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:linear-gradient(90deg,#2a0909,#171719); border-bottom:1px solid #7b1515; cursor:move; user-select:none; touch-action:none; }
+.cic-header h2 { margin:0; color:#ff5252; font-size:20px; } .cic-header h2 small { font-size:11px; opacity:.7; } .cic-header p{margin:3px 0 0;opacity:.65;font-size:12px}.cic-icon{width:34px;height:34px}
+.cic-form{display:flex;flex-direction:column;min-height:0;flex:1}.cic-tabs{display:flex;gap:3px;padding:7px 8px 0;border-bottom:1px solid #333;background:#101113;overflow-x:auto}.cic-tabs button{flex:1;min-width:112px;padding:7px 6px;border:1px solid #333;border-bottom:0;background:#1b1d20;color:#bbb}.cic-tabs button.active{background:#2b1010;color:#ff7272;border-color:#7b1515}
+.cic-tab{display:none;overflow:auto;padding:13px 15px;flex:1;min-height:0}.cic-tab.active{display:block}.cic-grid{display:grid;gap:11px 14px}.cic-grid.two{grid-template-columns:1fr 1fr}.cic-grid.three{grid-template-columns:repeat(3,1fr)}.cic-grid label{display:flex;flex-direction:column;gap:5px;font-weight:600}.cic-grid label.wide{grid-column:1/-1}.cic-grid label.check,.cic-footer label.check{flex-direction:row;align-items:center}.cic-grid small,.cic-toolbox small{font-weight:400;color:#9b9b9b;line-height:1.35}
+.cic-window input,.cic-window select,.cic-window textarea{width:100%;box-sizing:border-box;border:1px solid #41454b;border-radius:4px;background:#0d0f11;color:#eee;padding:7px 8px}.cic-window input[type=checkbox]{width:auto;transform:scale(1.12)}.cic-window textarea{resize:vertical;font-family:inherit}.cic-window textarea[name=rulesJson],.cic-window textarea[name=profileJson],.cic-window textarea[name=rulePatchJson],.cic-actions code,.cic-preview pre{font-family:monospace;font-size:12px}
+.cic-inline{display:flex;gap:7px}.cic-inline input{flex:1}.cic-inline button{white-space:nowrap}.cic-image-preview{display:flex;align-items:center;justify-content:center;width:76px;height:76px;border:1px solid #3d4146;border-radius:6px;background:#0d0f11;padding:4px}.cic-image-preview img{max-width:100%;max-height:100%;object-fit:contain}
+.cic-chip-row{display:flex;gap:6px;flex-wrap:wrap}.cic-chip{width:auto!important;padding:4px 8px!important;border:1px solid #633!important;background:#281010!important;color:#ffb0b0!important;border-radius:999px!important}.cic-toolbox{margin:0 0 13px;padding:12px;border:1px solid #393d42;border-radius:7px;background:#111315}.cic-toolbox h3{margin:0 0 10px;color:#ff7676}.cic-help{color:#c4c4c4;margin:7px 0 10px}.cic-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:9px}.cic-actions code{padding:6px 8px;border:1px solid #333;background:#090a0b;white-space:normal;color:#b9e2ff}
+.cic-rule-config{margin-top:8px;border-top:1px solid #2d3034;padding-top:8px}.cic-rule-config summary{cursor:pointer;color:#f2b0b0;font-weight:700;margin-bottom:10px}.cic-rule-config textarea{min-height:54px}
+.cic-preview{padding:15px;border:1px solid #3c3f44;border-radius:6px;background:#0d0f11}.cic-preview-title{display:flex;gap:12px;align-items:center}.cic-preview-title img{width:58px;height:58px;object-fit:contain;border:1px solid #333;border-radius:5px}.cic-preview h3{margin:0;color:#ff6767;font-size:22px}.cic-preview [data-preview-flags]{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0}.cic-preview [data-preview-flags] span{padding:4px 8px;border:1px solid #6b2020;border-radius:999px;background:#281010;color:#ffb2b2}.cic-preview-description{padding:10px;border-top:1px solid #333;line-height:1.45}.cic-preview pre{max-height:240px;overflow:auto;white-space:pre-wrap;background:#08090a;padding:10px;border:1px solid #2e3135}
+.cic-footer{display:flex;align-items:center;gap:9px;padding:9px 12px;border-top:1px solid #3b3b3b;background:#101113}.cic-footer .cic-spacer{flex:1}.cic-footer button{padding:7px 12px}.cic-footer .cic-primary,.cic-launch{border-color:#8b1e1e;background:#3c0e0e;color:#ffb0b0}.cic-launch{margin:4px;padding:5px 8px}
+@media(max-width:760px){.cic-grid.two,.cic-grid.three{grid-template-columns:1fr}.cic-grid label.wide{grid-column:auto}.cic-window{width:calc(100vw - 16px);height:calc(100vh - 16px);min-width:0;min-height:0;resize:none}.cic-tabs button{min-width:132px}}
+
+.cic-header.dragging { cursor:grabbing; }
+.cic-header button { cursor:pointer; }
+.cic-window textarea[name=activationEffectRulesJson]{font-family:monospace;font-size:12px}
+.cic-activation-controls{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:6px 8px;padding:6px 8px;border:1px solid #7b1515;border-radius:6px;background:rgba(35,8,8,.82)}
+.cic-activation-controls button{width:auto;min-height:30px;padding:5px 9px}
+.cic-activation-controls .cic-activate-button{border-color:#9a2424;background:#421010;color:#ffd0d0}
+.cic-activation-controls .cic-deactivate-button{border-color:#555;background:#1c1f22;color:#ddd}
+.cic-chat-activation h3{margin:0 0 6px}
+
+/* v1.5 — выбор traits активации */
+.cic-trait-picker{display:flex;flex-direction:column;gap:8px;padding:9px;border:1px solid #35393e;border-radius:6px;background:#0f1113}
+.cic-trait-picker-row input{min-width:180px;flex:1.2}.cic-trait-picker-row select{min-width:260px;flex:1.8}.cic-trait-picker-row button,.cic-trait-custom-row button{width:auto;white-space:nowrap}
+.cic-trait-selected{display:flex;gap:6px;flex-wrap:wrap;min-height:34px;align-items:center;padding:5px;border:1px dashed #35393e;border-radius:5px;background:#0a0c0e}
+.cic-trait-tag{display:inline-flex!important;align-items:center;gap:6px;width:auto!important;padding:5px 8px!important;border:1px solid #7b3030!important;border-radius:999px!important;background:#2a1010!important;color:#ffd0d0!important}
+.cic-trait-tag code{font-size:10px;opacity:.7;color:#ddd}.cic-trait-tag i{opacity:.8}.cic-trait-empty{font-size:12px;color:#777;padding:0 4px;font-weight:400}
+@media(max-width:900px){.cic-trait-picker-row{flex-wrap:wrap}.cic-trait-picker-row input,.cic-trait-picker-row select{min-width:220px}}
+
+/* v1.7 — кибероружие/киберброня и нативные действия на листе персонажа */
+.cic-combat-section[hidden]{display:none!important}
+.cic-combat-section code{font-family:monospace;color:#ffd0d0}
+.cic-actor-activate{display:inline-flex!important;align-items:center;justify-content:center;min-width:24px;min-height:24px;margin-left:4px;color:#ffb0b0!important;text-decoration:none!important}
+.cic-actor-activate:hover{color:#fff!important;text-shadow:0 0 6px #ff5252}
+
+/* v1.8 — полный редактор Weapon/Armor SF2e и заметная активация */
+.cic-combat-section select[multiple]{min-height:190px;padding:5px;background:#0a0c0e}
+.cic-combat-section select[multiple] option{padding:4px 6px;border-radius:3px}
+.cic-combat-section textarea[name=weaponSystemPatchJson],
+.cic-combat-section textarea[name=armorSystemPatchJson]{font-family:monospace;font-size:12px;min-height:110px}
+.cic-actor-activate{
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:5px!important;
+  width:auto!important;min-width:108px!important;min-height:28px!important;padding:4px 8px!important;margin:0 5px!important;
+  border:1px solid #ffb000!important;border-radius:4px!important;background:linear-gradient(180deg,#b83d00,#761c00)!important;
+  color:#fff6d5!important;font-weight:800!important;font-size:10px!important;letter-spacing:.35px!important;
+  box-shadow:0 0 8px rgba(255,96,0,.65)!important;text-shadow:0 1px 2px #000!important;text-decoration:none!important;
+}
+.cic-actor-activate i{color:#ffe062!important;font-size:13px!important}
+.cic-actor-activate:hover{filter:brightness(1.22);box-shadow:0 0 12px rgba(255,170,0,.9)!important;color:white!important}
+.cic-actor-activate.is-active{border-color:#70e08b!important;background:linear-gradient(180deg,#197a38,#0d4c22)!important;box-shadow:0 0 8px rgba(70,220,110,.55)!important}
+.cic-actor-activate.is-active i{color:#baffc7!important}
+/* v1.8.0 — имя импланта прямо на кнопке активации */
+.cic-actor-activate{max-width:260px!important;white-space:normal!important;line-height:1.12!important;text-align:center!important;font-size:11px!important;padding:5px 9px!important}
+.cic-actor-activate span{display:inline-block;overflow-wrap:anywhere}
+
+/* v1.9 — поисковые прокручиваемые каталоги Weapon/Armor/материалов */
+.cic-catalog-field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.cic-catalog-field.wide{grid-column:1/-1}
+.cic-catalog-label{font-weight:700;color:#e7e7e7}
+.cic-catalog-picker-row{align-items:stretch;flex-wrap:wrap}
+.cic-catalog-picker-row input[type=search]{flex:1 1 190px;min-width:150px}
+.cic-catalog-picker-row select{flex:1.7 1 280px;min-width:220px;background:#0a0c0e}
+.cic-catalog-picker-row select option{padding:4px 6px}
+.cic-catalog-picker-row button,.cic-catalog-custom-row button{width:auto!important;white-space:nowrap;align-self:stretch}
+.cic-catalog-custom-row input{flex:1}
+.cic-catalog-field .cic-trait-selected{min-height:36px}
+@media(max-width:760px){.cic-catalog-field.wide{grid-column:auto}.cic-catalog-picker-row select{min-width:100%;flex-basis:100%}}
+
+/* v1.11 — компактная кнопка активации как в ранних версиях, но крупнее */
+.cic-actor-activate{
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  width:34px!important;min-width:34px!important;max-width:34px!important;
+  height:34px!important;min-height:34px!important;
+  margin:0 4px!important;padding:0!important;
+  border:1px solid #c77700!important;border-radius:5px!important;
+  background:linear-gradient(180deg,#6a250d,#3d1308)!important;
+  color:#ffd56b!important;box-shadow:0 0 5px rgba(255,150,0,.35)!important;
+  text-decoration:none!important;white-space:nowrap!important;line-height:1!important;
+}
+.cic-actor-activate i{font-size:17px!important;color:#ffd56b!important;margin:0!important}
+.cic-actor-activate:hover{filter:brightness(1.18);color:#fff2b5!important;box-shadow:0 0 8px rgba(255,160,0,.65)!important}
+.cic-actor-activate.is-active{border-color:#57b96c!important;background:linear-gradient(180deg,#245d31,#173d21)!important;box-shadow:0 0 5px rgba(70,210,100,.35)!important}
+.cic-actor-activate.is-active i{color:#a8efb6!important}
+
+
+/* v1.13.2 — Manual button and UUID drag/drop description fields */
+.cic-header-actions{display:flex;align-items:center;gap:7px}
+.cic-manual-button{width:auto!important;min-height:34px;padding:5px 9px!important;border:1px solid #6a3434!important;border-radius:4px;background:#241315!important;color:#ffd0d0!important;white-space:nowrap}
+.cic-manual-button:hover{border-color:#a84747!important;background:#351719!important;color:#fff!important}
+.cic-window textarea[data-cic-uuid-drop]{transition:border-color .15s ease,box-shadow .15s ease,background .15s ease}
+.cic-window textarea[data-cic-uuid-drop]::placeholder{color:#777}
+.cic-window textarea.cic-uuid-drop-active{border-color:#ff6464!important;background:#170d0e!important;box-shadow:0 0 0 2px rgba(255,82,82,.18),inset 0 0 18px rgba(255,50,50,.05)!important}
+
+
+/* v1.13.3 — пользовательские модели ПКТ внутри каталога Cyberpunk Remaster */
+.cic-pkt-model-builder textarea[data-cic-uuid-drop]{min-height:110px}
+.cic-pkt-catalog-extension{margin:8px 0 12px;padding:8px;border:1px solid rgba(57,190,224,.32);border-radius:5px;background:rgba(8,18,28,.32)}
+.cic-pkt-catalog-title{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 8px;padding-bottom:6px;border-bottom:1px solid rgba(57,190,224,.25)}
+.cic-pkt-catalog-title strong{font-size:13px;text-transform:uppercase}.cic-pkt-catalog-title small{opacity:.7}
+.cic-pkt-model-card{margin:7px 0;padding:8px;border:1px solid rgba(55,144,183,.38);border-radius:4px;background:linear-gradient(180deg,rgba(25,39,52,.92),rgba(18,31,43,.92))}
+.cic-pkt-model-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.cic-pkt-model-head>div{display:flex;flex-direction:column;gap:2px}.cic-pkt-model-head small{opacity:.75;font-size:11px}
+.cic-pkt-count{flex:0 0 auto;padding:2px 7px;border:1px solid rgba(43,194,234,.35);border-radius:10px;background:rgba(18,95,120,.26);font-size:10px;color:#8ee9ff}
+.cic-pkt-model-card details{margin:5px 0}.cic-pkt-model-card details summary{cursor:pointer;font-size:11px;opacity:.82}.cic-pkt-model-card details ul{margin:5px 0 3px 20px;padding:0}
+.cic-pkt-choice{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:center;margin:6px 0}.cic-pkt-choice select{width:100%;min-width:0}
+.cic-pkt-model-actions{display:grid;grid-template-columns:minmax(0,1fr) 1fr auto auto;gap:8px;align-items:center;margin-top:6px}.cic-pkt-requirement{font-size:10px;color:#e7b92f;text-transform:uppercase}.cic-pkt-requirement.is-ok{color:#77d6a6}
+.cic-pkt-model-actions button{white-space:nowrap}.cic-pkt-delete{width:32px;padding:4px!important}
+@media(max-width:760px){.cic-pkt-model-actions{grid-template-columns:1fr auto}.cic-pkt-model-actions>span{display:none}.cic-pkt-requirement{grid-column:1/-1}}
+
+
+/* v1.13.6 — редактор дополнительных компонентов ПКТ и под-вкладки предпросмотра */
+.cic-pkt-extra-builder{border:1px solid #343a40;border-radius:6px;padding:10px;background:#101419}
+.cic-pkt-extra-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.cic-pkt-extra-title button{width:auto!important;white-space:nowrap}
+.cic-pkt-extra-list{display:flex;flex-direction:column;gap:7px}
+.cic-pkt-extra-row{display:grid;grid-template-columns:minmax(0,1fr) 78px 110px 34px;gap:7px;align-items:end;padding:7px;border:1px solid #2f3b45;border-radius:5px;background:#0b1117}
+.cic-pkt-extra-main{display:grid;grid-template-columns:1.25fr .75fr;gap:7px;min-width:0}.cic-pkt-extra-row label{gap:3px!important;font-size:10px}.cic-pkt-extra-remove{width:34px!important;height:34px;padding:0!important;color:#ff8d8d!important}
+.cic-pkt-extra-empty{padding:9px;border:1px dashed #35434f;border-radius:4px;color:#7f909e;text-align:center;font-size:11px}
+.cic-preview-subtabs{display:flex;gap:4px;margin:10px 0;border-bottom:1px solid #333}.cic-preview-subtabs button{width:auto;padding:6px 10px;border:1px solid #333;border-bottom:0;background:#15191d;color:#aaa}.cic-preview-subtabs button.active{background:#251114;color:#ff9d9d;border-color:#703030}.cic-preview-subtabs span{display:inline-block;min-width:18px;margin-left:4px;padding:1px 5px;border-radius:9px;background:#173947;color:#8ee9ff;font-size:9px}
+.cic-preview-subpane{display:none}.cic-preview-subpane.active{display:block}.cic-preview-extra-list{display:flex;flex-direction:column;gap:7px}.cic-preview-extra-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;padding:8px;border:1px solid #334553;border-radius:5px;background:#0b131a}.cic-preview-extra-card strong{color:#dff8ff}.cic-preview-extra-card span{color:#7feaff;font-weight:800}.cic-preview-extra-card small,.cic-preview-extra-card em{grid-column:1/-1;color:#8294a2;font-size:10px;overflow-wrap:anywhere}.cic-preview-extra-card em{color:#c7a867;font-style:normal}
+@media(max-width:760px){.cic-pkt-extra-row{grid-template-columns:1fr 70px 100px 34px}.cic-pkt-extra-main{grid-column:1/-1}}
+
+
+/* v1.13.7 user PKT management */
+.cic-pkt-model-manager-list{display:flex;flex-direction:column;gap:6px}
+.cic-pkt-manager-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border:1px solid rgba(61,180,210,.28);background:rgba(7,16,24,.72);border-radius:4px}
+.cic-pkt-manager-row>div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.cic-pkt-manager-row strong{color:#d9f7ff}
+.cic-pkt-manager-row small{color:#93aab3;white-space:normal}
+.cic-danger,.cic-native-pkt-delete{border-color:rgba(232,52,88,.6)!important;color:#ffd7df!important;background:rgba(65,10,24,.55)!important}
+.cic-danger:hover:not(:disabled),.cic-native-pkt-delete:hover:not(:disabled){background:rgba(105,14,36,.72)!important;box-shadow:0 0 8px rgba(232,52,88,.18)!important}
+.cic-danger:disabled,.cic-native-pkt-delete:disabled{opacity:.45!important;cursor:not-allowed!important}
+
+/* v1.13.8 — отдельные базы и доп. модули готовой модели ПКТ */
+.cic-pkt-composition-columns{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;align-items:start}
+.cic-pkt-base-builder{border-color:#31515d;background:#0d161b}
+.cic-pkt-component-main{display:grid;grid-template-columns:1.25fr .75fr;gap:7px;min-width:0}
+.cic-pkt-base-row,.cic-pkt-extra-row{display:grid;grid-template-columns:minmax(0,1fr) 62px 112px 110px 92px 34px;gap:7px;align-items:end;padding:7px;border:1px solid #2f3b45;border-radius:5px;background:#0b1117}
+.cic-pkt-base-row{grid-template-columns:minmax(0,1fr) 62px 112px 92px 92px 34px;border-color:#2f4f5c;background:#0a1419}
+.cic-pkt-base-row label,.cic-pkt-extra-row label{gap:3px!important;font-size:10px;min-width:0}
+.cic-pkt-base-row input,.cic-pkt-extra-row input,.cic-pkt-extra-row select,.cic-pkt-base-row select{min-width:0;width:100%}
+.cic-mini-check{display:flex!important;flex-direction:row!important;align-items:center!important;gap:5px!important;min-height:34px;padding-bottom:5px}
+.cic-mini-check input{width:auto!important}
+@media(max-width:1180px){.cic-pkt-composition-columns{grid-template-columns:1fr}.cic-pkt-base-row,.cic-pkt-extra-row{grid-template-columns:minmax(0,1fr) 62px 110px 100px 90px 34px}}
+@media(max-width:760px){.cic-pkt-base-row,.cic-pkt-extra-row{grid-template-columns:1fr 70px 100px 34px}.cic-pkt-component-main{grid-column:1/-1}.cic-pkt-base-row label:nth-of-type(n+3),.cic-pkt-extra-row label:nth-of-type(n+3){grid-column:auto}}
+/* v1.13.8 layout refinement: две реальные колонки состава */
+.cic-pkt-composition-columns{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.cic-pkt-base-row,.cic-pkt-extra-row{grid-template-columns:64px minmax(90px,1fr) minmax(100px,1fr) 92px 34px}
+.cic-pkt-component-main{grid-column:1/-1}
+@media(max-width:760px){.cic-pkt-composition-columns{grid-template-columns:1fr}.cic-pkt-base-row,.cic-pkt-extra-row{grid-template-columns:64px minmax(90px,1fr) minmax(100px,1fr) 92px 34px}}
+
+
+/* v1.13.9 — Hard Cost preview breakdown */
+.cic-pkt-hard-hint{display:block;margin-top:2px;color:#d8b16a;font-size:9px}
+.cic-hard-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:8px 0 12px}
+.cic-hard-summary>div{display:flex;flex-direction:column;gap:3px;padding:10px;border:1px solid #344653;border-radius:5px;background:#0a1218}.cic-hard-summary span{color:#9fb0bb;font-size:10px}.cic-hard-summary strong{font-size:20px;color:#f2d18b}.cic-hard-summary .cic-hard-total{border-color:#8c3e45;background:#1b0e12}.cic-hard-summary .cic-hard-total strong{color:#ff7f83}
+.cic-hard-breakdown{display:grid;grid-template-columns:1fr 1fr;gap:10px}.cic-hard-breakdown section{padding:8px;border:1px solid #2f3f49;border-radius:5px;background:#0a1116}.cic-hard-breakdown h4{margin:0 0 7px;color:#dcebf2;border-bottom:1px solid #283944;padding-bottom:5px}.cic-hard-line{display:flex;justify-content:space-between;gap:10px;padding:5px 3px;border-bottom:1px solid #1e2a31}.cic-hard-line:last-child{border-bottom:0}.cic-hard-line span{color:#c7d3d9}.cic-hard-line strong{color:#f0c16e;white-space:nowrap}
+@media(max-width:900px){.cic-hard-summary{grid-template-columns:1fr 1fr}.cic-hard-breakdown{grid-template-columns:1fr}}
+
+
+/* v1.13.10 — compact PKT composition editor */
+.cic-pkt-composition-editor{min-width:0;border:1px solid #263b47;border-radius:7px;background:#0a1015;overflow:hidden}
+.cic-pkt-builder-tabs{display:flex;gap:0;border-bottom:1px solid #2c4654;background:#0d151b}
+.cic-pkt-builder-tabs button{width:auto!important;flex:1;min-height:34px;border:0!important;border-radius:0!important;background:transparent!important;color:#9fb2bd!important}
+.cic-pkt-builder-tabs button.active{color:#7feaff!important;background:#10222b!important;box-shadow:inset 0 -2px 0 #d94154!important}
+.cic-pkt-builder-pane{display:none!important;border:0!important;border-radius:0!important;margin:0!important;background:#0d1419!important}
+.cic-pkt-builder-pane.active{display:block!important}
+.cic-pkt-scroll-list{max-height:390px;overflow:auto;padding-right:3px;scrollbar-width:thin}
+.cic-pkt-base-row,.cic-pkt-extra-row{display:block!important;padding:8px!important;margin:0!important;border:1px solid #263a46!important;border-radius:5px!important;background:#091117!important}
+.cic-pkt-extra-list{gap:6px!important}
+.cic-pkt-component-main{display:grid!important;grid-template-columns:minmax(180px,1.35fr) minmax(150px,.8fr)!important;gap:7px!important;align-items:center}
+.cic-pkt-component-main .cic-pkt-hard-hint{grid-column:1/-1}
+.cic-pkt-component-controls{display:grid;grid-template-columns:72px minmax(150px,1.2fr) minmax(130px,1fr) 105px 105px minmax(135px,auto) 34px;gap:7px;align-items:end;margin-top:6px}
+.cic-pkt-base-row .cic-pkt-component-controls{grid-template-columns:72px minmax(160px,1.3fr) 105px 105px minmax(135px,auto) 34px}
+.cic-pkt-component-controls label{display:flex!important;flex-direction:column!important;gap:3px!important;min-width:0;font-size:10px!important}
+.cic-pkt-component-controls .cic-mini-check{flex-direction:row!important;align-items:center!important;align-self:center;padding-top:13px;white-space:nowrap}
+.cic-pkt-component-controls input,.cic-pkt-component-controls select{width:100%!important;min-width:0!important}
+@media(max-width:1050px){.cic-pkt-component-controls,.cic-pkt-base-row .cic-pkt-component-controls{grid-template-columns:72px minmax(140px,1fr) minmax(120px,1fr) 100px 100px;}.cic-pkt-component-controls .cic-mini-check{grid-column:1/-2;padding-top:0}.cic-pkt-component-controls .cic-pkt-extra-remove{grid-column:-2/-1}}
+@media(max-width:720px){.cic-pkt-component-main{grid-template-columns:1fr}.cic-pkt-component-controls,.cic-pkt-base-row .cic-pkt-component-controls{grid-template-columns:1fr 1fr}.cic-pkt-component-controls .cic-mini-check{grid-column:1/-1}.cic-pkt-component-controls .cic-pkt-extra-remove{grid-column:2;justify-self:end}}
+
+
+/* v1.13.12 — custom replacement bases + internal/external capacity */
+.cic-pkt-base-row .cic-pkt-component-controls{grid-template-columns:72px minmax(145px,1.25fr) 72px 72px 100px 100px minmax(145px,auto) 34px!important}
+.cic-native-base-capacity{display:flex;gap:12px;align-items:center;padding:4px 8px;margin:3px 0 5px;border-left:2px solid rgba(76,236,255,.45);background:rgba(8,26,34,.55);font-size:10px;color:#9fb8c2}
+.cic-native-base-capacity b{color:#78efff}
+@media(max-width:1100px){.cic-pkt-base-row .cic-pkt-component-controls{grid-template-columns:72px minmax(130px,1fr) 72px 72px 95px 95px!important}.cic-pkt-base-row .cic-pkt-unique-base{grid-column:1/-2!important}.cic-pkt-base-row .cic-pkt-extra-remove{grid-column:-2/-1!important}}
+@media(max-width:720px){.cic-pkt-base-row .cic-pkt-component-controls{grid-template-columns:1fr 1fr!important}}
+
+
+/* v1.13.13 — global internal/external implant capacity */
+.cic-global-implant-capacity{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  min-width:34px!important;
+  margin-left:8px!important;
+  padding:1px 6px!important;
+  border:1px solid rgba(75,231,245,.42)!important;
+  border-radius:9px!important;
+  background:rgba(7,30,37,.82)!important;
+  color:#7feaff!important;
+  font:700 10px/1.4 sans-serif!important;
+  letter-spacing:.02em!important;
+  vertical-align:middle!important;
+}
+.cic-global-implant-capacity.over{
+  border-color:rgba(255,76,91,.62)!important;
+  background:rgba(62,10,18,.82)!important;
+  color:#ff7f8b!important;
+}
+
+
+/* v1.13.16 — maximize / normal / minimize creator window */
+.cic-window-controls{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  padding:2px 4px;
+  border:1px solid rgba(118,55,55,.55);
+  border-radius:5px;
+  background:rgba(15,10,12,.46);
+}
+.cic-window-control{
+  width:32px!important;
+  min-width:32px!important;
+  height:30px!important;
+  min-height:30px!important;
+  padding:0!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+}
+.cic-window-control.active,
+.cic-window-control:disabled{
+  opacity:.52!important;
+  cursor:default!important;
+  border-color:#4a3030!important;
+  background:#171315!important;
+}
+.cic-window.cic-maximized{
+  left:8px!important;
+  top:8px!important;
+  right:8px!important;
+  bottom:8px!important;
+  transform:none!important;
+  width:auto!important;
+  height:auto!important;
+  min-width:0!important;
+  min-height:0!important;
+  max-width:none!important;
+  max-height:none!important;
+  resize:none!important;
+  border-radius:5px!important;
+}
+.cic-window.cic-minimized{
+  width:min(520px,calc(100vw - 24px))!important;
+  height:auto!important;
+  min-width:300px!important;
+  min-height:0!important;
+  max-width:calc(100vw - 24px)!important;
+  max-height:none!important;
+  resize:none!important;
+  overflow:visible!important;
+  border-radius:7px!important;
+}
+.cic-window.cic-minimized .cic-form{display:none!important;}
+.cic-window.cic-minimized .cic-header{
+  padding:7px 9px!important;
+  border-bottom:0!important;
+  border-radius:7px!important;
+}
+.cic-window.cic-minimized .cic-header h2{font-size:15px!important;}
+.cic-window.cic-minimized .cic-header p{display:none!important;}
+.cic-window.cic-minimized .cic-manual-button{display:none!important;}
+@media(max-width:760px){
+  .cic-window-controls{gap:2px;padding:1px 2px}
+  .cic-window-control{width:29px!important;min-width:29px!important;height:28px!important;min-height:28px!important}
+  .cic-window.cic-maximized{left:4px!important;top:4px!important;right:4px!important;bottom:4px!important}
+  .cic-window.cic-minimized{width:calc(100vw - 12px)!important;min-width:0!important}
+}
+
+
+
+
+/* v1.13.18 — section header implant counters */
+.cic-global-implant-capacity{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  min-width:36px!important;
+  margin-left:8px!important;
+  padding:1px 7px!important;
+  border:1px solid rgba(75,231,245,.50)!important;
+  border-radius:10px!important;
+  background:rgba(6,28,36,.88)!important;
+  color:#83efff!important;
+  font:700 10px/1.35 sans-serif!important;
+  letter-spacing:.02em!important;
+  vertical-align:middle!important;
+  white-space:nowrap!important;
+  text-shadow:0 0 5px rgba(72,222,239,.18)!important;
+}
+.cic-global-implant-capacity.over{
+  border-color:rgba(255,76,91,.68)!important;
+  background:rgba(62,10,18,.88)!important;
+  color:#ff8590!important;
+  text-shadow:0 0 5px rgba(255,76,91,.18)!important;
+}
+
+
+/* v1.13.21 preview totals */
+.cic-preview-actions{display:flex;justify-content:flex-end;gap:8px;margin:8px 0 12px}.cic-preview-actions button{width:auto;padding:7px 11px}.cic-price-summary{grid-template-columns:repeat(5,minmax(0,1fr))}.cic-price-summary .cic-hard-total{grid-column:auto}.cic-preview-subtabs{flex-wrap:wrap}@media(max-width:1100px){.cic-price-summary{grid-template-columns:1fr 1fr}.cic-price-summary .cic-hard-total{grid-column:1/-1}}
+
+
+/* v1.13.22 — editable component prices + automatic model price */
+.cic-pkt-component-controls{grid-template-columns:72px minmax(145px,1.15fr) minmax(125px,1fr) 110px 100px 100px minmax(135px,auto) 34px!important}
+.cic-pkt-base-row .cic-pkt-component-controls{grid-template-columns:72px minmax(145px,1.2fr) 72px 72px 110px 100px 100px minmax(145px,auto) 34px!important}
+input.cic-auto-price{background:rgba(20,62,68,.38)!important;border-color:rgba(80,220,225,.32)!important;color:#9fe8e8!important;cursor:default}
+@media(max-width:1200px){.cic-pkt-component-controls,.cic-pkt-base-row .cic-pkt-component-controls{grid-template-columns:repeat(4,minmax(90px,1fr))!important}.cic-pkt-component-main{grid-column:1/-1}.cic-pkt-component-controls .cic-mini-check{grid-column:1/-2!important}.cic-pkt-component-controls .cic-pkt-extra-remove{grid-column:-2/-1!important}}
+@media(max-width:720px){.cic-pkt-component-controls,.cic-pkt-base-row .cic-pkt-component-controls{grid-template-columns:1fr 1fr!important}}
+
+
+/* v1.13.25 — wider PKT editor and true full-width composition pane */
+.cic-grid > .wide{grid-column:1/-1!important;}
+.cic-pkt-model-builder .cic-grid.two{grid-template-columns:minmax(0,1fr) minmax(0,1fr);}
+.cic-pkt-model-builder .cic-pkt-composition-editor{width:100%!important;max-width:none!important;}
+.cic-pkt-model-builder .cic-pkt-builder-pane{width:100%!important;box-sizing:border-box!important;}
+.cic-pkt-model-builder .cic-pkt-scroll-list{max-height:460px;}
+.cic-pkt-model-builder .cic-pkt-component-main{grid-template-columns:minmax(300px,1.5fr) minmax(220px,.85fr)!important;}
+.cic-pkt-model-builder .cic-pkt-component-controls{grid-template-columns:72px minmax(170px,1.15fr) minmax(150px,1fr) 112px 110px 110px minmax(145px,auto) 34px!important;}
+.cic-pkt-model-builder .cic-pkt-base-row .cic-pkt-component-controls{grid-template-columns:72px minmax(175px,1.2fr) 76px 76px 112px 110px 110px minmax(155px,auto) 34px!important;}
+@media(max-width:1280px){
+  .cic-pkt-model-builder .cic-pkt-component-main{grid-template-columns:minmax(240px,1.35fr) minmax(180px,.8fr)!important;}
+  .cic-pkt-model-builder .cic-pkt-component-controls,
+  .cic-pkt-model-builder .cic-pkt-base-row .cic-pkt-component-controls{grid-template-columns:repeat(4,minmax(105px,1fr))!important;}
+  .cic-pkt-model-builder .cic-pkt-component-controls .cic-mini-check{grid-column:1/-2!important;}
+  .cic-pkt-model-builder .cic-pkt-component-controls .cic-pkt-extra-remove{grid-column:-2/-1!important;}
+}
+@media(max-width:900px){
+  .cic-window{width:calc(100vw - 20px);min-width:0;}
+  .cic-pkt-model-builder .cic-pkt-component-main{grid-template-columns:1fr!important;}
+}
+
+
+/* v1.13.26 — нативные заряды активаций и постоянная маленькая кнопка */
+.cic-actor-activate.is-empty{
+  display:inline-flex!important;
+  opacity:.68!important;
+  border-color:#6f747b!important;
+  background:linear-gradient(180deg,#30343a,#1f2227)!important;
+  box-shadow:none!important;
+  cursor:not-allowed!important;
+}
+.cic-actor-activate.is-empty i{color:#aeb4ba!important}
+.cic-activation-controls .cic-activate-button:disabled{opacity:.62;cursor:not-allowed;filter:saturate(.45)}
+
+
+/* v1.13.29 — вся площадь маленькой кнопки активации кликабельна */
+.cic-actor-activate{
+  position:relative!important;
+  z-index:2!important;
+  pointer-events:auto!important;
+  cursor:pointer!important;
+  touch-action:manipulation!important;
+  user-select:none!important;
+}
+/* Font Awesome / вложенные элементы больше не перехватывают центр кнопки. */
+.cic-actor-activate > *,
+.cic-actor-activate i,
+.cic-actor-activate i::before,
+.cic-actor-activate span,
+.cic-actor-activate svg,
+.cic-actor-activate path{
+  pointer-events:none!important;
+}
+.cic-actor-activate::before,
+.cic-actor-activate::after{
+  pointer-events:none!important;
+}
+
+/* 2.8.7 — SF2E Cyberpunk Remaster unified shell */
+.cic-root {
+  font-family: Consolas, "Roboto Mono", "Courier New", monospace;
+}
+
+.cic-window {
+  --cyber-accent: #df2532;
+  --cyber-secondary: #46d9dc;
+  --cyber-background: #09070b;
+  --cyber-panel: #100b12;
+  --cyber-panel-strong: #160d13;
+  --cyber-text: #f0e9df;
+  --cyber-muted: #a89fa5;
+  --cyber-accent-soft: rgba(223, 37, 50, 0.2);
+  --cyber-accent-strong: rgba(223, 37, 50, 0.7);
+  --cyber-secondary-soft: rgba(70, 217, 220, 0.15);
+  border: 1px solid var(--cyber-accent-strong);
+  border-radius: 0;
+  color: var(--cyber-text);
+  background:
+    linear-gradient(var(--cyber-secondary-soft) 1px, transparent 1px),
+    linear-gradient(90deg, var(--cyber-secondary-soft) 1px, transparent 1px),
+    radial-gradient(circle at 92% -8%, var(--cyber-secondary-soft), transparent 35%),
+    var(--cyber-background);
+  background-size: 30px 30px, 30px 30px, auto, auto;
+  box-shadow:
+    0 0 0 1px var(--cyber-secondary-soft),
+    0 0 34px var(--cyber-accent-soft),
+    0 26px 72px rgba(0, 0, 0, 0.76);
+  font-family: Consolas, "Roboto Mono", "Courier New", monospace;
+}
+
+.cic-header {
+  position: relative;
+  min-height: 42px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--cyber-accent-strong);
+  border-radius: 0;
+  background:
+    linear-gradient(90deg, var(--cyber-accent-soft), transparent 42%),
+    repeating-linear-gradient(90deg, transparent 0 17px, var(--cyber-secondary-soft) 17px 18px),
+    var(--cyber-background);
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.cic-header::after {
+  width: 62px;
+  height: 3px;
+  margin-left: 10px;
+  content: "";
+  background: linear-gradient(
+    90deg,
+    var(--cyber-accent) 0 54%,
+    transparent 54% 62%,
+    var(--cyber-secondary) 62% 80%,
+    transparent 80% 87%,
+    var(--cyber-text) 87%
+  );
+  box-shadow: 0 0 8px var(--cyber-accent-soft);
+}
+
+.cic-header h2,
+.cic-preview h3,
+.cic-toolbox h3,
+.cic-rule-config summary {
+  color: var(--cyber-accent);
+  text-shadow: 0 0 10px var(--cyber-accent-soft);
+}
+
+.cic-header p,
+.cic-grid small,
+.cic-toolbox small,
+.cic-help {
+  color: var(--cyber-muted);
+}
+
+.cic-tabs,
+.cic-footer {
+  border-color: var(--cyber-accent-strong);
+  background: rgba(9, 7, 11, 0.94);
+}
+
+.cic-tabs button,
+.cic-window button,
+.cic-window-control,
+.cic-launch {
+  border-radius: 0;
+  border-color: rgba(223, 37, 50, 0.42);
+  background: rgba(22, 13, 19, 0.92);
+  color: var(--cyber-text);
+  font-family: Consolas, "Roboto Mono", "Courier New", monospace;
+  letter-spacing: 0.025em;
+  transition:
+    color 140ms ease,
+    border-color 140ms ease,
+    background-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 100ms ease;
+}
+
+.cic-window button:hover:not(:disabled),
+.cic-launch:hover:not(:disabled) {
+  border-color: var(--cyber-secondary);
+  color: #ffffff;
+  background: rgba(70, 217, 220, 0.1);
+  box-shadow: 0 0 12px var(--cyber-secondary-soft);
+  transform: translateY(-1px);
+}
+
+.cic-tabs button.active {
+  border-color: var(--cyber-accent-strong);
+  color: #ffffff;
+  background:
+    linear-gradient(180deg, rgba(223, 37, 50, 0.2), rgba(223, 37, 50, 0.08)),
+    var(--cyber-panel);
+  box-shadow: inset 0 -2px 0 var(--cyber-accent);
+}
+
+.cic-window input,
+.cic-window select,
+.cic-window textarea,
+.cic-trait-picker,
+.cic-preview,
+.cic-toolbox,
+.cic-pkt-composition-editor,
+.cic-pkt-builder-pane,
+.cic-pkt-base-row,
+.cic-pkt-extra-row,
+.cic-hard-breakdown section,
+.cic-preview-extra-card {
+  border-color: rgba(70, 217, 220, 0.28) !important;
+  border-radius: 0 !important;
+  background: rgba(7, 10, 13, 0.9) !important;
+  color: var(--cyber-text) !important;
+  font-family: Consolas, "Roboto Mono", "Courier New", monospace;
+}
+
+.cic-window input:focus,
+.cic-window select:focus,
+.cic-window textarea:focus {
+  border-color: var(--cyber-secondary) !important;
+  outline: none;
+  box-shadow: 0 0 0 1px var(--cyber-secondary-soft), 0 0 12px var(--cyber-secondary-soft);
+}
+
+.cic-chip,
+.cic-trait-tag,
+.cic-preview [data-preview-flags] span {
+  border-color: rgba(223, 37, 50, 0.58) !important;
+  border-radius: 0 !important;
+  background: rgba(223, 37, 50, 0.12) !important;
+  color: #ffd9dc !important;
+}
+
+.cic-actions code,
+.cic-preview pre,
+.cic-window textarea[name="rulesJson"],
+.cic-window textarea[name="profileJson"],
+.cic-window textarea[name="rulePatchJson"] {
+  color: #bffcff;
+  background: rgba(3, 9, 11, 0.92);
+  font-family: Consolas, "Roboto Mono", "Courier New", monospace;
+}
+
+.cic-primary,
+.cic-footer .cic-primary {
+  border-color: var(--cyber-accent) !important;
+  border-radius: 0 !important;
+  color: #ffffff !important;
+  background: linear-gradient(180deg, #ed3040, #a61220) !important;
+  clip-path: polygon(
+    8px 0,
+    100% 0,
+    100% calc(100% - 8px),
+    calc(100% - 8px) 100%,
+    0 100%,
+    0 8px
+  );
+  font-weight: 800;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 0 15px var(--cyber-accent-soft);
+}
+
+.cic-primary:hover:not(:disabled),
+.cic-footer .cic-primary:hover:not(:disabled) {
+  border-color: #ff6670 !important;
+  background: linear-gradient(180deg, #fa3b4b, #bc1424) !important;
+  box-shadow: 0 0 18px rgba(223, 37, 50, 0.4) !important;
+}
+
+.cic-window-controls {
+  border-color: rgba(70, 217, 220, 0.26);
+  border-radius: 0;
+  background: rgba(3, 9, 11, 0.76);
+}
+
+.cic-native-base-capacity,
+.cic-global-implant-capacity {
+  border-color: rgba(70, 217, 220, 0.5) !important;
+  border-radius: 0 !important;
+  color: #8ff8fb !important;
+  background: rgba(6, 25, 30, 0.88) !important;
+}
+
+.cic-window ::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+.cic-window ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.42); }
+.cic-window ::-webkit-scrollbar-thumb {
+  border: 1px solid rgba(223, 37, 50, 0.35);
+  background: rgba(70, 217, 220, 0.32);
+}

@@ -297,3 +297,104 @@
     animation: none !important;
   }
 }
+
+/* 2.8.7 — standalone-style integrated tools share the Remaster chrome. */
+.cic-window {
+  color-scheme: dark;
+  font-family: Consolas, "Roboto Mono", "Courier New", monospace;
+}
+
+/* 2.8.8 / 2.8.11 — one typography scale for Remaster text, while Foundry owns icon fonts. */
+:root {
+  --cyber-ui-font: Consolas, "Roboto Mono", "Courier New", monospace;
+}
+:is(.cpel-neon-forge-application, .cyberpunk-forge-application, .neuro-archive-application, .cic-root) {
+  --cyber-ui-font-size: clamp(11px, 1.1cqi, 14px);
+  container-type: inline-size;
+  font-family: var(--cyber-ui-font) !important;
+}
+
+/*
+ * IMPORTANT: Foundry 14 puts Font Awesome classes not only on nested <i>
+ * elements, but also directly on native header/control buttons. Never force
+ * the Remaster text font onto any element whose class token belongs to FA.
+ * We intentionally do not name a Font Awesome family here: Foundry's own
+ * stylesheet selects the correct bundled family/weight for the installed UI.
+ */
+:is(.cpel-neon-forge-application, .cyberpunk-forge-application, .neuro-archive-application, .cic-root)
+  :is(button, input, select, textarea, label, summary):not([class^="fa-"]):not([class*=" fa-"]):not(.fa):not(.fas):not(.far):not(.fab):not(.fad):not(.fal):not(.fat):not(.fass):not(.fasds) {
+  font-family: var(--cyber-ui-font) !important;
+}
+:is(.cpel-neon-forge-application, .cyberpunk-forge-application, .neuro-archive-application, .cic-root)
+  :is(h1, h2, h3, h4, h5, h6, p, a, strong, b, small, li, td, th, button, input, select, textarea, label, summary, code, pre):not([class^="fa-"]):not([class*=" fa-"]):not(.fa):not(.fas):not(.far):not(.fab):not(.fad):not(.fal):not(.fat):not(.fass):not(.fasds) {
+  font-family: var(--cyber-ui-font) !important;
+}
+:is(.cpel-neon-forge-application, .cyberpunk-forge-application) .cyberpunk-forge-shell,
+.neuro-archive-application #pcm-root,
+.cic-root .cic-window {
+  container-type: inline-size;
+  font-family: var(--cyber-ui-font) !important;
+  font-size: var(--cyber-ui-font-size);
+}
+.neuro-archive-application #pcm-root {
+  --font-size: var(--cyber-ui-font-size);
+  font-family: var(--cyber-ui-font) !important;
+}
+:is(.cpel-neon-forge-application, .cyberpunk-forge-application) .window-content,
+.neuro-archive-application .window-content {
+  min-width: 0;
+  min-height: 0;
+}
+.cpel-neon-forge-application .cyberpunk-forge-body,
+.neuro-archive-application #pcm-root main,
+.cic-root .cic-tab {
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+@container (max-width: 900px) {
+  .cpel-neon-forge-application .cyberpunk-forge-layout {
+    grid-template-columns: 1fr !important;
+    overflow: auto !important;
+  }
+  .cpel-neon-forge-application .cyberpunk-forge-preview-panel {
+    margin: 0 12px 12px !important;
+    max-height: none !important;
+  }
+  .neuro-archive-application #pcm-root .pcm-detail-grid,
+  .neuro-archive-application #pcm-root .pcm-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .neuro-archive-application #pcm-root .pcm-detail-panel.wide {
+    grid-column: auto !important;
+  }
+  .cic-root .cic-grid.two,
+  .cic-root .cic-grid.three,
+  .cic-root .cic-pkt-composition-columns,
+  .cic-root .cic-hard-breakdown {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@container (max-width: 640px) {
+  :is(.cpel-neon-forge-application, .cyberpunk-forge-application, .neuro-archive-application, .cic-root) {
+    --cyber-ui-font-size: clamp(10px, 2.15cqi, 13px);
+  }
+  .cpel-neon-forge-application .cyberpunk-forge-hero,
+  .neuro-archive-application #pcm-root .pcm-top,
+  .neuro-archive-application #pcm-root .pcm-person-hero,
+  .cic-root .cic-header,
+  .cic-root .cic-footer {
+    flex-wrap: wrap;
+  }
+  .neuro-archive-application #pcm-root .pcm-layout {
+    grid-template-columns: minmax(44px, 64px) minmax(0, 1fr) !important;
+  }
+  .cic-root .cic-window {
+    width: calc(100vw - 12px) !important;
+    height: calc(100vh - 12px) !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    resize: none !important;
+  }
+}

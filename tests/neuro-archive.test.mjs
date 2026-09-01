@@ -67,7 +67,7 @@ test("Neuro Archive registers a public module API", () => {
   assert.equal(typeof init, "function");
   init();
   assert.equal(typeof moduleRecord.api.neuroArchive.open, "function");
-  assert.equal(moduleRecord.api.neuroArchive.version, "4.1.0");
+  assert.equal(moduleRecord.api.neuroArchive.version, "4.2.0");
   assert.equal(typeof globalThis.CyberpunkRemaster.forge, "function");
   assert.equal(typeof globalThis.CyberpunkRemaster.archive, "function");
 });
@@ -180,6 +180,7 @@ test("module keeps legacy archive data compatibility and a tiny launcher macro",
     new URL("../runtime/neuro-archive-controller.mjs", import.meta.url),
     "utf8",
   );
+  assert.match(controller, /flags\.cyberpunkRemaster\?\.neuroArchive\?\.data/u);
   assert.match(controller, /flags\.personalChronicleMacro\?\.data/u);
   assert.match(controller, /personal-chronicle-macro:/u);
 
@@ -213,7 +214,7 @@ test("Neuro Archive theme controls show all four palette colors", () => {
   assert.match(styles, /\.pcm-theme-palette i:nth-child\(4\)/u);
 });
 
-test("modular controller opens a legacy macro archive without migration", () => {
+test("modular controller opens a legacy macro archive through the compatibility fallback", () => {
   const { NODE_V8_COVERAGE: _coverage, ...environment } = process.env;
   execFileSync(
     process.execPath,

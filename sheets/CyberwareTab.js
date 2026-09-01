@@ -167,6 +167,10 @@ export class CyberwareTab {
       element.querySelector("section.sheet-body, .sheet-body");
     if (!nav || !content || nav.querySelector('[data-tab="cyberware"]')) return;
 
+    // Give both character and NPC sheets the same constrained host so the
+    // Chrome panel always owns vertical scrolling instead of being clipped.
+    content.classList.add("cw-sheet-content-host");
+
     const group = nav.dataset.group || "primary";
     const label = "Хром";
     const navItem = document.createElement("a");
@@ -508,11 +512,80 @@ export class CyberwareTab {
         usedSlots: base.usedSlots,
         totalSlots: base.totalSlots,
       })),
+      internalCapacity: this.implantCapacityView(actor, "internal"),
+      externalCapacity: this.implantCapacityView(actor, "external"),
+      fashionCapacity: this.implantCapacityView(actor, "fashion"),
       internals: internals.map((item) => this.simpleItemView(item)),
       externals: externals.map((item) => this.simpleItemView(item)),
       fashion: fashion.map((item) => this.simpleItemView(item)),
       unlinked,
     };
+  }
+
+  static implantQuantity(item) {
+    const quantity = Number(item?.system?.quantity ?? 1);
+    return Number.isFinite(quantity) ? Math.max(1, Math.trunc(quantity)) : 1;
+  }
+
+  static actorHasInstalledPktBody(actor, { excludeItemId = null } = {}) {
+    return collectionValues(actor?.items).some(
+      (item) =>
+        item?.id !== excludeItemId &&
+        this.isPktBody(item) &&
+        this.isInstalled(item),
+    );
+  }
+
+  static implantCapacity(actor, type, { excludeItemId = null, pktActive = null } = {}) {
+    if (!["internal", "external", "fashion"].includes(type)) {
+      return { used: 0, limit: Infinity, over: false };
+    }
+    const hasPkt =
+      typeof pktActive === "boolean"
+        ? pktActive
+        : this.actorHasInstalledPktBody(actor, { excludeItemId });
+    const limit = type === "fashion" ? 7 : hasPkt ? 14 : 7;
+    const used = collectionValues(actor?.items)
+      .filter(
+        (item) =>
+          item?.id !== excludeItemId &&
+          !this.isPktBody(item) &&
+          this.isInstalled(item) &&
+          this.getImplantType(item) === type,
+      )
+      .reduce((sum, item) => sum + this.implantQuantity(item), 0);
+    return { used, limit, over: used > limit };
+  }
+
+  static implantCapacityView(actor, type) {
+    const capacity = this.implantCapacity(actor, type);
+    return {
+      ...capacity,
+      percent:
+        Number.isFinite(capacity.limit) && capacity.limit > 0
+          ? Math.min(100, Math.round((capacity.used / capacity.limit) * 100))
+          : 0,
+    };
+  }
+
+  static implantCapacityMessage(actor, type, item = null) {
+    const capacity = this.implantCapacity(actor, type, {
+      excludeItemId: item?.id ?? null,
+    });
+    const requested = item ? this.implantQuantity(item) : 1;
+    const label =
+      type === "internal"
+        ? "внутренних"
+        : type === "external"
+          ? "внешних"
+          : "стилевых";
+    const mode =
+      type === "fashion"
+        ? "независимо от ПКТ"
+        : this.actorHasInstalledPktBody(actor)
+          ? "с установленным ПКТ"
+          : "без ПКТ";
+    return `Лимит ${label} имплантов ${mode}: ${capacity.limit}. Сейчас установлено ${capacity.used}; требуется ещё ${requested}.`;
   }
 
   static simpleItemView(item) {
@@ -1015,6 +1088,16 @@ export class CyberwareTab {
       candidate.traits?.has?.(trait) ||
       candidate.system?.traits?.value?.includes?.(trait) === true;
 
+    const implantType = this.getImplantType(item);
+    if (["internal", "external", "fashion"].includes(implantType)) {
+      const capacity = this.implantCapacity(actor, implantType, {
+        excludeItemId: item?.id ?? null,
+      });
+      if (capacity.used + this.implantQuantity(item) > capacity.limit) {
+        return this.implantCapacityMessage(actor, implantType, item);
+      }
+    }
+
     const exclusiveFamily = this.getExclusiveFamily(item);
     if (
       exclusiveFamily &&
@@ -1107,6 +1190,21 @@ export class CyberwareTab {
       )
     ) {
       return "Сначала демонтируйте установленную модель ПКТ во вкладке «Хром».";
+    }
+    if (
+      this.isPktBody(item) &&
+      this.isInstalled(item) &&
+      !this.actorHasInstalledPktBody(actor, { excludeItemId: item.id })
+    ) {
+      for (const type of ["internal", "external"]) {
+        const capacity = this.implantCapacity(actor, type, {
+          pktActive: false,
+        });
+        if (capacity.used > capacity.limit) {
+          const label = type === "internal" ? "внутренних" : "внешних";
+          return `Нельзя снять последний корпус ПКТ: установлено ${capacity.used} ${label} имплантов при обычном лимите ${capacity.limit}. Сначала снизьте загрузку до ${capacity.limit}.`;
+        }
+      }
     }
     if (
       this.isPktBiosystem(item) &&

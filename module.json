@@ -2,7 +2,7 @@
   "id": "cyberpunk-remaster",
   "title": "SF2E Cyberpunk Remaster",
   "description": "Cyberpunk equipment, netrunning, full-body conversion, cyberware management and NPC generation for Starfinder Second Edition.",
-  "version": "2.8.3",
+  "version": "2.8.13",
   "authors": [
     {
       "name": "Ogorodnik"
@@ -10,7 +10,7 @@
   ],
   "compatibility": {
     "minimum": "14.360",
-    "verified": "14.361",
+    "verified": "14.365",
     "maximum": "14"
   },
   "relationships": {
@@ -48,13 +48,14 @@
         "type": "system",
         "manifest": "https://raw.githubusercontent.com/foundryvtt/pf2e/v14-dev/system.sf2e.json",
         "compatibility": {
-          "minimum": "1.2.0"
+          "minimum": "1.4.0"
         }
       }
     ]
   },
   "esmodules": [
     "runtime/cyberware-runtime.mjs",
+    "runtime/implant-creator.mjs",
     "runtime/item-sheet-enhancements.mjs",
     "forge/forge-runtime.mjs",
     "runtime/neuro-archive-runtime.mjs"
@@ -71,6 +72,9 @@
     },
     {
       "src": "styles/neuro-archive.css"
+    },
+    {
+      "src": "styles/implant-creator.css"
     },
     {
       "src": "styles/cyberpunk-windows.css"
@@ -119,7 +123,11 @@
       "name": "SF2E Cyberpunk",
       "sorting": "m",
       "color": "#850000",
-      "packs": ["cyberpunk-items", "cyberpunk-journals", "cyberpunk-macros"]
+      "packs": [
+        "cyberpunk-items",
+        "cyberpunk-journals",
+        "cyberpunk-macros"
+      ]
     }
   ],
   "flags": {

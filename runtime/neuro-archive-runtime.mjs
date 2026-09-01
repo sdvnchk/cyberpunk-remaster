@@ -138,10 +138,6 @@ export async function openNeuroArchive() {
     return neuroArchiveInstance;
   }
 
-  // Старый макрос мог остаться на панели пользователя. Закрываем его оболочку,
-  // но продолжаем читать тот же флаг и localStorage, поэтому данные сохраняются.
-  globalThis.__PERSONAL_CHRONICLE_MACRO__?.destroy?.();
-
   const NeuroArchiveApplication = getNeuroArchiveApplicationClass();
   neuroArchiveInstance = new NeuroArchiveApplication({
     position: viewportPosition(),

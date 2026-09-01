@@ -5,6 +5,7 @@ import { CyberwareTab } from "../sheets/CyberwareTab.js";
 import {
   catalogEntry,
   cloneCatalogEntry,
+  compatibleAmmo,
   forgeFlag,
   interfaceKeysForEntries,
   interfaceTraitsHtml,
@@ -16,6 +17,7 @@ import {
   FORGE_FOLDER_NAME,
   FORGE_VERSION,
   MODULE_ID,
+  CYBERWARE_FLAG_ID,
 } from "./constants.mjs";
 import {
   buildLoadout,
@@ -23,6 +25,13 @@ import {
   pickSecondaryWeapon,
 } from "./loadout.mjs";
 import { presetAbility } from "./preset-abilities.mjs";
+import { NONMAGICAL_SKILL_SLUGS, SKILL_ABILITY_MAP } from "./customization.mjs";
+import {
+  presetSkillTiers,
+  resolveAutomaticAbilityTiers,
+  resolveAutomaticSaveTiers,
+  shiftStatTier,
+} from "./stat-profiles.mjs";
 import { normalizeForgeForm, resolvePreset, resolveRole } from "./presets.mjs";
 import {
   deriveSeed,
@@ -34,6 +43,7 @@ import {
 import {
   FALLBACK_LANGUAGE_SLUGS,
   FALLBACK_SKILL_SLUGS,
+  ammunitionQuantity,
   buildNpcSkillTiers,
   selectNpcDefenses,
   selectNpcLanguages,
@@ -45,7 +55,7 @@ const PUBLICATION = Object.freeze({
   authors: "Ogorodnik",
   license: "ORC",
   remaster: true,
-  title: "SF2E Cyberpunk Remaster",
+  title: "Киберпанк-Кузница NPC / SF2E",
 });
 
 function publicationSource() {
@@ -132,18 +142,72 @@ function normalizeHpTier(tier) {
   return tier;
 }
 
-function resolveAbilities(role, level) {
-  return Object.fromEntries(
-    Object.entries(role.abilities).map(([ability, tier]) => [
-      ability,
-      {
-        mod:
-          tier === "terrible"
-            ? -5
-            : valueAt("ability", level, normalizeTier("ability", tier)),
-      },
-    ]),
-  );
+function proficiencyValue(value, level, mode = "pwl") {
+  const numeric = Number(value);
+  // PWL subtracts the creature level from statistics that include proficiency.
+  // Standard SF2e preserves the normal creature-table value. HP, damage and
+  // ability modifiers are untouched in both modes.
+  return mode === "pwl" ? numeric - Number(level || 0) : numeric;
+}
+
+const STAT_TIER_ORDER = Object.freeze(["terrible", "low", "moderate", "high", "extreme"]);
+const STAT_TIER_RANK = Object.freeze(Object.fromEntries(STAT_TIER_ORDER.map((tier, index) => [tier, index])));
+const SAVE_ABILITY_MAP = Object.freeze({ fortitude: "con", reflex: "dex", will: "wis" });
+
+function abilityValueForTier(level, tier) {
+  return tier === "terrible"
+    ? -5
+    : valueAt("ability", level, normalizeTier("ability", tier));
+}
+
+function nearestAbilityTier(level, value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return "moderate";
+  let best = "moderate";
+  let bestDistance = Number.POSITIVE_INFINITY;
+  for (const tier of STAT_TIER_ORDER) {
+    const distance = Math.abs(numeric - abilityValueForTier(level, tier));
+    if (distance < bestDistance) {
+      best = tier;
+      bestDistance = distance;
+    }
+  }
+  return best;
+}
+
+function exactFormNumber(form, key) {
+  const value = form?.[key];
+  if (value === "" || value === null || value === undefined) return null;
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function resolveAbilityState(role, preset, level, form = {}) {
+  const automaticTiers = resolveAutomaticAbilityTiers(role, preset);
+  const allowed = new Set(STAT_TIER_ORDER);
+  const system = {};
+  const effectiveTiers = {};
+  const shifts = {};
+
+  for (const [ability, autoTier] of Object.entries(automaticTiers)) {
+    const override = String(form[`ability_${ability}`] ?? "auto");
+    const exact = override === "custom" ? exactFormNumber(form, `ability_${ability}_value`) : null;
+    const selectedTier = allowed.has(override) ? override : autoTier;
+    const mod = exact ?? abilityValueForTier(level, selectedTier);
+    const effectiveTier = exact === null ? selectedTier : nearestAbilityTier(level, mod);
+    system[ability] = { mod };
+    effectiveTiers[ability] = effectiveTier;
+    shifts[ability] = Math.max(
+      -3,
+      Math.min(3, (STAT_TIER_RANK[effectiveTier] ?? 2) - (STAT_TIER_RANK[autoTier] ?? 2)),
+    );
+  }
+
+  return { system, automaticTiers, effectiveTiers, shifts };
+}
+
+function resolveAbilities(role, preset, level, form = {}) {
+  return resolveAbilityState(role, preset, level, form).system;
 }
 
 function configuredSlugs(configured, fallback) {
@@ -154,7 +218,9 @@ function configuredSlugs(configured, fallback) {
 
 function validSkillSlugs() {
   const configured = globalThis.CONFIG?.PF2E?.skills;
-  return configuredSlugs(configured, FALLBACK_SKILL_SLUGS);
+  const available = configuredSlugs(configured, FALLBACK_SKILL_SLUGS);
+  const nonmagical = new Set(NONMAGICAL_SKILL_SLUGS);
+  return available.filter((slug) => nonmagical.has(slug));
 }
 
 function validLanguageSlugs() {
@@ -182,37 +248,71 @@ function terribleSkillValue(level) {
   return valueAt("skill", level, "low") - 3;
 }
 
-function resolveSkills(role, preset, level, adjustment, random) {
+function resolveSkills(role, preset, level, adjustment, random, form = {}, abilityState = null) {
   const valid = validSkillSlugs();
-  const tiers = buildNpcSkillTiers({
-    roleSkills: role.skills,
-    presetId: preset.id,
-    availableSkills: valid,
-    level,
-    random,
-  });
+  const manualOnly = form.skillSelectionMode === "manual";
+  const tiers = manualOnly
+    ? {}
+    : buildNpcSkillTiers({
+        roleSkills: role.skills,
+        presetId: preset.id,
+        availableSkills: valid,
+        level,
+        random,
+      });
+  const allowedTiers = new Set(["terrible", "low", "moderate", "high", "extreme"]);
+  if (!manualOnly) {
+    const rank = { terrible: 0, low: 1, moderate: 2, high: 3, extreme: 4 };
+    for (const [slug, preferredTier] of Object.entries(presetSkillTiers(preset))) {
+      if (!valid.includes(slug) || !allowedTiers.has(preferredTier)) continue;
+      const current = tiers[slug];
+      if (!current || (rank[preferredTier] ?? 0) > (rank[current] ?? 0)) {
+        tiers[slug] = preferredTier;
+      }
+    }
+  }
+  if (!manualOnly && abilityState?.shifts) {
+    for (const [slug, tier] of Object.entries(tiers)) {
+      const ability = SKILL_ABILITY_MAP[slug];
+      const shift = ability ? Number(abilityState.shifts[ability] ?? 0) : 0;
+      if (shift) tiers[slug] = shiftStatTier(tier, shift);
+    }
+  }
+  for (const slug of valid) {
+    const override = String(form[`skill_${slug}`] ?? "auto");
+    if (override === "none") delete tiers[slug];
+    else if (allowedTiers.has(override)) tiers[slug] = override;
+  }
   return Object.fromEntries(
     Object.entries(tiers).map(([slug, tier]) => [
       slug,
       {
-        base:
+        base: proficiencyValue(
           (tier === "terrible"
             ? terribleSkillValue(level)
-            : valueAt("skill", level, normalizeTier("skill", tier))) +
-          adjustment,
+            : valueAt("skill", level, normalizeTier("skill", tier))) + adjustment,
+          level,
+          form.proficiencyMode,
+        ),
       },
     ]),
   );
 }
 
-function resolveTiers(form, role) {
+function resolveTiers(form, role, preset, abilityState = null) {
+  const automaticSaves = resolveAutomaticSaveTiers(role, preset);
+  const allowed = new Set(STAT_TIER_ORDER);
   return Object.fromEntries(
     Object.keys(role.tiers).map((key) => {
-      const override = form[`tier_${key}`];
-      return [
-        key,
-        override && override !== "auto" ? override : role.tiers[key],
-      ];
+      const override = String(form[`tier_${key}`] ?? "auto");
+      let automatic = Object.hasOwn(automaticSaves, key)
+        ? automaticSaves[key]
+        : role.tiers[key];
+      const linkedAbility = SAVE_ABILITY_MAP[key];
+      if (linkedAbility && abilityState?.shifts) {
+        automatic = shiftStatTier(automatic, Number(abilityState.shifts[linkedAbility] ?? 0));
+      }
+      return [key, allowed.has(override) ? override : automatic];
     }),
   );
 }
@@ -300,6 +400,18 @@ function roleTactics(roleId) {
       routine: "меняет оружие и импланты под текущую дистанцию",
       retreat: "отходит только по приказу или после критического повреждения",
     },
+    pointman: { opening: "первым входит в сектор и вскрывает ближайшую угрозу", routine: "удерживает темп группы и меняет укрытия", retreat: "отходит после прикрытия основных сил" },
+    gunfighter: { opening: "быстро сокращает дистанцию до удобной для короткого оружия", routine: "стреляет на ходу и не задерживается в одной точке", retreat: "разрывает контакт серией коротких перемещений" },
+    breacher: { opening: "вскрывает вход и бросает группу внутрь", routine: "работает по ближайшим целям и препятствиям", retreat: "создаёт новый проход и отходит через него" },
+    bodyguard: { opening: "занимает позицию рядом с охраняемым союзником", routine: "перехватывает угрозы и закрывает линию огня", retreat: "эвакуирует клиента и отступает последним" },
+    scout: { opening: "ищет засаду и безопасный маршрут", routine: "передаёт группе позиции угроз и меняет точку наблюдения", retreat: "исчезает из прямой видимости и уводит преследование" },
+    controller: { opening: "перекрывает опасный проход дымом, шоком или подавлением", routine: "заставляет врагов менять маршруты", retreat: "оставляет зону задержки и отходит" },
+    suppressor: { opening: "выбирает сектор и начинает плотное подавление", routine: "держит врага в укрытии и переносит огонь по команде", retreat: "отходит под прикрытием собственного огня" },
+    saboteur: { opening: "отключает сигнализацию, питание или ключевое устройство", routine: "ставит ловушки и ломает инфраструктуру", retreat: "оставляет задерживающую диверсию" },
+    hunter: { opening: "проверяет маршрут цели и отмечает пути отхода", routine: "не теряет контакт и работает по одной приоритетной цели", retreat: "отходит, сохраняя возможность продолжить преследование" },
+    interrogator: { opening: "пытается сломать волю противника угрозой или приказом", routine: "давит на слабые места и координирует союзников", retreat: "выводит ценного пленника или свидетеля" },
+    commando: { opening: "выбирает между штурмом и контролем позиции", routine: "адаптирует дистанцию и оружие к обстановке", retreat: "организованно отходит через заранее выбранный маршрут" },
+    support: { opening: "подключает связь, сенсоры и медицинский контур группы", routine: "усиливает наиболее важное действие союзника", retreat: "сохраняет канал связи и помогает эвакуации" },
   };
   return tactics[roleId] ?? tactics.assault;
 }
@@ -314,17 +426,18 @@ function validIwrEntries(entries, configKey) {
 function buildActorSystem({ form, preset, role, ancestry, loadout, random }) {
   const elite = form.quality === "elite";
   const adjustment = elite ? 2 : 0;
-  const tiers = resolveTiers(form, role);
+  const abilityState = resolveAbilityState(role, preset, form.level, form);
+  const tiers = resolveTiers(form, role, preset, abilityState);
   const hpBase = valueAt("hp", form.level, normalizeHpTier(tiers.hp));
   const hp = hpBase + (elite ? eliteHpAdjustment(form.level) : 0);
-  const skills = resolveSkills(role, preset, form.level, adjustment, random);
+  const skills = resolveSkills(role, preset, form.level, adjustment, random, form, abilityState);
   const tactics = roleTactics(role.id);
   const interfaceHtml = interfaceTraitsHtml(loadout.interfaceKeys);
   const hasFocusProgram = linkedFocusIds(loadout.entries).length > 0;
   const languages = selectNpcLanguages({
     ancestryLanguages: ancestry.languages,
     presetId: preset.id,
-    intelligenceTier: role.abilities.int,
+    intelligenceTier: abilityState.effectiveTiers.int ?? role.abilities.int,
     availableLanguages: validLanguageSlugs(),
     random,
   });
@@ -348,8 +461,11 @@ function buildActorSystem({ form, preset, role, ancestry, loadout, random }) {
     presetId: preset.id,
     random,
   });
-  const dc =
-    valueAt("dc", form.level, normalizeTier("dc", tiers.dc)) + adjustment;
+  const dc = proficiencyValue(
+    valueAt("dc", form.level, normalizeTier("dc", tiers.dc)) + adjustment,
+    form.level,
+    form.proficiencyMode,
+  );
   const areaDamage = valueAt("areaDamage", form.level, "moderate");
   const abilityDamage = elite ? `${areaDamage}+2` : areaDamage;
   const loadoutRows = loadoutPreview(loadout)
@@ -373,6 +489,9 @@ function buildActorSystem({ form, preset, role, ancestry, loadout, random }) {
     `<h2>Снаряжение Кузницы</h2><ul>${loadoutRows}</ul>`,
     `<p><strong>Шкалы:</strong> ${escapeHtml(tierSummary(tiers))}.</p>`,
     `<p><strong>Защитный профиль:</strong> ${escapeHtml(defenses.label)}.</p>`,
+    form.proficiencyMode === "pwl"
+      ? `<p><strong>Математика:</strong> Proficiency without Level — уровень вычтен из КБ, атак, КС, Восприятия, спасбросков и навыков.</p>`
+      : `<p><strong>Математика:</strong> Обычные правила SF2e — используются стандартные значения таблиц NPC с уровнем.</p>`,
     loadout.warnings.length
       ? `<h3>Предупреждения</h3><ul>${loadout.warnings
           .map((warning) => `<li>${escapeHtml(warning)}</li>`)
@@ -382,14 +501,16 @@ function buildActorSystem({ form, preset, role, ancestry, loadout, random }) {
 
   return {
     system: {
-      abilities: resolveAbilities(role, form.level),
+      abilities: abilityState.system,
       attributes: {
         adjustment: null,
         ac: {
           details: loadout.armor?.name ?? "Без внешней брони",
-          value:
-            valueAt("ac", form.level, normalizeTier("ac", tiers.ac)) +
-            adjustment,
+          value: proficiencyValue(
+            valueAt("ac", form.level, normalizeTier("ac", tiers.ac)) + adjustment,
+            form.level,
+            form.proficiencyMode,
+          ),
         },
         allSaves: { value: "" },
         hp: {
@@ -422,7 +543,7 @@ function buildActorSystem({ form, preset, role, ancestry, loadout, random }) {
       initiative: { statistic: role.initiative },
       perception: {
         details: "",
-        mod: valueAt("perception", form.level, tiers.perception) + adjustment,
+        mod: proficiencyValue(valueAt("perception", form.level, tiers.perception) + adjustment, form.level, form.proficiencyMode),
         senses: ancestry.senses,
         vision: true,
       },
@@ -435,16 +556,25 @@ function buildActorSystem({ form, preset, role, ancestry, loadout, random }) {
       saves: {
         fortitude: {
           saveDetail: "",
-          value:
-            valueAt("perception", form.level, tiers.fortitude) + adjustment,
+          value: form.tier_fortitude === "custom" && exactFormNumber(form, "save_fortitude_value") !== null
+            ? exactFormNumber(form, "save_fortitude_value")
+            : proficiencyValue(
+                valueAt("perception", form.level, tiers.fortitude) + adjustment,
+                form.level,
+                form.proficiencyMode,
+              ),
         },
         reflex: {
           saveDetail: "",
-          value: valueAt("perception", form.level, tiers.reflex) + adjustment,
+          value: form.tier_reflex === "custom" && exactFormNumber(form, "save_reflex_value") !== null
+            ? exactFormNumber(form, "save_reflex_value")
+            : proficiencyValue(valueAt("perception", form.level, tiers.reflex) + adjustment, form.level, form.proficiencyMode),
         },
         will: {
           saveDetail: "",
-          value: valueAt("perception", form.level, tiers.will) + adjustment,
+          value: form.tier_will === "custom" && exactFormNumber(form, "save_will_value") !== null
+            ? exactFormNumber(form, "save_will_value")
+            : proficiencyValue(valueAt("perception", form.level, tiers.will) + adjustment, form.level, form.proficiencyMode),
         },
       },
       skills,
@@ -519,6 +649,89 @@ function validNpcAttackTraits(traits) {
   return [...new Set(traits)].filter((trait) => !allowed || allowed.has(trait));
 }
 
+/**
+ * Return the native damage die/type of a physical weapon. SF2e/PF2e item
+ * schemas have used both `system.damage.die` and `system.damage.base.die`, so
+ * the Forge deliberately accepts both layouts (plus a few harmless aliases).
+ *
+ * The NPC strike is allowed to change the NUMBER of dice for creature-level
+ * balance, but it must never silently upgrade/downgrade the DIE SIZE of the
+ * weapon itself. A d8 weapon therefore always creates a d8 NPC strike.
+ */
+function weaponDamageProfile(document) {
+  const damage = document?.system?.damage;
+  const candidates = [
+    damage?.base,
+    damage?.primary,
+    damage?.value,
+    damage,
+  ].filter((entry) => entry && typeof entry === "object");
+
+  const topLevelType =
+    damage?.damageType ?? damage?.base?.damageType ?? damage?.primary?.damageType ?? null;
+
+  for (const entry of candidates) {
+    const rawDie = String(entry?.die ?? "").trim().toLowerCase();
+    if (!/^d(?:4|6|8|10|12)$/.test(rawDie)) continue;
+    const dice = Number(entry?.dice);
+    return {
+      die: rawDie,
+      dice: Number.isFinite(dice) && dice > 0 ? Math.trunc(dice) : 1,
+      damageType: entry?.damageType ?? topLevelType ?? "bludgeoning",
+    };
+  }
+
+  return {
+    die: null,
+    dice: 1,
+    damageType: topLevelType ?? "bludgeoning",
+  };
+}
+
+/**
+ * Keep the expected creature-table damage close to its requested tier while
+ * replacing the table's generic die with the weapon's real die. We preserve
+ * the flat modifier and only scale the number of dice.
+ *
+ * Example: if the NPC table asks for 2d10+9 but the equipped Massive Pistol
+ * is a d8 weapon, the generated strike becomes 2d8+9 (or another d8 count
+ * when that is closer to the table's dice average), never d10.
+ */
+function retargetDamageFormulaToWeaponDie(formula, weaponDie) {
+  const normalizedDie = String(weaponDie ?? "").trim().toLowerCase();
+  if (!/^d(?:4|6|8|10|12)$/.test(normalizedDie)) return String(formula);
+
+  const text = String(formula ?? "").replace(/\s+/g, "");
+  const match = text.match(/^(\d+)d(\d+)([+-]\d+)?$/i);
+  if (!match) return text;
+
+  const originalCount = Math.max(1, Number(match[1]) || 1);
+  const originalSides = Math.max(2, Number(match[2]) || 0);
+  const weaponSides = Number(normalizedDie.slice(1));
+  if (!Number.isFinite(weaponSides) || weaponSides < 2) return text;
+
+  // Match the average contribution of the dice portion. This keeps high-level
+  // NPC damage useful without changing a weapon's defining die size.
+  const targetDiceAverage = originalCount * ((originalSides + 1) / 2);
+  const weaponDieAverage = (weaponSides + 1) / 2;
+  const scaledCount = Math.max(1, Math.round(targetDiceAverage / weaponDieAverage));
+  const modifier = match[3] ?? "";
+  return `${scaledCount}${normalizedDie}${modifier}`;
+}
+
+function addFlatDamageAdjustment(formula, adjustment) {
+  const bonus = Number(adjustment) || 0;
+  if (!bonus) return String(formula);
+
+  const text = String(formula ?? "").replace(/\s+/g, "");
+  const match = text.match(/^(\d+d\d+)([+-]\d+)?$/i);
+  if (!match) return `${text}+${bonus}`;
+
+  const flat = Number(match[2] ?? 0) + bonus;
+  if (!flat) return match[1];
+  return `${match[1]}${flat > 0 ? "+" : ""}${flat}`;
+}
+
 function strikeDamageValue({ form, tiers, adjustment, weapon }) {
   const ranged = Number(weapon?.document?.system?.range ?? 0) > 0;
   const automaticExtreme = form.tier_damage === "auto";
@@ -526,13 +739,17 @@ function strikeDamageValue({ form, tiers, adjustment, weapon }) {
     ranged && automaticExtreme && tiers.damage === "extreme"
       ? "high"
       : tiers.damage;
-  const formula = valueAt(
+  const tableFormula = valueAt(
     "damage",
     form.level,
     normalizeTier("damage", damageTier),
     "moderate",
   );
-  return adjustment ? `${formula}+2` : formula;
+  const nativeDamage = weaponDamageProfile(weapon?.document);
+  const weaponFormula = nativeDamage.die
+    ? retargetDamageFormulaToWeaponDie(tableFormula, nativeDamage.die)
+    : tableFormula;
+  return addFlatDamageAdjustment(weaponFormula, adjustment);
 }
 
 function strikeSource({ form, tiers, adjustment, weapon }) {
@@ -557,15 +774,17 @@ function strikeSource({ form, tiers, adjustment, weapon }) {
       area: null,
       attackEffects: { value: [] },
       bonus: {
-        value:
-          valueAt("attack", form.level, normalizeTier("attack", tiers.attack)) +
-          adjustment,
+        value: proficiencyValue(
+          valueAt("attack", form.level, normalizeTier("attack", tiers.attack)) + adjustment,
+          form.level,
+          form.proficiencyMode,
+        ),
       },
       damageRolls: {
         main: {
           category: null,
           damage,
-          damageType: document?.system?.damage?.damageType ?? "bludgeoning",
+          damageType: weaponDamageProfile(document).damageType,
         },
       },
       description: {
@@ -573,7 +792,7 @@ function strikeSource({ form, tiers, adjustment, weapon }) {
         value: weapon
           ? `<p>Рабочая NPC-атака для @UUID[${weapon.uuid}]{${escapeHtml(
               weapon.name,
-            )}}. Урон рассчитан по уровню и роли NPC; физический предмет сохранён в инвентаре без изменения.</p>`
+            )}}. Размер кости урона сохранён от исходного оружия; количество костей масштабируется по уровню и роли NPC. Физический предмет сохранён в инвентаре без изменения.</p>`
           : "<p>Рабочая безоружная атака NPC.</p>",
       },
       publication: publicationSource(),
@@ -657,32 +876,281 @@ function presetAbilitySource(presetId, context) {
   };
 }
 
+const CUSTOM_ABILITY_SLOTS = 6;
+const MAGIC_ABILITY_RE = /^(?:arcane|divine|occult|primal|magical|spell|focus|cantrip)$/iu;
+
+function parseCustomAbilityRules(value, index) {
+  const text = String(value ?? "").trim();
+  if (!text) return [];
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch (error) {
+    throw new Error(`Способность ${index}: Rule Elements содержат некорректный JSON (${error.message}).`);
+  }
+  const rules = Array.isArray(parsed) ? parsed : [parsed];
+  if (rules.some((rule) => !rule || typeof rule !== "object" || Array.isArray(rule))) {
+    throw new Error(`Способность ${index}: каждый Rule Element должен быть JSON-объектом.`);
+  }
+  return rules;
+}
+
+function customAbilityDefinition(form, index, context) {
+  if (form[`ability${index}_enabled`] !== true) return null;
+  const name = String(form[`ability${index}_name`] ?? "").trim();
+  if (!name) throw new Error(`Способность ${index}: укажите название.`);
+  const actionType = ["action", "reaction", "free", "passive"].includes(form[`ability${index}_actionType`])
+    ? form[`ability${index}_actionType`]
+    : "passive";
+  const actions = actionType === "action"
+    ? Math.max(1, Math.min(3, Math.trunc(Number(form[`ability${index}_actions`]) || 1)))
+    : null;
+  const category = ["offensive", "defensive", "interaction"].includes(form[`ability${index}_category`])
+    ? form[`ability${index}_category`]
+    : "interaction";
+  const traits = [...new Set(String(form[`ability${index}_traits`] ?? "")
+    .split(/[;,\s]+/u)
+    .map((trait) => trait.trim().toLocaleLowerCase("ru-RU"))
+    .filter(Boolean))];
+  const magicTrait = traits.find((trait) => MAGIC_ABILITY_RE.test(trait));
+  if (magicTrait) {
+    throw new Error(`Способность «${name}»: магический признак «${magicTrait}» запрещён в профиле Киберпанк-Кузницы без магии.`);
+  }
+  const description = renderAbilityDescription(
+    String(form[`ability${index}_description`] ?? "").trim() || `<p>${escapeHtml(name)}</p>`,
+    context,
+  );
+  const frequencyPer = String(form[`ability${index}_frequencyPer`] ?? "").trim();
+  const frequencyMax = Math.max(1, Math.min(99, Math.trunc(Number(form[`ability${index}_frequencyMax`]) || 1)));
+  return {
+    index,
+    name,
+    actionType,
+    actions,
+    category,
+    traits,
+    description,
+    frequency: frequencyPer ? { max: frequencyMax, per: frequencyPer, value: frequencyMax } : null,
+    rules: parseCustomAbilityRules(form[`ability${index}_rules`], index),
+  };
+}
+
+function customAbilitySources(form, context) {
+  const result = [];
+  for (let index = 1; index <= CUSTOM_ABILITY_SLOTS; index += 1) {
+    const feature = customAbilityDefinition(form, index, context);
+    if (!feature) continue;
+    result.push({
+      name: feature.name,
+      type: "action",
+      img: abilityIcon(feature.actionType, feature.actions),
+      flags: forgeItemFlags("custom-ability", { slot: feature.index }),
+      system: {
+        actionType: { value: feature.actionType },
+        actions: { value: feature.actions },
+        category: feature.category,
+        description: { gm: "", value: feature.description },
+        ...(feature.frequency ? { frequency: structuredClone(feature.frequency) } : {}),
+        publication: publicationSource(),
+        rules: structuredClone(feature.rules),
+        slug: `cyberpunk-forge-custom-${feature.index}-${slugify(feature.name)}`,
+        traits: { value: [...feature.traits], otherTags: [] },
+      },
+    });
+  }
+  return result;
+}
+
+function customAbilityCount(form, context) {
+  return customAbilitySources(form, context).length;
+}
+
+function implantContainerSource(catalog) {
+  const entries = Array.isArray(catalog?.entries) ? catalog.entries : [];
+  const preferred = entries.find(
+    (entry) =>
+      entry?.document?.type === "backpack" &&
+      /пояс с подсумками|рюкзак|backpack/iu.test(String(entry?.name ?? "")),
+  );
+  const template = preferred ?? entries.find((entry) => entry?.document?.type === "backpack");
+
+  if (template) {
+    const source = cloneCatalogEntry(template, {
+      loadoutKey: "implant-container",
+      kind: "implant-container",
+      quantity: 1,
+    });
+    source.name = "Импланты";
+    source.img = `modules/${MODULE_ID}/assets/icons/items/backpack.webp`;
+    source.system ??= {};
+    source.system.collapsed = false;
+    source.system.containerId = null;
+    source.system.bulk = {
+      ...(source.system.bulk ?? {}),
+      value: 0,
+      heldOrStowed: 0,
+      capacity: 100,
+      ignored: 100,
+    };
+    source.system.equipped = {
+      ...(source.system.equipped ?? {}),
+      carryType: "worn",
+      handsHeld: 0,
+      inSlot: true,
+    };
+    source.system.quantity = 1;
+    if (source.system.price?.value && typeof source.system.price.value === "object") {
+      source.system.price.value = {};
+    }
+    if ("slug" in source.system) source.system.slug = "implants";
+    source.system.description ??= {};
+    source.system.description.value =
+      '<p>Служебный контейнер Киберпанк-Кузницы. Все созданные Кузницей импланты NPC складываются сюда, оставаясь установленными для механики вкладки «Хром».</p>';
+    return source;
+  }
+
+  // SF2e/PF2e v14 supports backpack physical items. This fallback is used only
+  // when neither the library nor Remaster exposes a backpack template.
+  return {
+    name: "Импланты",
+    type: "backpack",
+    img: `modules/${MODULE_ID}/assets/icons/items/backpack.webp`,
+    flags: forgeItemFlags("implant-container"),
+    system: {
+      bulk: { value: 0, heldOrStowed: 0, capacity: 100, ignored: 100 },
+      collapsed: false,
+      containerId: null,
+      description: {
+        value:
+          '<p>Служебный контейнер Киберпанк-Кузницы. Все созданные Кузницей импланты NPC складываются сюда.</p>',
+      },
+      equipped: { carryType: "worn", handsHeld: 0, inSlot: true },
+      level: { value: 0 },
+      price: { value: {} },
+      quantity: 1,
+      rules: [],
+      traits: { rarity: "common", value: [] },
+    },
+  };
+}
+
+async function organizeGeneratedCyberware(actor, items, container) {
+  if (!container) return 0;
+  const physicalTypes = new Set([
+    "ammo",
+    "armor",
+    "backpack",
+    "consumable",
+    "equipment",
+    "shield",
+    "treasure",
+    "weapon",
+  ]);
+  const updates = items
+    .filter((item) => item && physicalTypes.has(item.type))
+    .map((item) => ({
+      _id: item.id,
+      "system.containerId": container.id,
+      [`flags.${MODULE_ID}.implantContainerId`]: container.id,
+    }));
+  if (!updates.length) return 0;
+  await actor.updateEmbeddedDocuments("Item", updates, {
+    cyberpunkForgeOperation: true,
+    cpelNeonForgeManaged: true,
+  });
+  return updates.length;
+}
+
 function loadoutSources(loadout, secondaryWeapon) {
-  const entries = [
-    loadout.weapon,
-    secondaryWeapon,
-    loadout.armor,
-    loadout.ammo,
-    ...loadout.gear,
-    ...loadout.cyberware,
-  ].filter(Boolean);
+  const specs = [
+    { entry: loadout.weapon, quantity: 1 },
+    { entry: secondaryWeapon, quantity: 1 },
+    { entry: loadout.armor, quantity: 1 },
+    { entry: loadout.ammo, quantity: Math.max(1, loadout.ammoQuantity ?? 1) },
+    { entry: loadout.secondaryAmmo, quantity: Math.max(1, loadout.secondaryAmmoQuantity ?? 1) },
+    ...loadout.gear.map((entry) => ({ entry, quantity: 1 })),
+    ...loadout.cyberware.map((entry) => ({ entry, quantity: 1 })),
+  ].filter(({ entry }) => Boolean(entry));
   const seen = new Set();
-  return entries
-    .filter((entry) => {
-      const key = `${entry.id}:${entry.parentSourceId ?? ""}`;
+  return specs
+    .filter(({ entry }) => {
+      // Physical bases may legitimately use the same source item twice (left/right
+      // cyberarm, paired cyberlegs, paired cybereyes).  forgeHostKey keeps those
+      // hosts distinct while ordinary duplicate gear still collapses normally.
+      const key = [
+        entry.id,
+        entry.forgeHostKey ?? "",
+        entry.parentHostKey ?? entry.parentSourceId ?? "",
+      ].join(":");
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
     })
-    .map((entry, index) =>
+    .map(({ entry, quantity }, index) =>
       cloneCatalogEntry(entry, {
         loadoutKey: `loadout-${index + 1}`,
         installed: entry.cyberware,
         parentSourceId: entry.parentSourceId ?? null,
-        quantity:
-          entry.category === "ammo" ? Math.max(1, loadout.ammoQuantity) : 1,
+        hostKey: entry.forgeHostKey ?? null,
+        parentHostKey: entry.parentHostKey ?? null,
+        quantity,
       }),
     );
+}
+
+function pairedBaseFamily(item) {
+  if (CyberwareTab.getImplantType(item) !== "base") return null;
+  const family = String(CyberwareTab.getFlag(item, "pktFamily") ?? "").toLocaleLowerCase("ru-RU");
+  const name = String(item?.name ?? "").toLocaleLowerCase("ru-RU");
+  if (/eye|кибер.?глаз|оптик/iu.test(`${family} ${name}`)) return "eye";
+  if (/arm|кибер.?рук/iu.test(`${family} ${name}`)) return "arm";
+  if (/leg|кибер.?ног/iu.test(`${family} ${name}`)) return "leg";
+  return null;
+}
+
+function zeroHardCostDescription(html) {
+  const value = String(html ?? "");
+  return value.replace(
+    /(<strong>\s*Hard\s*Cost\s*:\s*<\/strong>\s*)(?:[^<]*)(?=<\/p>)/iu,
+    "$10",
+  );
+}
+
+async function applyPairedHardCostWaivers(actor, createdItems, { skip = false } = {}) {
+  if (skip) return 0;
+  const groups = new Map();
+  for (const item of createdItems) {
+    if (!CyberwareTab.isCyberware(item) || !CyberwareTab.isInstalled(item)) continue;
+    const family = pairedBaseFamily(item);
+    if (!family) continue;
+    const group = groups.get(family) ?? [];
+    group.push(item);
+    groups.set(family, group);
+  }
+  const updates = [];
+  for (const items of groups.values()) {
+    // Paired chrome pays Hard Cost once per physical pair: 1st pays, 2nd is 0,
+    // 3rd pays, 4th is 0, etc. This applies only to non-PKT Forge generation.
+    for (let index = 1; index < items.length; index += 2) {
+      const item = items[index];
+      const description = zeroHardCostDescription(item.system?.description?.value);
+      updates.push({
+        _id: item.id,
+        [`flags.${MODULE_ID}.hardCostOverride`]: 0,
+        [`flags.${MODULE_ID}.pairedHardCostWaived`]: true,
+        ...(description !== String(item.system?.description?.value ?? "")
+          ? { "system.description.value": description }
+          : {}),
+      });
+    }
+  }
+  if (updates.length) {
+    await actor.updateEmbeddedDocuments("Item", updates, {
+      cyberpunkForgeOperation: true,
+      cpelNeonForgeManaged: true,
+    });
+  }
+  return updates.length;
 }
 
 function pktBaseSources(pkt) {
@@ -704,12 +1172,12 @@ function pktBaseSources(pkt) {
 function applyPktFlags(source, pkt, component, bodyId) {
   const entry = component.pktPlanEntry;
   source.flags ??= {};
-  source.flags[MODULE_ID] ??= {};
-  Object.assign(source.flags[MODULE_ID], {
+  source.flags[CYBERWARE_FLAG_ID] ??= {};
+  Object.assign(source.flags[CYBERWARE_FLAG_ID], {
     pktModelKey: pkt.model.key,
     pktComponentKey: entry.componentKey,
     pktModelSourceId: entry.itemId,
-    pktFamily: entry.family ?? source.flags[MODULE_ID]?.pktFamily ?? null,
+    pktFamily: entry.family ?? source.flags[CYBERWARE_FLAG_ID]?.pktFamily ?? null,
     pktLocked: entry.locked !== false,
     pktStress: entry.stress ?? "normal",
     pktBodyId: bodyId,
@@ -734,7 +1202,7 @@ function buildSpellEntry(name, prepared, dc, kind) {
         value:
           kind === "focus-entry"
             ? "<p>Фокусные программы, предоставленные установленной кибердекой.</p>"
-            : "<p>Программы и квикхаки NPC из библиотеки SF2E Cyberpunk Remaster.</p>",
+            : "<p>Программы и квикхаки NPC из Cyberpunk Equipment Library.</p>",
       },
       prepared: { value: prepared, flexible: false },
       proficiency: { value: 0 },
@@ -842,22 +1310,49 @@ async function createSpellLoadout(actor, loadout, catalog, dc, level) {
 }
 
 async function linkRegularModules(actor, created) {
+  const basesByHostKey = new Map();
   const basesBySource = new Map();
+  const usedByBase = new Map();
+
   for (const item of created) {
     const metadata = forgeFlag(item);
-    if (metadata?.sourceId && CyberwareTab.getImplantType(item) === "base") {
-      basesBySource.set(metadata.sourceId, item);
-    }
+    if (!metadata?.sourceId || CyberwareTab.getImplantType(item) !== "base") continue;
+    if (metadata.hostKey) basesByHostKey.set(metadata.hostKey, item);
+    const list = basesBySource.get(metadata.sourceId) ?? [];
+    list.push(item);
+    basesBySource.set(metadata.sourceId, list);
+    usedByBase.set(item.id, 0);
   }
+
   const updates = [];
   for (const item of created) {
     const metadata = forgeFlag(item);
-    if (!metadata?.parentSourceId) continue;
-    const base = basesBySource.get(metadata.parentSourceId);
+    if (!metadata?.parentSourceId && !metadata?.parentHostKey) continue;
+
+    let base = metadata.parentHostKey
+      ? basesByHostKey.get(metadata.parentHostKey)
+      : null;
+
+    // Backward-compatible fallback for old selections without host keys. Pick an
+    // actual base that can fit the module instead of always binding to one copy.
+    if (!base && metadata.parentSourceId) {
+      const candidates = basesBySource.get(metadata.parentSourceId) ?? [];
+      const slots = CyberwareTab.getSlotsUsed(item);
+      base = [...candidates]
+        .filter((candidate) =>
+          (usedByBase.get(candidate.id) ?? 0) + slots <= CyberwareTab.getSlots(candidate),
+        )
+        .sort((a, b) =>
+          (usedByBase.get(a.id) ?? 0) - (usedByBase.get(b.id) ?? 0),
+        )[0] ?? candidates[0];
+    }
     if (!base) continue;
+
+    const slots = CyberwareTab.getSlotsUsed(item);
+    usedByBase.set(base.id, (usedByBase.get(base.id) ?? 0) + slots);
     updates.push({
       _id: item.id,
-      [`flags.${MODULE_ID}.parentId`]: base.id,
+      [`flags.${CYBERWARE_FLAG_ID}.parentId`]: base.id,
     });
   }
   if (updates.length) {
@@ -879,13 +1374,13 @@ async function createPktComponents(actor, pkt, body) {
   });
   const created = await actor.createEmbeddedDocuments("Item", sources, {
     cyberpunkForgeOperation: true,
-    cyberpunkRemasterModelOperation: true,
+    cpelNeonForgeManaged: true,
   });
   const updates = CyberwareTab.pktModuleLinkUpdates(created);
   if (updates.length) {
     await actor.updateEmbeddedDocuments("Item", updates, {
       cyberpunkForgeOperation: true,
-      cyberpunkRemasterModelOperation: true,
+      cpelNeonForgeManaged: true,
     });
   }
   return created;
@@ -1004,7 +1499,10 @@ async function createActorContent({
     const strikeWeapons = loadout.weapon
       ? [loadout.weapon, secondaryWeapon].filter(Boolean)
       : [null];
+    const hasGeneratedChrome = Boolean(loadout.pkt) || (loadout.cyberware?.length ?? 0) > 0;
+    const implantContainer = hasGeneratedChrome ? implantContainerSource(catalog) : null;
     const baseSources = [
+      implantContainer,
       ...strikeWeapons.map((weapon) =>
         strikeSource({
           form,
@@ -1015,6 +1513,7 @@ async function createActorContent({
       ),
       roleFeatureSource(role),
       presetAbilitySource(form.preset, built.abilityContext),
+      ...customAbilitySources(form, built.abilityContext),
       ...loadoutSources(loadout, secondaryWeapon),
       ...pktBaseSources(loadout.pkt),
     ].filter(Boolean);
@@ -1024,11 +1523,35 @@ async function createActorContent({
     await linkRegularModules(actor, created);
 
     let pktCreated = [];
+    let pktBody = null;
     if (loadout.pkt) {
-      const body = created.find((item) => forgeFlag(item)?.kind === "pkt-body");
-      if (!body) throw new Error("Корпус ПКТ не создан.");
-      pktCreated = await createPktComponents(actor, loadout.pkt, body);
+      pktBody = created.find((item) => forgeFlag(item)?.kind === "pkt-body");
+      if (!pktBody) throw new Error("Корпус ПКТ не создан.");
+      pktCreated = await createPktComponents(actor, loadout.pkt, pktBody);
+      const stress = CyberwareTab.pktHumanityLossSummary(loadout.pkt.plan);
+      await pktBody.update(
+        {
+          [`flags.${MODULE_ID}.pktModelStress`]: {
+            key: loadout.pkt.model.key,
+            formula: stress.formula,
+            average: stress.average,
+          },
+        },
+        { cyberpunkForgeOperation: true, cpelNeonForgeManaged: true },
+      );
     }
+
+    const generatedCyberware = [...created, ...pktCreated].filter((item) =>
+      CyberwareTab.isCyberware(item),
+    );
+    const createdImplantContainer = created.find(
+      (item) => forgeFlag(item)?.kind === "implant-container",
+    );
+    await organizeGeneratedCyberware(actor, generatedCyberware, createdImplantContainer);
+    await applyPairedHardCostWaivers(actor, generatedCyberware, {
+      skip: Boolean(loadout.pkt),
+    });
+
     const spellCreated = await createSpellLoadout(
       actor,
       loadout,
@@ -1061,6 +1584,8 @@ function resultConcept({ form, presetId, role, ancestry, seed, tiers }) {
   return {
     preset: presetId,
     role: role.id,
+    proficiencyVariant: form.proficiencyMode === "pwl" ? "without-level" : "standard",
+    nameGender: "mixed",
     ancestry: ancestry.id,
     level: form.level,
     quality: form.quality,
@@ -1076,10 +1601,12 @@ async function prepareGeneration(formValues, { index = 0 } = {}) {
   const seed = deriveSeed(form.randomSeed || randomSeed(), `npc-${index + 1}`);
   const random = seededRandom(seed);
   const preset = { id: form.preset, ...resolvePreset(form.preset) };
-  const role = resolveRole(preset, random);
+  const role = resolveRole(preset, random, form.roleId);
   const ancestryId = pick(ANCESTRY_POOL, random) ?? "human";
   const ancestry = { id: ancestryId, ...ANCESTRIES[ancestryId] };
-  const catalog = await loadCyberpunkCatalog();
+  const catalog = await loadCyberpunkCatalog({
+    sources: { cpel: form.sourceCpel, remaster: form.sourceRemaster },
+  });
   const loadout = await buildLoadout({
     catalog,
     form,
@@ -1093,10 +1620,32 @@ async function prepareGeneration(formValues, { index = 0 } = {}) {
     preset,
     form,
     random,
+    role,
   );
   if (secondaryWeapon) {
     loadout.secondaryWeapon = secondaryWeapon;
     loadout.entries.push(secondaryWeapon);
+    const secondaryAmmo = compatibleAmmo(catalog, secondaryWeapon, form.level, random, {
+      allowance: Math.max(2, loadout.levelAllowances?.weapon ?? 2),
+      allowUnique: preset.allowUnique,
+      narrativeContext: {
+        roleId: role.id,
+        group: preset.group,
+        faction: preset.faction,
+        presetId: preset.id ?? form.preset,
+        presetLabel: preset.label,
+        allowUnique: preset.allowUnique,
+      },
+    });
+    if (secondaryAmmo && secondaryAmmo.id !== loadout.ammo?.id) {
+      loadout.secondaryAmmo = secondaryAmmo;
+      loadout.secondaryAmmoQuantity = ammunitionQuantity(
+        secondaryAmmo,
+        form.loadoutIntensity,
+        random,
+      );
+      loadout.entries.push(secondaryAmmo);
+    }
     loadout.interfaceKeys = interfaceKeysForEntries(loadout.entries);
   }
   const generatedName =
@@ -1104,11 +1653,10 @@ async function prepareGeneration(formValues, { index = 0 } = {}) {
       ? form.name
       : randomName(seed, {
           prefix: role.id === "pkt" ? "ПКТ" : "",
-          callsignChance: ["corporate-patrol", "corporate-response"].includes(
-            form.preset,
-          )
-            ? 0.15
-            : 0.45,
+          presetId: form.preset,
+          preset,
+          role,
+          callsignChance: preset.group === "street" ? 0.52 : preset.group === "specialist" ? 0.24 : 0.12,
         });
   const name =
     form.name && form.count > 1 ? `${form.name} ${index + 1}` : generatedName;
@@ -1157,12 +1705,15 @@ export async function previewNpc(formValues) {
     stats: {
       ac: prepared.built.system.attributes.ac.value,
       hp: prepared.built.system.attributes.hp.max,
-      attack:
+      attack: proficiencyValue(
         valueAt(
           "attack",
           prepared.form.level,
           normalizeTier("attack", prepared.built.tiers.attack),
         ) + prepared.built.adjustment,
+        prepared.form.level,
+        prepared.form.proficiencyMode,
+      ),
       dc: prepared.built.abilityContext.dc,
       damage: strikeDamageValue({
         form: prepared.form,
@@ -1173,15 +1724,22 @@ export async function previewNpc(formValues) {
       perception: prepared.built.system.perception.mod,
       speed: prepared.built.speed,
     },
+    abilities: Object.fromEntries(
+      Object.entries(prepared.built.system.abilities ?? {}).map(([slug, data]) => [slug, Number(data?.mod ?? 0)]),
+    ),
+    saves: Object.fromEntries(
+      Object.entries(prepared.built.system.saves ?? {}).map(([slug, data]) => [slug, Number(data?.value ?? 0)]),
+    ),
     defenses: prepared.built.defenses,
     languages: prepared.built.languages,
     skillCount: Object.keys(prepared.built.skills).length,
+    customAbilityCount: customAbilityCount(prepared.form, prepared.built.abilityContext),
   };
 }
 
 export async function generateNpc(formValues, options = {}) {
   if (globalThis.game?.system?.id !== "sf2e") {
-    throw new Error("Киберпанк-Кузница работает только в мире Starfinder 2e.");
+    throw new Error("Киберпанк-Кузница NPC работает только в мире Starfinder 2e.");
   }
   if (!globalThis.game?.user?.isGM) {
     throw new Error("Создавать и перестраивать NPC может только ведущий.");

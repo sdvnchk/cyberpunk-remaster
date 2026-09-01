@@ -2,12 +2,19 @@
 // PF2E NPC Forge 0.13.0 under the MIT License.
 // See licenses/PF2E_NPC_FORGE_LICENSE.txt.
 
-import { clearCyberpunkCatalog, loadCyberpunkCatalog } from "./catalog.mjs";
+import {
+  catalogResolveEntry,
+  clearCyberpunkCatalog,
+  loadCyberpunkCatalog,
+} from "./catalog.mjs";
+import { CyberwareTab } from "../sheets/CyberwareTab.js";
+import { PKT_BODY_QUALITIES } from "../runtime/cyberware-schema.mjs";
 import { createEncounterBriefing } from "./briefing.mjs";
 import {
   DEFAULT_FORM,
   FORGE_FLAG,
   ITEM_PACK_ID,
+  ITEM_PACK_IDS,
   MODULE_ID,
 } from "./constants.mjs";
 import { DEPLOYMENT_MODES, deployActorsToScene } from "./deployment.mjs";
@@ -23,9 +30,20 @@ import {
 } from "./generator.mjs";
 import { TIER_LABELS } from "./creature-tables.mjs";
 import {
+  ATTRIBUTE_OPTIONS,
+  ATTRIBUTE_OVERRIDE_TIERS,
+  SAVE_OPTIONS,
+  SAVE_OVERRIDE_TIERS,
+  SKILL_OVERRIDE_TIERS,
+  abilityTemplate,
+  abilityTemplateOptions,
+  forgeSkillOptions,
+} from "./customization.mjs";
+import {
   CYBERPUNK_PRESETS,
   presetsByGroup,
   resolvePreset,
+  roleOptions,
 } from "./presets.mjs";
 import { randomSeed } from "./random.mjs";
 import {
@@ -49,6 +67,7 @@ const TEMPLATE = `modules/${MODULE_ID}/templates/cyberpunk-forge.hbs`;
 const WINDOW_SIZE_KEY = `${MODULE_ID}.forge-window-size.v1`;
 let ForgeApplicationClass = null;
 let forgeInstance = null;
+let activeWorkTab = "builder";
 const pendingInterfaceRefreshes = new WeakMap();
 
 function escapeHtml(value) {
@@ -58,6 +77,99 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function signedStat(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return String(value ?? "—");
+  return numeric >= 0 ? `+${numeric}` : String(numeric);
+}
+
+function normalizeCatalogName(value) {
+  return String(value ?? "")
+    .toLocaleLowerCase("ru-RU")
+    .replaceAll("ё", "е")
+    .replace(/[«»„“”"']/gu, "")
+    .replace(/\s+/gu, " ")
+    .trim();
+}
+
+function catalogHasModelItem(catalog, itemId, hintName = "") {
+  return Boolean(catalogResolveEntry(catalog, itemId, hintName));
+}
+
+function pktBodyView(entry) {
+  if (!entry) return null;
+  const itemId = entry.id ?? entry.itemId ?? entry._id ?? "";
+  const document = entry.document ?? entry;
+  const name = entry.name ?? document?.name ?? `ПКТ ${itemId}`;
+  let quality = Number(PKT_BODY_QUALITIES.get(itemId));
+  if (!Number.isFinite(quality)) {
+    try {
+      quality = Number(CyberwareTab.getPktBodyQuality(document));
+    } catch {
+      quality = Number.NaN;
+    }
+  }
+  let slots = Number(entry.slots);
+  if (!Number.isFinite(slots)) {
+    try {
+      slots = Number(CyberwareTab.getSlots(document));
+    } catch {
+      slots = Number.NaN;
+    }
+  }
+  return {
+    itemId,
+    name,
+    nameKey: normalizeCatalogName(name),
+    quality,
+    slots,
+    available: true,
+    label: `${name}${Number.isFinite(slots) ? ` · ${slots} сл.` : ""}`,
+  };
+}
+
+function pktBodiesFromCatalog(catalog) {
+  const byId = new Map();
+  for (const entry of catalog?.entries ?? []) {
+    const knownId = PKT_BODY_QUALITIES.has(entry.id);
+    const knownName = /^Полная\s+Конверсия\s+Тела(?:\s|\[|$)/iu.test(String(entry.name ?? ""));
+    if (!entry.pktBody && !knownId && !knownName) continue;
+    const view = pktBodyView(entry);
+    if (view?.itemId && !byId.has(view.itemId)) byId.set(view.itemId, view);
+  }
+  return [...byId.values()].sort((left, right) =>
+    (Number.isFinite(left.quality) ? left.quality : 999) -
+      (Number.isFinite(right.quality) ? right.quality : 999) ||
+    left.name.localeCompare(right.name, "ru"),
+  );
+}
+
+function mergePktBodies(...groups) {
+  const merged = new Map();
+  for (const group of groups) {
+    for (const body of group ?? []) {
+      // Name is the stable merge key across compendium ID migrations. The
+      // catalog-derived entry is inserted first and therefore keeps the active
+      // world itemId even if an older structured journal still references a
+      // legacy body ID.
+      const key = normalizeCatalogName(body?.name) || body?.itemId;
+      if (!key) continue;
+      const existing = merged.get(key);
+      merged.set(
+        key,
+        existing
+          ? { ...body, ...existing, available: existing.available === true || body.available === true }
+          : body,
+      );
+    }
+  }
+  return [...merged.values()].sort((left, right) =>
+    (Number.isFinite(left.quality) ? left.quality : 999) -
+      (Number.isFinite(right.quality) ? right.quality : 999) ||
+    String(left.name ?? "").localeCompare(String(right.name ?? ""), "ru"),
+  );
 }
 
 function storedWindowSize() {
@@ -118,12 +230,20 @@ function readForm(app) {
   const data = Object.fromEntries(new globalThis.FormData(form).entries());
   for (const name of [
     "includePrograms",
+    "sourceCpel",
+    "sourceRemaster",
     "includeConsumables",
     "backupOriginal",
     "addToCombat",
     "createBriefing",
     "sendChatSummary",
     "openSheet",
+    "ability1_enabled",
+    "ability2_enabled",
+    "ability3_enabled",
+    "ability4_enabled",
+    "ability5_enabled",
+    "ability6_enabled",
   ]) {
     data[name] = form.elements.namedItem(name)?.checked === true;
   }
@@ -142,6 +262,7 @@ function applyFormValues(app, values) {
   }
   refreshPresetSelection(app);
   refreshConditionalFields(app);
+  syncPktSelectors(app);
 }
 
 function refreshPresetSelection(app) {
@@ -157,9 +278,24 @@ function refreshPresetSelection(app) {
     );
 }
 
+function refreshCustomStatFields(app) {
+  const form = formElement(app);
+  const root = app.element;
+  if (!form || !root) return;
+  root.querySelectorAll("[data-forge-stat-mode]").forEach((select) => {
+    const targetName = select.dataset.forgeCustomTarget;
+    const input = targetName ? form.elements.namedItem(targetName) : null;
+    if (!input) return;
+    const custom = select.value === "custom";
+    input.disabled = !custom;
+    input.classList.toggle("is-hidden", !custom);
+  });
+}
+
 function refreshConditionalFields(app) {
   const form = formElement(app);
   if (!form) return;
+  refreshCustomStatFields(app);
   const count = Math.max(
     1,
     Number(form.elements.namedItem("count")?.value) || 1,
@@ -175,6 +311,45 @@ function refreshConditionalFields(app) {
     combat.disabled =
       form.elements.namedItem("deploymentMode")?.value === "none";
     if (combat.disabled) combat.checked = false;
+  }
+}
+
+function syncPktSelectors(app) {
+  const form = formElement(app);
+  if (!form) return;
+  const bodyField = form.elements.namedItem("pktBodyId");
+  const modelField = form.elements.namedItem("pktModelKey");
+  if (!bodyField || !modelField) return;
+
+  const bodyValue = String(bodyField.value ?? "");
+  const selectedBodyOption = bodyField.selectedOptions?.[0] ?? null;
+  const selectedBodyKey = selectedBodyOption?.dataset?.pktBodyKey ?? "";
+  const bodyChosen = Boolean(bodyValue);
+  const bodyIsRandom = bodyValue === "random";
+
+  for (const option of modelField.options ?? []) {
+    const value = String(option.value ?? "");
+    if (!value || value === "random") {
+      option.hidden = false;
+      continue;
+    }
+    const optionBodyId = option.dataset?.pktBodyId ?? "";
+    const optionBodyKey = option.dataset?.pktBodyKey ?? "";
+    const compatible =
+      bodyIsRandom ||
+      optionBodyId === bodyValue ||
+      (selectedBodyKey && optionBodyKey && optionBodyKey === selectedBodyKey);
+    option.hidden = !bodyChosen || !compatible;
+  }
+
+  modelField.disabled = !bodyChosen;
+  if (!bodyChosen) {
+    modelField.value = "";
+    return;
+  }
+  const selectedModel = modelField.selectedOptions?.[0];
+  if (selectedModel?.hidden || selectedModel?.disabled) {
+    modelField.value = "random";
   }
 }
 
@@ -218,9 +393,9 @@ function previewHtml(preview) {
       <span>КС ${preview.stats.dc}</span>
       <span>Скорость ${preview.stats.speed}</span>
     </div>
-    <p class="cyberpunk-forge-preview-meta"><strong>Навыки:</strong> ${
+    <p class="cyberpunk-forge-preview-meta"><strong>Мод. атрибутов:</strong> Сил ${signedStat(preview.abilities?.str)} · Лвк ${signedStat(preview.abilities?.dex)} · Тел ${signedStat(preview.abilities?.con)} · Инт ${signedStat(preview.abilities?.int)} · Мдр ${signedStat(preview.abilities?.wis)} · Хар ${signedStat(preview.abilities?.cha)}<br><strong>Спасброски:</strong> Стойкость ${signedStat(preview.saves?.fortitude)} · Рефлекс ${signedStat(preview.saves?.reflex)} · Воля ${signedStat(preview.saves?.will)}<br><strong>Навыки:</strong> ${
       preview.skillCount
-    } · <strong>Защита:</strong> ${escapeHtml(
+    } · <strong>Свои способности:</strong> ${preview.customAbilityCount ?? 0} · <strong>Защита:</strong> ${escapeHtml(
       preview.defenses.label,
     )}<br><strong>Языки:</strong> ${escapeHtml(languageLabels)}</p>
     <ul class="cyberpunk-forge-preview-loadout">${loadout}</ul>
@@ -300,7 +475,7 @@ async function sendChatSummary(results, deployment, briefing, form) {
   const journal = briefing.journal
     ? `<p>@UUID[${briefing.journal.uuid}]{Открыть мастерскую сводку}</p>`
     : "";
-  const content = `<h3>Киберпанк-Кузница</h3><ul>${rows}</ul><p>Жетонов размещено: ${deployment.tokens.length}.</p>${journal}`;
+  const content = `<h3>Киберпанк-Кузница NPC</h3><ul>${rows}</ul><p>Жетонов размещено: ${deployment.tokens.length}.</p>${journal}`;
   const recipients =
     globalThis.ChatMessage.getWhisperRecipients?.("GM")?.map(
       (user) => user.id,
@@ -356,7 +531,7 @@ async function executeGeneration(app) {
   } catch (error) {
     console.error(`${MODULE_ID} | Forge generation failed`, error);
     globalThis.ui?.notifications?.error?.(
-      `Киберпанк-Кузница: ${error.message}`,
+      `Киберпанк-Кузница NPC: ${error.message}`,
       { permanent: true },
     );
     return null;
@@ -377,10 +552,85 @@ function downloadJson(filename, value) {
   globalThis.URL.revokeObjectURL(url);
 }
 
+function setWorkTab(root, tabId) {
+  activeWorkTab = tabId || "builder";
+  root.querySelectorAll("[data-forge-worktab]").forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.forgeWorktab === activeWorkTab);
+  });
+  root.querySelectorAll("[data-forge-worktab-panel]").forEach((panel) => {
+    panel.classList.toggle("is-hidden", panel.dataset.forgeWorktabPanel !== activeWorkTab);
+  });
+}
+
+function refreshAbilityRow(row) {
+  if (!row) return;
+  const enabled = row.querySelector('[data-forge-ability-enabled]')?.checked === true;
+  row.classList.toggle("is-enabled", enabled);
+  const type = row.querySelector('[data-forge-ability-action-type]')?.value ?? "passive";
+  const actions = row.querySelector('[data-forge-ability-actions]');
+  if (actions) {
+    actions.disabled = type !== "action";
+    actions.closest("label")?.classList.toggle("is-disabled", type !== "action");
+  }
+}
+
+function applyAbilityTemplate(form, row, index, templateId) {
+  const template = abilityTemplate(templateId);
+  if (!template || !row) return false;
+  const set = (suffix, value) => {
+    const field = form.elements.namedItem(`ability${index}_${suffix}`);
+    if (field) field.value = value ?? "";
+  };
+  const enabled = form.elements.namedItem(`ability${index}_enabled`);
+  if (enabled) enabled.checked = true;
+  set("name", template.label);
+  set("actionType", template.actionType);
+  set("actions", template.actions ?? 1);
+  set("category", template.category);
+  set("frequencyPer", template.frequencyPer ?? "");
+  set("frequencyMax", template.frequencyMax ?? 1);
+  set("traits", template.traits ?? "");
+  set("description", template.description ?? "");
+  set("rules", template.rules ?? "[]");
+  refreshAbilityRow(row);
+  return true;
+}
+
 function attachListeners(app) {
   const root = app.element;
   const form = formElement(app);
   if (!root || !form) return;
+
+  setWorkTab(root, activeWorkTab);
+  root.querySelectorAll("[data-forge-worktab]").forEach((button) => {
+    button.addEventListener("click", () => setWorkTab(root, button.dataset.forgeWorktab));
+  });
+
+  root.querySelectorAll("[data-forge-ability-row]").forEach((row) => {
+    const index = Number(row.dataset.forgeAbilityRow);
+    refreshAbilityRow(row);
+    row.querySelector(".neon-forge-ability-enabled")?.addEventListener("click", (event) => event.stopPropagation());
+    row.querySelector("[data-forge-ability-enabled]")?.addEventListener("change", () => refreshAbilityRow(row));
+    row.querySelector("[data-forge-ability-action-type]")?.addEventListener("change", () => refreshAbilityRow(row));
+    row.querySelector("[data-forge-ability-template]")?.addEventListener("change", async (event) => {
+      if (!event.currentTarget.value) return;
+      if (applyAbilityTemplate(form, row, index, event.currentTarget.value)) {
+        await refreshPreview(app);
+      }
+    });
+  });
+
+  root.querySelectorAll("[data-forge-group-tab]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const group = button.dataset.forgeGroupTab;
+      root.querySelectorAll("[data-forge-group-tab]").forEach((tab) =>
+        tab.classList.toggle("is-active", tab.dataset.forgeGroupTab === group),
+      );
+      root.querySelectorAll("[data-forge-group-panel]").forEach((panel) =>
+        panel.classList.toggle("is-hidden", panel.dataset.forgeGroupPanel !== group),
+      );
+    });
+  });
 
   root.querySelectorAll("[data-forge-preset]").forEach((button) => {
     button.addEventListener("click", async () => {
@@ -391,6 +641,12 @@ function attachListeners(app) {
       form.elements.namedItem("level").value = preset.level;
       form.elements.namedItem("includePrograms").checked =
         preset.includePrograms;
+      const chromeField = form.elements.namedItem("chromeIntensity");
+      const pktBodyField = form.elements.namedItem("pktBodyId");
+      const pktField = form.elements.namedItem("pktModelKey");
+      if (chromeField) chromeField.value = preset.forbidChrome ? "none" : "standard";
+      if (pktBodyField) pktBodyField.value = preset.pkt && !preset.forbidChrome ? "random" : "";
+      if (pktField) pktField.value = preset.pkt && !preset.forbidChrome ? "random" : "";
       form.elements.namedItem("randomSeed").value = randomSeed();
       refreshPresetSelection(app);
       await refreshPreview(app);
@@ -410,7 +666,11 @@ function attachListeners(app) {
     .querySelector("[data-forge-refresh-catalog]")
     ?.addEventListener("click", async () => {
       clearCyberpunkCatalog();
-      const catalog = await loadCyberpunkCatalog({ refresh: true });
+      const values = readForm(app);
+      const catalog = await loadCyberpunkCatalog({
+        refresh: true,
+        sources: { cpel: values.sourceCpel, remaster: values.sourceRemaster },
+      });
       globalThis.ui?.notifications?.info?.(
         `Каталог обновлён: ${catalog.entries.length} предметов; ${catalog.cyberware.length} имплантов.`,
       );
@@ -469,13 +729,31 @@ function attachListeners(app) {
     ?.addEventListener("click", async () => {
       await createLauncherMacro();
       globalThis.ui?.notifications?.info?.(
-        "Макрос запуска Киберпанк-Кузницы создан.",
+        "Макрос запуска Киберпанк-Кузницы NPC создан.",
       );
     });
 
-  form.addEventListener("change", () => {
+  root.querySelectorAll("[data-forge-source]").forEach((checkbox) => {
+    checkbox.addEventListener("change", async () => {
+      const cpel = form.elements.namedItem("sourceCpel");
+      const remaster = form.elements.namedItem("sourceRemaster");
+      if (!cpel?.checked && !remaster?.checked) {
+        checkbox.checked = true;
+        globalThis.ui?.notifications?.warn?.("Оставьте включённым хотя бы один источник предметов.");
+        return;
+      }
+      clearCyberpunkCatalog();
+      app.pendingValues = readForm(app);
+      await app.render({ force: true });
+    });
+  });
+
+  form.addEventListener("change", (event) => {
     refreshConditionalFields(app);
     refreshPresetSelection(app);
+    if (["pktBodyId", "pktModelKey"].includes(event.target?.name)) {
+      syncPktSelectors(app);
+    }
   });
 }
 
@@ -492,9 +770,9 @@ function getForgeApplicationClass() {
     HandlebarsApplicationMixin(ApplicationV2)
   ) {
     static DEFAULT_OPTIONS = {
-      id: "sf2e-cyberpunk-forge",
+      id: "sf2e-neon-forge",
       tag: "form",
-      classes: ["cyberpunk-forge-application"],
+      classes: ["cpel-neon-forge-application"],
       position: { width: 940, height: 800 },
       window: {
         title: "Киберпанк-Кузница NPC",
@@ -535,29 +813,123 @@ function getForgeApplicationClass() {
         items: 0,
         weapons: 0,
         armor: 0,
+        gear: 0,
         cyberware: 0,
         programs: 0,
+        cpel: 0,
+        remaster: 0,
       };
       let catalogError = "";
+      let catalog = null;
+      let pktModels = [];
+      let pktBodies = [];
+      let pktCatalogError = "";
+      const catalogForm = normalizeForgeForm(this.pendingValues ?? this.initialValues ?? {});
       try {
-        const catalog = await loadCyberpunkCatalog();
+        catalog = await loadCyberpunkCatalog({
+          sources: { cpel: catalogForm.sourceCpel, remaster: catalogForm.sourceRemaster },
+        });
         catalogStats = {
           items: catalog.entries.length,
           weapons: catalog.weapons.length,
           armor: catalog.armor.length,
           cyberware: catalog.cyberware.length,
+          gear: catalog.gear.length,
           programs: catalog.programs.length + catalog.quickhacks.length,
+          cpel: catalog.sourceStats?.cpel ?? 0,
+          remaster: catalog.sourceStats?.remaster ?? 0,
         };
+        // PKT bodies must remain selectable even when Remaster's model journals
+        // are missing, renamed, or temporarily fail to load. The item catalog
+        // itself is enough to populate the conversion/body selector.
+        pktBodies = pktBodiesFromCatalog(catalog);
       } catch (error) {
         catalogError = error.message;
       }
+      const pktErrors = [];
+      try {
+        pktModels = (await CyberwareTab.loadPktModels())
+          .map((model) => {
+            const missing = [];
+            if (!catalogHasModelItem(catalog, model.requiredBodyId, model.requiredBodyName ?? model.bodyName ?? "")) {
+              missing.push(model.requiredBodyName ?? model.bodyName ?? model.requiredBodyId ?? "корпус");
+            }
+            const fixed = [...(model.unique ?? []), ...(model.components ?? [])];
+            for (const entry of fixed) {
+              if (entry.itemId && !catalogHasModelItem(catalog, entry.itemId, entry.name ?? entry.label ?? "")) {
+                missing.push(entry.name ?? entry.label ?? entry.itemId);
+              }
+            }
+            for (const choice of model.choices ?? []) {
+              const need = Math.max(1, Number(choice.choose) || 1);
+              const options = choice.options ?? [];
+              const available = (choice.itemIds ?? []).filter((id, index) =>
+                catalogHasModelItem(catalog, id, options[index]?.name ?? options.find((entry) => entry.itemId === id)?.name ?? "")
+              );
+              if (available.length < need) missing.push(choice.label ?? choice.name ?? choice.key ?? "вариант модели");
+            }
+            const available = Boolean(catalog) && missing.length === 0;
+            const requiredBodyName = model.requiredBodyName ?? model.bodyName ?? "корпус ПКТ";
+            return {
+              key: model.key,
+              name: model.name,
+              label: `${model.name}${available ? "" : " [неполная библиотека]"}`,
+              description: model.description ?? "",
+              requiredBodyId: model.requiredBodyId ?? "",
+              requiredBodyName,
+              requiredBodyKey: normalizeCatalogName(requiredBodyName),
+              available,
+              missing: [...new Set(missing)],
+            };
+          })
+          .sort((left, right) => left.name.localeCompare(right.name, "ru"));
+      } catch (error) {
+        pktErrors.push(`модели: ${error.message}`);
+      }
+
+      // Load structured bodies independently from models. Previously both lived
+      // in one try/catch, so one broken journal hid every concrete conversion
+      // and left only “Без ПКТ / Случайная доступная конверсия”.
+      try {
+        const pktContent = await CyberwareTab.loadPktContent();
+        const structuredBodies = (pktContent.bodies ?? [])
+          .map((body) => {
+            const available = Boolean(catalog) && catalogHasModelItem(catalog, body.itemId, body.name);
+            return {
+              itemId: body.itemId,
+              name: body.name,
+              nameKey: normalizeCatalogName(body.name),
+              quality: body.quality,
+              slots: body.slots,
+              available,
+              label: `${body.name}${Number.isFinite(body.slots) ? ` · ${body.slots} сл.` : ""}${available ? "" : " [нет в активных источниках]"}`,
+            };
+          });
+        pktBodies = mergePktBodies(pktBodies, structuredBodies);
+      } catch (error) {
+        pktErrors.push(`корпуса: ${error.message}`);
+      }
+
+      // Last-resort scan: if the structured loader yielded nothing but the main
+      // catalog is present, expose all known/flagged PKT body items directly.
+      if (!pktBodies.length && catalog) pktBodies = pktBodiesFromCatalog(catalog);
+      pktCatalogError = pktErrors.join("; ");
       return {
         ...context,
         presetGroups: presetsByGroup(),
+        roles: roleOptions(),
         tiers: Object.entries(TIER_LABELS).map(([value, label]) => ({
           value,
           label,
         })),
+        attributeOptions: ATTRIBUTE_OPTIONS,
+        attributeTiers: ATTRIBUTE_OVERRIDE_TIERS,
+        saveOptions: SAVE_OPTIONS,
+        saveTiers: SAVE_OVERRIDE_TIERS,
+        skillOptions: forgeSkillOptions(),
+        skillTiers: SKILL_OVERRIDE_TIERS,
+        abilityTemplates: abilityTemplateOptions(),
+        abilitySlots: Array.from({ length: 6 }, (_, index) => ({ index: index + 1 })),
         deploymentModes: Object.entries(DEPLOYMENT_MODES).map(
           ([value, entry]) => ({ value, label: entry.label }),
         ),
@@ -568,6 +940,11 @@ function getForgeApplicationClass() {
         selectedNpc: selectedNpcInfo(),
         catalogStats,
         catalogError,
+        catalogSourceWarnings: catalog?.sourceWarnings ?? [],
+        remasterActive: globalThis.game?.modules?.get?.("cyberpunk-remaster")?.active === true,
+        pktModels,
+        pktBodies,
+        pktCatalogError,
       };
     }
 
@@ -587,6 +964,8 @@ function getForgeApplicationClass() {
       applyFormValues(this, this.pendingValues ?? this.initialValues);
       this.pendingValues = null;
       attachListeners(this);
+      const remasterSource = this.element?.querySelector?.('[name="sourceRemaster"]');
+      if (remasterSource?.disabled) remasterSource.checked = false;
       await refreshPreview(this);
     }
 
@@ -614,13 +993,13 @@ function getForgeApplicationClass() {
 export async function openForge(options = {}) {
   if (globalThis.game?.system?.id !== "sf2e") {
     globalThis.ui?.notifications?.error?.(
-      "Киберпанк-Кузница работает только в Starfinder 2e.",
+      "Киберпанк-Кузница NPC работает только в Starfinder 2e.",
     );
     return null;
   }
   if (!globalThis.game?.user?.isGM) {
     globalThis.ui?.notifications?.error?.(
-      "Киберпанк-Кузницу может открыть только ведущий.",
+      "Киберпанк-Кузницу NPC может открыть только ведущий.",
     );
     return null;
   }
@@ -667,13 +1046,14 @@ function addDirectoryButton(app, html) {
   const button = globalThis.document.createElement("button");
   button.type = "button";
   button.dataset.cyberpunkForgeLauncher = "true";
-  button.innerHTML = '<i class="fa-solid fa-microchip"></i> Киберпанк-Кузница';
+  button.innerHTML = '<i class="fa-solid fa-microchip"></i> Киберпанк-Кузница NPC';
   button.addEventListener("click", () => void openForge());
   group.append(button);
 }
 
 function clearCatalogForDocument(document) {
-  if (document?.pack === ITEM_PACK_ID) clearCyberpunkCatalog();
+  const pack = String(document?.pack ?? "");
+  if (pack.startsWith(`${MODULE_ID}.`) || pack.startsWith("cyberpunk-remaster.")) clearCyberpunkCatalog();
 }
 
 function scheduleNpcInterfaceRefresh(item, options = {}) {
@@ -684,6 +1064,7 @@ function scheduleNpcInterfaceRefresh(item, options = {}) {
     options.cyberpunkForgeOperation ||
     options.cyberpunkRemasterManaged ||
     options.cyberpunkRemasterModelOperation ||
+    options.cpelNeonForgeManaged ||
     options.cyberpunkForgeInterfaceUpdate
   ) {
     return;
@@ -699,6 +1080,24 @@ function scheduleNpcInterfaceRefresh(item, options = {}) {
     }
   }, 50);
   pendingInterfaceRefreshes.set(actor, timeout);
+}
+
+function actorSheetRoot(app, html) {
+  if (html instanceof globalThis.HTMLElement) return html;
+  if (html?.[0] instanceof globalThis.HTMLElement) return html[0];
+  if (app?.element instanceof globalThis.HTMLElement) return app.element;
+  return null;
+}
+
+function injectNpcCyberwareTab(app, html) {
+  if (!globalThis.game?.user?.isGM || app?.actor?.type !== "npc") return;
+  const root = actorSheetRoot(app, html);
+  if (!root) return;
+  try {
+    CyberwareTab.inject(app, root);
+  } catch (error) {
+    console.warn(`${MODULE_ID} | NPC cyberware tab injection failed`, error);
+  }
 }
 
 Hooks.once("init", () => {
@@ -726,6 +1125,12 @@ Hooks.once("init", () => {
 });
 
 Hooks.on("renderActorDirectory", addDirectoryButton);
+Hooks.on("renderActorSheet", injectNpcCyberwareTab);
+Hooks.on("renderActorSheetV2", injectNpcCyberwareTab);
+Hooks.on("renderApplicationV2", (app, html) => {
+  if (app?.actor?.type === "npc") injectNpcCyberwareTab(app, html);
+});
+Hooks.on("closeActorSheet", (app) => CyberwareTab.clearSheetState(app));
 Hooks.on("createItem", clearCatalogForDocument);
 Hooks.on("updateItem", clearCatalogForDocument);
 Hooks.on("deleteItem", clearCatalogForDocument);

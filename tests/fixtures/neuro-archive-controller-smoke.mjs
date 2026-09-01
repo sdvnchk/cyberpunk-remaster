@@ -27,6 +27,14 @@ const user = {
             actorName: actor.name,
             actorImg: actor.img,
             entries: {
+              people: [
+                {
+                  id: "legacy-person",
+                  type: "people",
+                  title: "Старый контакт",
+                  content: "Контакт без поля переписки",
+                },
+              ],
               notes: [
                 {
                   id: "legacy-note",
@@ -92,7 +100,10 @@ const root = {
 const controller = createNeuroArchiveController(root);
 const notebook = controller.state.store.notebooks[actor.id];
 const note = notebook.entries.notes[0];
+const person = notebook.entries.people[0];
 
+assert.equal(person.title, "Старый контакт");
+assert.deepEqual(person.messages, []);
 assert.equal(note.title, "Старая запись");
 assert.equal(note.content, "Данные прежнего макроса");
 assert.deepEqual(note.fragments, []);

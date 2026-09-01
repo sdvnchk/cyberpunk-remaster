@@ -1,14 +1,193 @@
 /*
- * Нейро-Архив — модульная версия одноимённого макроса 4.1.0.
+ * Нейро-Архив — модульная версия Нейро-Архива 4.2.0.
  *
- * Формат флага personalChronicleMacro.data и ключи localStorage намеренно
- * сохранены: существующие записи и JSON-бэкапы продолжают работать.
+ * Данные хранятся в собственном пространстве cyberpunkRemaster.neuroArchive.
+ * Старый personalChronicleMacro.data читается как резервный источник, поэтому
+ * архивы 4.1 остаются доступны; последующие сохранения идут в новое пространство.
  */
 
 import {
   NEURO_ARCHIVE_VARIANT,
   NEURO_ARCHIVE_VERSION,
 } from "./neuro-archive-constants.mjs";
+
+export function selectContactMessageRecipientIds({
+  users = [],
+  senderId = "",
+  actor = null,
+} = {}) {
+  const activeUsers = Array.from(users ?? []).filter(
+    (user) => user && user.active !== false,
+  );
+  const sender = String(senderId || "");
+  const playerOwners = actor
+    ? activeUsers.filter((user) => {
+        const id = String(user.id ?? user._id ?? "");
+        if (!id || id === sender || user.isGM) return false;
+        try {
+          return actor.testUserPermission?.(user, "OWNER") === true;
+        } catch (_error) {
+          return false;
+        }
+      })
+    : [];
+  const recipients = playerOwners.length
+    ? playerOwners
+    : activeUsers.filter((user) => {
+        const id = String(user.id ?? user._id ?? "");
+        return Boolean(id && id !== sender && user.isGM);
+      });
+  const ids = recipients
+    .map((user) => String(user.id ?? user._id ?? ""))
+    .filter(Boolean);
+  if (sender) ids.push(sender);
+  return [...new Set(ids)];
+}
+
+export function contactMessageDirection({
+  isGM = false,
+  archiveUserId = "",
+  currentUserId = "",
+} = {}) {
+  const archiveOwner = String(archiveUserId || "");
+  const currentUser = String(currentUserId || "");
+  return isGM && archiveOwner && currentUser && archiveOwner !== currentUser
+    ? "in"
+    : "out";
+}
+
+export async function captureDataUrlLooksUsable(dataUrl) {
+  const value = String(dataUrl ?? "");
+  if (!/^data:image\//u.test(value)) return false;
+
+  // В тестовой/серверной среде пиксели проверить нельзя. Сам формат data URL
+  // уже подтверждён, поэтому углублённая проверка выполняется только в браузере.
+  if (typeof globalThis.Image !== "function" || !globalThis.document?.createElement)
+    return true;
+
+  try {
+    const image = new globalThis.Image();
+    image.decoding = "async";
+    image.src = value;
+    if (typeof image.decode === "function") await image.decode();
+    else
+      await new Promise((resolve, reject) => {
+        image.onload = resolve;
+        image.onerror = reject;
+      });
+
+    const probe = globalThis.document.createElement("canvas");
+    probe.width = 16;
+    probe.height = 16;
+    const context = probe.getContext?.("2d", { willReadFrequently: true });
+    if (!context?.getImageData) return true;
+    context.drawImage(image, 0, 0, probe.width, probe.height);
+    const pixels = context.getImageData(0, 0, probe.width, probe.height).data;
+
+    const min = [255, 255, 255];
+    const max = [0, 0, 0];
+    const sum = [0, 0, 0];
+    let opaque = 0;
+    for (let index = 0; index < pixels.length; index += 4) {
+      if (pixels[index + 3] < 16) continue;
+      opaque += 1;
+      for (let channel = 0; channel < 3; channel += 1) {
+        const component = pixels[index + channel];
+        min[channel] = Math.min(min[channel], component);
+        max[channel] = Math.max(max[channel], component);
+        sum[channel] += component;
+      }
+    }
+    if (opaque < 8) return false;
+
+    const average = sum.map((component) => component / opaque);
+    const uniform = max.every((component, channel) => component - min[channel] <= 8);
+    if (!uniform) return true;
+
+    const brightest = Math.max(...average);
+    const darkest = Math.min(...average);
+    const saturatedDebugFrame = brightest >= 210 && brightest - darkest >= 150;
+    const emptyDarkFrame = brightest <= 4;
+    const emptyLightFrame = darkest >= 251;
+    return !(saturatedDebugFrame || emptyDarkFrame || emptyLightFrame);
+  } catch (error) {
+    console.warn("Нейро-архив: не удалось проверить пиксели снимка", error);
+    return true;
+  }
+}
+
+export async function extractFoundryViewportBase64(
+  canvas,
+  imageHelper =
+    globalThis.foundry?.helpers?.media?.ImageHelper ?? globalThis.ImageHelper,
+  validateCapture = captureDataUrlLooksUsable,
+) {
+  const renderer = canvas?.app?.renderer ?? null;
+  if (!renderer) return "";
+
+  const accept = async (encoded, source) => {
+    if (!encoded) return "";
+    try {
+      if (await validateCapture(encoded)) return encoded;
+      console.warn(`Нейро-архив: ${source} вернул однотонный/служебный кадр; используется резервный способ.`);
+    } catch (error) {
+      console.warn(`Нейро-архив: проверка снимка ${source} не удалась`, error);
+    }
+    return "";
+  };
+
+  // Framebuffer лучше всего сохраняет уже рассчитанное зрение/освещение,
+  // но некоторые GPU/драйверы Foundry 14 возвращают вместо него служебный
+  // однотонный буфер. Поэтому результат обязательно валидируется.
+  try {
+    const texture = canvas?.snapshot?.getFramebufferTexture?.(renderer);
+    if (texture && imageHelper?.textureToImage) {
+      const encoded = await imageHelper.textureToImage(texture, {
+        format: "image/webp",
+        quality: 0.82,
+      });
+      const accepted = await accept(encoded, "framebuffer");
+      if (accepted) return accepted;
+    }
+  } catch (error) {
+    console.warn("Нейро-архив: framebuffer snapshot недоступен", error);
+  }
+
+  // PIXI v8 ExtractSystem заново рендерит DisplayObject и не зависит от
+  // preserveDrawingBuffer WebGL-canvas, поэтому это основной резервный путь.
+  try {
+    const target = canvas?.stage ?? null;
+    if (target && renderer.extract?.base64) {
+      const encoded = await renderer.extract.base64({
+        target,
+        format: "webp",
+        quality: 0.82,
+        resolution: 1,
+      });
+      const accepted = await accept(encoded, "PIXI ExtractSystem");
+      if (accepted) return accepted;
+    }
+  } catch (error) {
+    console.warn("Нейро-архив: PIXI ExtractSystem snapshot недоступен", error);
+  }
+
+  try {
+    const target = canvas?.stage ?? null;
+    if (target && imageHelper?.pixiToBase64) {
+      const encoded = await imageHelper.pixiToBase64(
+        target,
+        "image/webp",
+        0.82,
+      );
+      const accepted = await accept(encoded, "ImageHelper.pixiToBase64");
+      if (accepted) return accepted;
+    }
+  } catch (error) {
+    console.warn("Нейро-архив: ImageHelper PIXI snapshot недоступен", error);
+  }
+
+  return "";
+}
 
 export function createNeuroArchiveController(
   root,
@@ -222,8 +401,8 @@ export function createNeuroArchiveController(
     });
   const localKeyFor = (ownerId) =>
     ownerId === userId
-      ? `personal-chronicle-macro:${worldId}:${userId}`
-      : `personal-chronicle-macro:${worldId}:gm-${userId}:owner-${ownerId}`;
+      ? `cyberpunk-remaster:neuro-archive:${worldId}:${userId}`
+      : `cyberpunk-remaster:neuro-archive:${worldId}:gm-${userId}:owner-${ownerId}`;
 
   function blankStore() {
     return {
@@ -278,6 +457,7 @@ export function createNeuroArchiveController(
         quotes: "",
         promises: "",
         secrets: "",
+        messages: [],
       },
       locations: {
         kind: "",
@@ -360,6 +540,26 @@ export function createNeuroArchiveController(
           entry.tags ??= "";
           entry.summary ??= "";
           entry.content ??= "";
+          if (entry.type === "people") {
+            entry.messages = Array.isArray(entry.messages)
+              ? entry.messages
+                  .map((message) => ({
+                    id: String(message?.id || uid()),
+                    direction: message?.direction === "in" ? "in" : "out",
+                    body: String(message?.body ?? ""),
+                    createdAt: String(message?.createdAt ?? entry.updatedAt ?? now()),
+                    senderUserId: String(message?.senderUserId ?? ""),
+                    senderName: String(message?.senderName ?? ""),
+                    sourceActorId: String(message?.sourceActorId ?? ""),
+                    sourceActorName: String(message?.sourceActorName ?? ""),
+                    archiveUserId: String(message?.archiveUserId ?? ""),
+                    archiveActorId: String(message?.archiveActorId ?? message?.sourceActorId ?? ""),
+                    contactId: String(message?.contactId ?? entry.id ?? ""),
+                    contactName: String(message?.contactName ?? entry.title ?? ""),
+                  }))
+                  .filter((message) => message.body.trim())
+              : [];
+          }
           if (LOCATION_LINK_TYPES.has(entry.type)) {
             entry.locationIds = Array.isArray(entry.locationIds)
               ? [...new Set(entry.locationIds.filter(Boolean))]
@@ -380,12 +580,24 @@ export function createNeuroArchiveController(
 
   function serverData(user = game.user) {
     const flags = user?.flags ?? user?.data?.flags ?? {};
-    return flags.personalChronicleMacro?.data ?? null;
+    return (
+      flags.cyberpunkRemaster?.neuroArchive?.data ??
+      flags.personalChronicleMacro?.data ??
+      null
+    );
+  }
+
+  function legacyLocalKeyFor(ownerId) {
+    return ownerId === userId
+      ? `personal-chronicle-macro:${worldId}:${userId}`
+      : `personal-chronicle-macro:${worldId}:gm-${userId}:owner-${ownerId}`;
   }
 
   function localData(ownerId) {
     try {
-      return JSON.parse(localStorage.getItem(localKeyFor(ownerId)) || "null");
+      const current = localStorage.getItem(localKeyFor(ownerId));
+      const legacy = current ? null : localStorage.getItem(legacyLocalKeyFor(ownerId));
+      return JSON.parse(current || legacy || "null");
     } catch (_error) {
       return null;
     }
@@ -442,6 +654,13 @@ export function createNeuroArchiveController(
     previousView: null,
     quick: "",
     search: "",
+    contactQuery: "",
+    contactRoleFilter: "all",
+    contactTagFilter: "all",
+    contactSort: "recent",
+    quickEditPersonId: null,
+    contextMenu: null,
+    contextTagEditorOpen: false,
     saveTimer: null,
     saving: false,
     saveAgain: false,
@@ -602,6 +821,7 @@ export function createNeuroArchiveController(
     state.openId = null;
     state.lightbox = null;
     state.openFragmentId = null;
+    if (section !== "people") state.quickEditPersonId = null;
   }
 
   function saveLocal() {
@@ -667,7 +887,7 @@ export function createNeuroArchiveController(
         throw new Error("Недостаточно прав для чужого архива");
       if (typeof owner?.update !== "function")
         throw new Error("User.update недоступен");
-      await owner.update({ "flags.personalChronicleMacro.data": payload });
+      await owner.update({ "flags.cyberpunkRemaster.neuroArchive.data": payload });
       state.storageMode = "server";
       if (state.archiveUserId === ownerId && state.revision === revision)
         state.pendingServer = false;
@@ -923,28 +1143,247 @@ export function createNeuroArchiveController(
     </div>`;
   }
 
-  function card(entry, book) {
-    const tags = String(entry.tags)
+
+  function contactTagValues(person) {
+    return String(person?.tags || "")
       .split(",")
       .map((tag) => tag.trim())
       .filter(Boolean);
-    const search = [
+  }
+
+  function searchableText(entry) {
+    const extra =
+      entry.type === "people"
+        ? [
+            entry.role,
+            entry.ancestry,
+            entry.status,
+            entry.attitude,
+            entry.relationship,
+            entry.firstMet,
+            entry.quotes,
+            entry.promises,
+            entry.secrets,
+          ]
+        : entry.type === "locations"
+          ? [
+              entry.kind,
+              entry.region,
+              entry.status,
+              entry.atmosphere,
+              entry.dangers,
+              entry.services,
+              entry.travel,
+            ]
+          : entry.type === "quests"
+            ? [
+                entry.status,
+                entry.objective,
+                entry.reward,
+                entry.deadline,
+                entry.nextStep,
+                ...(entry.tasks ?? []).map((task) => task.text),
+              ]
+            : entry.type === "clues"
+              ? [entry.status, entry.source, entry.theory, entry.conclusion]
+              : entry.type === "sessions"
+                ? [
+                    entry.realDate,
+                    entry.gameDate,
+                    entry.participants,
+                    entry.events,
+                    entry.decisions,
+                    entry.loot,
+                    entry.nextTime,
+                  ]
+                : [entry.category];
+    return [
       entry.title,
       entry.summary,
       entry.content,
       entry.tags,
-      ...entry.fragments.map((f) => `${f.title} ${f.content}`),
+      ...extra,
+      ...entry.fragments.map((fragment) => `${fragment.title} ${fragment.content}`),
     ]
+      .filter(Boolean)
       .join(" ")
       .toLowerCase();
-    return `<details class="pcm-card ${entry.pinned ? "pinned" : ""}" data-entry-id="${entry.id}" data-search="${esc(search)}" ${state.openId === entry.id ? "open" : ""}>
-      <summary><div class="pcm-thumb">${entry.image ? `<img src="${esc(entry.image)}" alt="">` : sectionIcon(entry.type)}</div><div><h2>${esc(entry.title)}</h2><p>${short(entry.summary || entry.content || "Нажмите, чтобы открыть запись")}</p><small>${tags
-        .slice(0, 4)
-        .map(
-          (tag) => `<i class="pcm-tag" data-tag="${esc(tag)}">#${esc(tag)}</i>`,
-        )
-        .join(" ")}</small></div><b>${fa("fa-chevron-down")}</b></summary>
-      ${editorBody(entry, book)}</details>`;
+  }
+
+  function contactFilteredPeople(book) {
+    let people = [...book.entries.people];
+    const query = String(state.contactQuery || "").trim().toLowerCase();
+    const role = String(state.contactRoleFilter || "all");
+    const tag = String(state.contactTagFilter || "all");
+    if (query)
+      people = people.filter((person) => searchableText(person).includes(query));
+    if (role !== "all")
+      people = people.filter((person) =>
+        role === "none"
+          ? !String(person.role || "").trim()
+          : normalizeName(person.role) === normalizeName(role),
+      );
+    if (tag !== "all")
+      people = people.filter((person) =>
+        contactTagValues(person).some(
+          (value) => normalizeName(value) === normalizeName(tag),
+        ),
+      );
+    return people;
+  }
+
+  function contactSortList(people, mode = state.contactSort) {
+    const list = [...people];
+    if (mode === "name")
+      return list.sort((a, b) =>
+        String(a.title).localeCompare(String(b.title), "ru"),
+      );
+    if (mode === "role")
+      return list.sort((a, b) => {
+        const ar = String(a.role || "Яяя Без роли");
+        const br = String(b.role || "Яяя Без роли");
+        return (
+          ar.localeCompare(br, "ru") ||
+          String(a.title).localeCompare(String(b.title), "ru")
+        );
+      });
+    if (mode === "tags")
+      return list.sort((a, b) => {
+        const at = contactTagValues(a)[0] || "Яяя Без тегов";
+        const bt = contactTagValues(b)[0] || "Яяя Без тегов";
+        return (
+          at.localeCompare(bt, "ru") ||
+          String(a.title).localeCompare(String(b.title), "ru")
+        );
+      });
+    if (mode === "attitude")
+      return list.sort((a, b) => {
+        const aa = String(a.attitude || "");
+        const ba = String(b.attitude || "");
+        return (
+          aa.localeCompare(ba, "ru") ||
+          String(a.title).localeCompare(String(b.title), "ru")
+        );
+      });
+    if (mode === "pinned")
+      return list.sort(
+        (a, b) =>
+          Number(b.pinned) - Number(a.pinned) ||
+          String(a.title).localeCompare(String(b.title), "ru"),
+      );
+    return list.sort(
+      (a, b) =>
+        String(b.updatedAt).localeCompare(String(a.updatedAt)) ||
+        String(a.title).localeCompare(String(b.title), "ru"),
+    );
+  }
+
+  function contactListCard(person) {
+    const tags = contactTagValues(person);
+    return `<article class="pcm-card pcm-contact-list-card ${person.pinned ? "pinned" : ""}" data-entry-id="${person.id}" data-search="${esc(searchableText(person))}">
+      <button class="pcm-record-open" data-action="view-person" data-person-id="${person.id}">
+        <div class="pcm-thumb">${person.image ? `<img src="${esc(person.image)}" alt="">` : sectionIcon("people")}</div>
+        <div><h2>${esc(person.title)}</h2><p>${short(person.summary || person.content || "Открыть досье контакта")}</p><small>${[person.role, person.attitude].filter(Boolean).map((value) => `<i class="pcm-tag-static">${esc(value)}</i>`).join(" ")} ${tags.slice(0, 4).map((tag) => `<i class="pcm-tag-static">#${esc(tag)}</i>`).join(" ")}</small></div>
+        <b>${fa("fa-arrow-right")}</b>
+      </button>
+    </article>`;
+  }
+
+  function peopleListView(book) {
+    const allPeople = [...book.entries.people];
+    const people = contactSortList(contactFilteredPeople(book));
+    const roles = [
+      ...new Set(
+        allPeople.map((person) => String(person.role || "").trim()).filter(Boolean),
+      ),
+    ].sort((a, b) => a.localeCompare(b, "ru"));
+    const tags = [
+      ...new Set(allPeople.flatMap((person) => contactTagValues(person))),
+    ].sort((a, b) => a.localeCompare(b, "ru"));
+    return `<div class="pcm-section-head"><div><small>${people.length} ИЗ ${allPeople.length} КОНТАКТОВ</small><h1>${sectionIcon("people")} Контакты</h1></div><div><button data-action="from-token" title="Добавить все выбранные цели без дублей">${fa("fa-crosshairs")} Из целей</button><button data-action="to-journal">${fa("fa-book")} В журнал</button><button class="primary" data-action="add" data-section="people">${fa("fa-plus")} Добавить</button></div></div>
+      <div class="pcm-contact-toolbar">
+        <label><span>Поиск</span><input data-contact-search value="${esc(state.contactQuery)}" placeholder="Имя, роль, тег, заметка…"></label>
+        <label><span>Роль</span><select data-contact-role-filter>${opt("all", state.contactRoleFilter, "Все роли")}${roles.map((role) => opt(role, state.contactRoleFilter, role)).join("")}${opt("none", state.contactRoleFilter, "Без роли")}</select></label>
+        <label><span>Тег</span><select data-contact-tag-filter>${opt("all", state.contactTagFilter, "Все теги")}${tags.map((tag) => opt(tag, state.contactTagFilter, `#${tag}`)).join("")}</select></label>
+        <label><span>Сортировка</span><select data-contact-sort>${opt("recent", state.contactSort, "Недавно изменённые")}${opt("attitude", state.contactSort, "По отношению")}${opt("name", state.contactSort, "По имени")}${opt("role", state.contactSort, "По роли")}${opt("tags", state.contactSort, "По тегам")}${opt("pinned", state.contactSort, "Закреплённые")}</select></label>
+      </div>
+      <div class="pcm-list">${people.length ? people.map(contactListCard).join("") : emptyState("people")}</div>`;
+  }
+
+  function detailValue(label, value, { wide = false } = {}) {
+    if (value === undefined || value === null || String(value).trim() === "")
+      return "";
+    return `<section class="pcm-detail-panel ${wide ? "wide" : ""}"><h3>${esc(label)}</h3>${readText(String(value))}</section>`;
+  }
+
+  function entryReadPanels(book, entry) {
+    const locations = entryLocationIds(entry)
+      .map((id) => book.entries.locations.find((location) => location.id === id))
+      .filter(Boolean);
+    const locationPanel = locations.length
+      ? `<section class="pcm-detail-panel wide"><h3>${sectionIcon("locations")} Связанные точки</h3><div class="pcm-location-chips">${locations.map((location) => `<button data-action="view-location" data-location-id="${location.id}">${sectionIcon("locations")} ${esc(location.title)}</button>`).join("")}</div></section>`
+      : "";
+    if (entry.type === "quests") {
+      const giver = book.entries.people.find((person) => person.id === entry.giverId);
+      const taskPanel = entry.tasks?.length
+        ? `<section class="pcm-detail-panel wide"><h3>${fa("fa-list-check")} Этапы</h3>${entry.tasks.map((task) => `<div>${task.done ? "✓" : "○"} ${esc(task.text || "Без названия")}</div>`).join("")}</section>`
+        : "";
+      return `${detailValue("Статус", entry.status)}${detailValue("Заказчик", giver?.title)}${detailValue("Дедлайн", entry.deadline)}${detailValue("Цель", entry.objective, { wide: true })}${detailValue("Награда", entry.reward, { wide: true })}${detailValue("Следующий шаг", entry.nextStep, { wide: true })}${taskPanel}${locationPanel}`;
+    }
+    if (entry.type === "clues") {
+      const person = book.entries.people.find((item) => item.id === entry.personId);
+      return `${detailValue("Статус", entry.status)}${detailValue("Источник", entry.source)}${detailValue("Контакт", person?.title)}${detailValue("Теория", entry.theory, { wide: true })}${detailValue("Вывод", entry.conclusion, { wide: true })}${locationPanel}`;
+    }
+    if (entry.type === "sessions")
+      return `${detailValue("Дата игры", entry.realDate)}${detailValue("Дата в мире", entry.gameDate)}${detailValue("Участники", entry.participants, { wide: true })}${detailValue("События", entry.events, { wide: true })}${detailValue("Решения", entry.decisions, { wide: true })}${detailValue("Добыча", entry.loot, { wide: true })}${detailValue("К следующей игре", entry.nextTime, { wide: true })}${locationPanel}`;
+    if (entry.type === "notes")
+      return `${detailValue("Категория", entry.category)}${locationPanel}`;
+    return locationPanel;
+  }
+
+  function entryOverview(book, entry) {
+    const section = SECTIONS[entry.type];
+    const tags = contactTagValues(entry);
+    return `<div class="pcm-detail" data-entry-id="${entry.id}">
+      <div class="pcm-detail-nav"><button data-action="back-list" data-section="${entry.type}">${fa("fa-arrow-left")} ${esc(section.label)}</button><div><button data-action="to-chat">${fa("fa-paper-plane")} В чат</button><button data-action="pin">${fa(entry.pinned ? "fa-star" : "fa-thumbtack")} ${entry.pinned ? "Закреплено" : "Закрепить"}</button><button class="primary" data-action="edit-entry">${fa("fa-pen")} Редактировать</button></div></div>
+      <section class="pcm-location-hero"><div class="pcm-location-hero-image">${entry.image ? `<img src="${esc(entry.image)}" alt="">` : sectionIcon(entry.type)}</div><div><small>${esc(section.label)}</small><h1>${esc(entry.title)}</h1>${readText(entry.summary, "Краткая сводка пока не добавлена.")}</div></section>
+      <div class="pcm-detail-grid">${entry.content ? `<section class="pcm-detail-panel wide"><h3>Основная запись</h3>${readText(entry.content)}</section>` : ""}${entryReadPanels(book, entry)}${tags.length ? `<section class="pcm-detail-panel wide"><h3>Теги</h3><div>${tags.map((tag) => `<span class="pcm-tag-static">#${esc(tag)}</span>`).join(" ")}</div></section>` : ""}${readFragments(entry)}</div>
+    </div>`;
+  }
+
+  function personQuickEditPanel(book, person) {
+    return `<div class="pcm-person-quick-edit" data-entry-id="${person.id}">
+      <section class="pcm-detail-panel wide"><h3>Основные данные</h3><div class="pcm-grid">
+        <label class="pcm-field"><span>Имя / позывной</span><input data-quick-person-field="title" value="${esc(person.title)}"></label>
+        <label class="pcm-field"><span>Роль</span><input data-quick-person-field="role" value="${esc(person.role || "")}"></label>
+        <label class="pcm-field"><span>Происхождение</span><input data-quick-person-field="ancestry" value="${esc(person.ancestry || "")}"></label>
+        <label class="pcm-field"><span>Статус</span><select data-quick-person-field="status">${["Неизвестно","Жив","Мёртв","Пропал","Недоступен"].map((value) => opt(value, person.status)).join("")}</select></label>
+        <label class="pcm-field"><span>Отношение</span><select data-quick-person-field="attitude">${["Неизвестно","Враждебно","Недоверие","Нейтрально","Союзник","Близко"].map((value) => opt(value, person.attitude)).join("")}</select></label>
+        <label class="pcm-field"><span>Первая встреча</span><input data-quick-person-field="firstMet" value="${esc(person.firstMet || "")}"></label>
+        <label class="pcm-field wide"><span>Изображение</span><div class="pcm-path"><input data-quick-person-field="image" value="${esc(person.image || "")}"><button data-action="pick-image">${fa("fa-folder-open")} Выбрать</button></div></label>
+        <label class="pcm-field area wide"><span>Краткая сводка</span><textarea data-quick-person-field="summary">${esc(person.summary || "")}</textarea></label>
+        <label class="pcm-field area wide"><span>Наша связь</span><textarea data-quick-person-field="relationship">${esc(person.relationship || "")}</textarea></label>
+        <label class="pcm-field area wide"><span>Основные заметки</span><textarea data-quick-person-field="content">${esc(person.content || "")}</textarea></label>
+        <label class="pcm-field area wide"><span>Что говорил</span><textarea data-quick-person-field="quotes">${esc(person.quotes || "")}</textarea></label>
+        <label class="pcm-field area wide"><span>Долги и договорённости</span><textarea data-quick-person-field="promises">${esc(person.promises || "")}</textarea></label>
+        <label class="pcm-field area wide"><span>Подозрения и секреты</span><textarea data-quick-person-field="secrets">${esc(person.secrets || "")}</textarea></label>
+        <label class="pcm-field wide"><span>Теги</span><input data-quick-person-field="tags" value="${esc(person.tags || "")}"></label>
+      </div></section>
+      <section class="pcm-detail-panel wide pcm-quick-person-locations"><h3>${sectionIcon("locations")} Где пересекались</h3>${locationChecks(person, book.entries.locations)}</section>
+      <section class="pcm-detail-panel wide pcm-quick-person-gallery"><h3>${fa("fa-images")} Галерея</h3>${galleryEditor(person)}</section>
+      <section class="pcm-detail-panel wide pcm-quick-person-fragments"><h3>${fa("fa-layer-group")} Фрагменты</h3>${fragments(person)}<div class="pcm-add-fragment"><button data-action="add-fragment">${fa("fa-plus")} Сворачиваемый фрагмент</button></div></section>
+    </div>`;
+  }
+
+  function card(entry, book) {
+    const tags = contactTagValues(entry);
+    return `<article class="pcm-card pcm-view-card ${entry.pinned ? "pinned" : ""}" data-entry-id="${entry.id}" data-search="${esc(searchableText(entry))}">
+      <button class="pcm-record-open" data-action="open-entry" data-entry-id="${entry.id}" data-section="${entry.type}">
+        <div class="pcm-thumb">${entry.image ? `<img src="${esc(entry.image)}" alt="">` : sectionIcon(entry.type)}</div>
+        <div><h2>${esc(entry.title)}</h2><p>${short(entry.summary || entry.content || "Открыть запись")}</p><small>${tags.slice(0, 4).map((tag) => `<i class="pcm-tag-static">#${esc(tag)}</i>`).join(" ")}</small></div>
+        <b>${fa("fa-arrow-right")}</b>
+      </button>
+    </article>`;
   }
 
   function dashboard(book) {
@@ -1019,7 +1458,7 @@ export function createNeuroArchiveController(
         title: "Точек пока нет",
         steps: [
           "Открой нужную сцену Foundry.",
-          "Нажми «Из сцены» — название и фон подставятся автоматически.",
+          "Нажми «Из сцены» — сохранится название и безопасный снимок только того, что видит твой токен.",
           "Привязывай к точке контакты, гиги, зацепки и записи сессий.",
         ],
         extra: `<button data-action="from-scene">${fa("fa-map")} Из текущей сцены</button>`,
@@ -1181,20 +1620,26 @@ export function createNeuroArchiveController(
       )
         ? `<button data-action="back-location" data-location-id="${state.returnLocationId}">${fa("fa-arrow-left")} Вернуться к точке</button>`
         : `<button data-action="back-list" data-section="people">${fa("fa-arrow-left")} Все контакты</button>`;
-    return `<div class="pcm-detail" data-entry-id="${person.id}">
-      <div class="pcm-detail-nav">${back}<div><button data-action="to-chat" title="Шёпотом себе, Shift+клик — всем">${fa("fa-paper-plane")} В чат</button><button data-action="pin">${fa(person.pinned ? "fa-star" : "fa-thumbtack")} ${person.pinned ? "Закреплено" : "Закрепить"}</button><button class="primary" data-action="edit-entry">${fa("fa-pen")} Редактировать контакт</button></div></div>
-      <section class="pcm-person-hero"><div class="pcm-person-portrait">${person.image ? `<img src="${esc(person.image)}" alt="">` : sectionIcon("people")}</div><div><small>${esc([person.role, person.ancestry].filter(Boolean).join(" · ") || "КОНТАКТ")}</small><h1>${esc(person.title)}</h1><div class="pcm-badges"><span>${esc(person.status || "Неизвестно")}</span><span>${esc(person.attitude || "Нейтрально")}</span></div>${readText(person.summary, "Краткая сводка пока не добавлена.")}</div></section>
-      <div class="pcm-detail-grid">
+    const quickEdit = state.quickEditPersonId === person.id;
+    const heroInfo = quickEdit
+      ? `<div><small>КОНТАКТ // БЫСТРОЕ РЕДАКТИРОВАНИЕ</small><h1>${esc(person.title)}</h1><p class="muted">Все основные поля старого редактора доступны ниже без перехода на отдельный экран.</p></div>`
+      : `<div><small>${esc([person.role, person.ancestry].filter(Boolean).join(" · ") || "КОНТАКТ")}</small><h1>${esc(person.title)}</h1><div class="pcm-badges"><span>${esc(person.status || "Неизвестно")}</span><span>${esc(person.attitude || "Нейтрально")}</span></div>${readText(person.summary, "Краткая сводка пока не добавлена.")}</div>`;
+
+    return `<div class="pcm-detail ${quickEdit ? "is-quick-edit" : ""}" data-entry-id="${person.id}">
+      <div class="pcm-detail-nav">${back}<div><button data-action="compose-person-message">${fa("fa-message")} Сообщение</button><button data-action="to-chat">${fa("fa-paper-plane")} В чат</button><button data-action="pin">${fa(person.pinned ? "fa-star" : "fa-thumbtack")} ${person.pinned ? "Закреплено" : "Закрепить"}</button><button class="primary" data-action="edit-entry">${fa(quickEdit ? "fa-check" : "fa-pen")} ${quickEdit ? "Готово" : "Быстро редактировать"}</button></div></div>
+      <section class="pcm-person-hero"><div class="pcm-person-portrait">${person.image ? `<img src="${esc(person.image)}" alt="">` : sectionIcon("people")}</div>${heroInfo}</section>
+      ${quickEdit ? personQuickEditPanel(book, person) : `<div class="pcm-detail-grid">
         ${person.gallery.length ? `<section class="pcm-detail-panel wide"><h3>${fa("fa-images")} Галерея контакта</h3><div class="pcm-gallery-view">${person.gallery.map((item) => `<button data-action="view-gallery-image" data-gallery-id="${item.id}"><img src="${esc(item.image)}" alt="${esc(item.caption)}"><span>${esc(item.caption || "Открыть изображение")}</span></button>`).join("")}</div></section>` : ""}
         <section class="pcm-detail-panel wide"><h3>${sectionIcon("locations")} Где пересекались</h3><div class="pcm-location-chips">${locations.length ? locations.map((location) => `<button data-action="view-location" data-location-id="${location.id}" data-entry-id="${location.id}">${sectionIcon("locations")} ${esc(location.title)}</button>`).join("") : '<span class="muted">Точки пока не связаны.</span>'}</div>${person.firstMet ? `<h4>Первая встреча</h4>${readText(person.firstMet)}` : ""}</section>
-        <section class="pcm-detail-panel"><header><h3>${sectionIcon("quests")} Гиги от контакта</h3></header>${related(gigs, "quests", "Связанных гигов нет.")}</section>
-        <section class="pcm-detail-panel"><header><h3>${sectionIcon("clues")} Зацепки</h3></header>${related(clues, "clues", "Связанных зацепок нет.")}</section>
-        <section class="pcm-detail-panel"><h3>Мои заметки</h3>${readText(person.content)}${person.relationship ? `<h4>Наши отношения</h4>${readText(person.relationship)}` : ""}</section>
+        <section class="pcm-detail-panel wide pcm-contact-comms"><header><div><h3>${fa("fa-satellite-dish")} Нейро-связь</h3><small>${game.user?.isGM && state.archiveUserId !== userId ? `GM отвечает от имени контакта «${esc(person.title)}»; ответ сразу сохраняется в архиве игрока.` : "Сообщения сохраняются в досье контакта и дублируются адресатам через чат Foundry."}</small></div></header>${contactMessageThread(person)}<div class="pcm-message-composer"><textarea data-person-message-input rows="3" placeholder="${game.user?.isGM && state.archiveUserId !== userId ? `Ответить от имени ${esc(person.title)}…` : `Написать ${esc(person.title)}…`}"></textarea><button class="primary" data-action="send-person-message">${fa("fa-paper-plane")} ${game.user?.isGM && state.archiveUserId !== userId ? "Ответить" : "Отправить"}</button></div></section>
+        <section class="pcm-detail-panel"><header><h3>${sectionIcon("quests")} Гиги от контакта</h3><button data-action="add-person-gig">${fa("fa-plus")} Гиг</button></header>${related(gigs, "quests", "Связанных гигов нет.")}</section>
+        <section class="pcm-detail-panel"><header><h3>${sectionIcon("clues")} Зацепки</h3><button data-action="add-person-clue">${fa("fa-plus")} Зацепка</button></header>${related(clues, "clues", "Связанных зацепок нет.")}</section>
+        <section class="pcm-detail-panel"><header><h3>Мои заметки</h3></header>${readText(person.content, "Заметок о контакте пока нет.")}${person.relationship ? `<h4>Наши отношения</h4>${readText(person.relationship)}` : ""}</section>
         <section class="pcm-detail-panel"><h3>Что говорил</h3>${readText(person.quotes, "Цитат и важных фактов пока нет.")}</section>
         <section class="pcm-detail-panel"><h3>Обещания и долги</h3>${readText(person.promises, "Ничего не отмечено.")}</section>
         <section class="pcm-detail-panel"><h3>Подозрения и секреты</h3>${readText(person.secrets, "Ничего не отмечено.")}</section>
         ${readFragments(person)}
-      </div>
+      </div>`}
     </div>`;
   }
 
@@ -1222,7 +1667,13 @@ export function createNeuroArchiveController(
       if (person) return personOverview(book, person);
       resetView(key);
     }
+    if (state.viewMode === "entry") {
+      const entry = entryById(state.viewId);
+      if (entry) return entryOverview(book, entry);
+      resetView(key);
+    }
     if (key === "locations") return locationListView(book);
+    if (key === "people") return peopleListView(book);
 
     const section = SECTIONS[key];
     const entries = sortedEntries(book.entries[key]);
@@ -1274,7 +1725,7 @@ export function createNeuroArchiveController(
         <section><h3>${fa("fa-bolt")} Быстрые записи</h3><p>На главной введи текст и выбери нужный тип. <b>Ctrl+Enter</b> сохраняет его как дамп. Если вставить обычный текст через <b>Ctrl+V</b> вне поля ввода, из него тоже автоматически создастся дамп. Кнопки «Слух», «Адрес» и «Долг» создают записи с готовой структурой.</p></section>
         <section><h3>${fa("fa-crosshairs")} Контакты с карты</h3><p>Отметь одного или нескольких NPC целями клавишей <b>T</b> и нажми <b>«Из целей»</b> — добавятся все выбранные. Если целей нет, Архив возьмёт все выделенные токены. Для портрета используется изображение прикреплённого <b>Actor</b>, а не внешний вид токена.</p></section>
         <section><h3>${fa("fa-shield-halved")} Защита от дублей</h3><p>Контакты сравниваются по UUID/ID Actor, источнику токена и имени. При повторном импорте одного уже существующего NPC новая запись <b>не создаётся</b> — Архив сразу откроет ранее добавленный контакт. При массовом импорте существующие контакты будут пропущены, а новые добавятся. Точка из уже импортированной сцены ведёт себя так же: открывается существующее досье.</p></section>
-        <section><h3>${fa("fa-map")} Точки из сцен</h3><p>Кнопка <b>«Из сцены»</b> берёт название и фон активной сцены. Контакты, ранее импортированные на этой сцене, автоматически привяжутся к созданной точке. Одну запись можно связать сразу с несколькими точками через чекбоксы «Связанные точки».</p></section>
+        <section><h3>${fa("fa-map")} Точки из сцен</h3><p>Кнопка <b>«Из сцены»</b> берёт название активной сцены и делает снимок текущего зрения выбранного токена. Полный фон сцены не сохраняется. Контакты, ранее импортированные на этой сцене, автоматически привяжутся к созданной точке. Одну запись можно связать сразу с несколькими точками через чекбоксы «Связанные точки».</p></section>
         <section><h3>${fa("fa-link")} Связи и удаление</h3><p>Досье точки автоматически собирает находящихся там контактов, гиги, зацепки, логи и дампы. У контакта отображаются его гиги и зацепки. При удалении точки ссылки на неё очищаются из остальных записей; при удалении контакта он убирается из полей заказчика и источника.</p></section>
         <section><h3>${fa("fa-eye")} Просмотр и редактирование</h3><p>Контакты и точки сначала открываются в удобном режиме чтения. Чтобы увидеть все поля, нажми <b>«Редактировать»</b>. Булавка закрепляет важную запись наверху. Кнопка копирования создаёт намеренную копию, но очищает её привязку к исходному Actor или сцене.</p></section>
         <section><h3>${fa("fa-tags")} Поиск и теги</h3><p>Поиск проверяет заголовок, основной текст, краткую заметку, теги и содержимое фрагментов. Нажатие на тег под карточкой мгновенно фильтрует текущий раздел по нему.</p></section>
@@ -1298,6 +1749,276 @@ export function createNeuroArchiveController(
     return `<div class="pcm-lightbox" data-action="close-lightbox"><button data-action="close-lightbox" title="Закрыть">${fa("fa-xmark")}</button><figure><img src="${esc(item.image)}" alt="${esc(item.caption)}"><figcaption><b>${esc(entry.title)}</b>${item.caption ? `<span>${esc(item.caption)}</span>` : ""}</figcaption></figure></div>`;
   }
 
+
+  function openExistingEntry(entry, { returnLocationId = null } = {}) {
+    if (!entry) return false;
+    if (entry.type === "locations") {
+      resetView("locations");
+      state.viewMode = "location";
+      state.viewId = entry.id;
+    } else if (entry.type === "people") {
+      resetView(returnLocationId ? "locations" : "people");
+      state.viewMode = "person";
+      state.viewId = entry.id;
+      state.returnLocationId = returnLocationId;
+    } else {
+      resetView(entry.type);
+      state.viewMode = "entry";
+      state.viewId = entry.id;
+    }
+    return true;
+  }
+
+  function contextStatusValues(entry) {
+    if (!entry) return [];
+    if (entry.type === "people")
+      return ["Неизвестно", "Жив", "Мёртв", "Пропал", "Недоступен"];
+    if (entry.type === "locations")
+      return ["Активна", "Не разведана", "Проверена", "Опасна", "Закрыта", "Уничтожена"];
+    if (entry.type === "quests")
+      return ["Активно", "На паузе", "Выполнено", "Провалено", "Отказались", "Скрытое"];
+    if (entry.type === "clues")
+      return ["Новая", "Проверяется", "Связана", "Закрыта", "Ложный след"];
+    return [];
+  }
+
+  function contextMenuHtml(entry) {
+    if (!entry || !state.contextMenu) return "";
+    const tags = contactTagValues(entry);
+    const isPerson = entry.type === "people";
+    const statuses = contextStatusValues(entry);
+    const attitudes = [
+      "Неизвестно",
+      "Враждебно",
+      "Недоверие",
+      "Нейтрально",
+      "Союзник",
+      "Близко",
+    ];
+    return `<div class="pcm-context-menu-surface" data-context-entry-id="${entry.id}">
+      <header><span class="pcm-context-avatar">${entry.image ? `<img src="${esc(entry.image)}" alt="">` : sectionIcon(entry.type)}</span><span><small>КОНТЕКСТ // ${esc(SECTIONS[entry.type]?.label || "ЗАПИСЬ")}</small><b>${esc(entry.title)}</b></span><button data-context-action="context-close" aria-label="Закрыть">${fa("fa-xmark")}</button></header>
+      <div class="pcm-context-actions">
+        <button data-context-action="context-open">${fa("fa-folder-open")} Открыть</button>
+        <button data-context-action="context-edit">${fa("fa-pen")} ${isPerson ? "Быстро редактировать" : "Редактировать"}</button>
+        <button data-context-action="context-pin">${fa(entry.pinned ? "fa-star" : "fa-thumbtack")} ${entry.pinned ? "Открепить" : "Закрепить"}</button>
+        <button data-context-action="context-chat">${fa("fa-paper-plane")} В чат</button>
+      </div>
+      ${isPerson ? `<section><small>ОТНОШЕНИЕ</small><div class="pcm-context-chip-grid">${attitudes.map((value) => `<button class="${entry.attitude === value ? "active" : ""}" data-context-action="context-person-attitude" data-value="${esc(value)}">${esc(value)}</button>`).join("")}</div></section>` : ""}
+      ${statuses.length ? `<section><small>СТАТУС</small><div class="pcm-context-chip-grid">${statuses.map((value) => `<button class="${entry.status === value ? "active" : ""}" data-context-action="${isPerson ? "context-person-status" : "context-set-status"}" data-value="${esc(value)}">${esc(value)}</button>`).join("")}</div></section>` : ""}
+      <section><small>ТЕГИ</small><div class="pcm-context-tag-list">${tags.length ? tags.map((tag) => `<button data-context-action="context-remove-tag" data-context-tag-remove="${esc(tag)}">#${esc(tag)} ${fa("fa-xmark")}</button>`).join("") : '<span class="muted">Тегов пока нет.</span>'}</div></section>
+      <div class="pcm-context-tag-action">${state.contextTagEditorOpen ? `<div class="pcm-context-tag-editor"><input data-context-tag-input placeholder="Новый тег" autocomplete="off"><button data-context-action="context-add-tag-confirm">${fa("fa-plus")} Добавить</button><button data-context-action="context-tag-cancel">${fa("fa-xmark")}</button></div>` : `<button data-context-action="context-add-tag">${fa("fa-hashtag")} Добавить тег</button>`}</div>
+      <button class="danger pcm-context-delete" data-context-action="context-delete">${fa("fa-trash")} Удалить</button>
+    </div>`;
+  }
+
+  function contextHost() {
+    let host = document.querySelector?.("[data-neuro-archive-context-host]");
+    if (!host) {
+      host = document.createElement("div");
+      host.dataset.neuroArchiveContextHost = "true";
+      host.className = "neuro-archive-context-host";
+      document.body.append(host);
+      host.addEventListener("click", contextClickHandler);
+      host.addEventListener("keydown", (event) => {
+        if (
+          event.key === "Enter" &&
+          event.target?.matches?.("[data-context-tag-input]")
+        ) {
+          event.preventDefault();
+          void handleContextAction("context-add-tag-confirm", event.target);
+        }
+      });
+    }
+    return host;
+  }
+
+  function fitContextMenuToViewport(menu, x, y) {
+    if (!menu) return;
+    const margin = 8;
+    const viewportWidth =
+      Number(globalThis.visualViewport?.width) ||
+      Number(globalThis.innerWidth) ||
+      1280;
+    const viewportHeight =
+      Number(globalThis.visualViewport?.height) ||
+      Number(globalThis.innerHeight) ||
+      720;
+    const rect = menu.getBoundingClientRect();
+    const left = Math.max(
+      margin,
+      Math.min(Number(x) || margin, viewportWidth - rect.width - margin),
+    );
+    const top = Math.max(
+      margin,
+      Math.min(Number(y) || margin, viewportHeight - rect.height - margin),
+    );
+    menu.style.left = `${Math.round(left)}px`;
+    menu.style.top = `${Math.round(top)}px`;
+    menu.style.maxHeight = `${Math.max(160, viewportHeight - margin * 2)}px`;
+  }
+
+  function closeContextMenu() {
+    state.contextMenu = null;
+    state.contextTagEditorOpen = false;
+    document
+      .querySelector?.("[data-neuro-archive-context-host]")
+      ?.replaceChildren();
+  }
+
+  function mountContextMenu({ focusTag = false } = {}) {
+    const context = state.contextMenu;
+    if (!context) return;
+    const entry = entryById(context.entryId);
+    if (!entry) return closeContextMenu();
+    const host = contextHost();
+    const computed = globalThis.getComputedStyle?.(state.root);
+    for (const property of [
+      "--bg",
+      "--panel",
+      "--panel2",
+      "--ink",
+      "--heading",
+      "--muted",
+      "--gold",
+      "--teal",
+      "--line",
+      "--accent-soft",
+      "--accent-hover",
+      "--field",
+    ]) {
+      const value = computed?.getPropertyValue?.(property);
+      if (value) host.style.setProperty(property, value);
+    }
+    host.innerHTML = contextMenuHtml(entry);
+    const menu = host.querySelector(".pcm-context-menu-surface");
+    requestAnimationFrame(() => {
+      fitContextMenuToViewport(menu, context.x, context.y);
+      if (focusTag) host.querySelector("[data-context-tag-input]")?.focus?.();
+    });
+  }
+
+  function refreshContextMenu({ focusTag = false } = {}) {
+    if (!state.contextMenu) return;
+    mountContextMenu({ focusTag });
+    render();
+  }
+
+  async function handleContextAction(action, source) {
+    const context = state.contextMenu;
+    const entry = context ? entryById(context.entryId) : null;
+    if (!entry && action !== "context-close") return closeContextMenu();
+    if (action === "context-close") return closeContextMenu();
+    if (action === "context-open") {
+      openExistingEntry(entry);
+      render();
+      mountContextMenu();
+      return;
+    }
+    if (action === "context-edit") {
+      if (entry.type === "people") {
+        openExistingEntry(entry);
+        state.quickEditPersonId = entry.id;
+      } else {
+        state.previousView = viewSnapshot();
+        state.viewMode = "edit";
+        state.viewId = entry.id;
+        state.openId = entry.id;
+      }
+      render();
+      mountContextMenu();
+      return;
+    }
+    if (action === "context-pin") {
+      entry.pinned = !entry.pinned;
+      entry.updatedAt = now();
+      dirty();
+      refreshContextMenu();
+      return;
+    }
+    if (action === "context-chat") {
+      await sendToChat(entry, false);
+      mountContextMenu();
+      return;
+    }
+    if (action === "context-person-attitude" && entry.type === "people") {
+      entry.attitude = source.dataset.value || "Нейтрально";
+      entry.updatedAt = now();
+      dirty();
+      refreshContextMenu();
+      return;
+    }
+    if (action === "context-person-status" && entry.type === "people") {
+      entry.status = source.dataset.value || "Неизвестно";
+      entry.updatedAt = now();
+      dirty();
+      refreshContextMenu();
+      return;
+    }
+    if (action === "context-set-status" && "status" in entry) {
+      entry.status = source.dataset.value || entry.status;
+      entry.updatedAt = now();
+      dirty();
+      refreshContextMenu();
+      return;
+    }
+    if (action === "context-add-tag") {
+      state.contextTagEditorOpen = true;
+      mountContextMenu({ focusTag: true });
+      return;
+    }
+    if (action === "context-tag-cancel") {
+      state.contextTagEditorOpen = false;
+      mountContextMenu();
+      return;
+    }
+    if (action === "context-add-tag-confirm") {
+      const input =
+        source.matches?.("[data-context-tag-input]")
+          ? source
+          : contextHost().querySelector("[data-context-tag-input]");
+      const tag = String(input?.value || "").trim().replace(/^#+/, "");
+      if (!tag) return;
+      const values = contactTagValues(entry);
+      if (
+        !values.some((value) => normalizeName(value) === normalizeName(tag))
+      )
+        values.push(tag);
+      entry.tags = values.join(", ");
+      entry.updatedAt = now();
+      dirty();
+      state.contextTagEditorOpen = true;
+      refreshContextMenu({ focusTag: true });
+      return;
+    }
+    if (action === "context-remove-tag") {
+      const tag = source.dataset.contextTagRemove || "";
+      entry.tags = contactTagValues(entry)
+        .filter((value) => normalizeName(value) !== normalizeName(tag))
+        .join(", ");
+      entry.updatedAt = now();
+      dirty();
+      refreshContextMenu();
+      return;
+    }
+    if (action === "context-delete") {
+      if (!confirm(`Удалить «${entry.title}»?`)) return;
+      removeEntry(entry);
+      dirty();
+      closeContextMenu();
+      if (state.viewId === entry.id || state.openId === entry.id)
+        resetView(entry.type);
+      render();
+    }
+  }
+
+  function contextClickHandler(event) {
+    const button = event.target.closest?.("[data-context-action]");
+    if (!button) return;
+    event.preventDefault();
+    event.stopPropagation();
+    void handleContextAction(button.dataset.contextAction, button);
+  }
+
   function render() {
     const win = state.root.querySelector(".pcm-window");
     const owner = archiveUserById(state.archiveUserId);
@@ -1316,7 +2037,7 @@ export function createNeuroArchiveController(
     const counts = Object.fromEntries(
       Object.keys(SECTIONS).map((key) => [key, book.entries[key].length]),
     );
-    win.innerHTML = `<header class="pcm-top">${ownerSelector}<div class="pcm-brand"><img src="${esc(book.actorImg)}" alt=""><div><small>// НЕЙРО-АРХИВ ${esc(themeLabel)} 4.1</small><select data-actor>${state.actors.map((item) => opt(item.id ?? item._id, actor.id ?? actor._id, item.name)).join("")}</select></div></div><span data-save-badge data-mode="${state.storageMode}">${state.storageMode === "server" ? "SYNC ✓" : "LOCAL"}</span><button data-action="appearance" title="Вид и размер текста"><b>${fa("fa-palette")}</b><span>Вид</span></button><button class="pcm-save-now" data-action="save" title="Синхронизировать (Ctrl+S)"><b>${fa("fa-arrows-rotate")}</b><span>SYNC</span></button><button data-action="export" title="Экспорт JSON"><b>${fa("fa-file-export")}</b><span>Бэкап</span></button><button data-action="import" title="Импорт JSON"><b>${fa("fa-file-import")}</b><span>Импорт</span></button><input type="file" accept=".json,application/json" data-import hidden></header>
+    win.innerHTML = `<header class="pcm-top">${ownerSelector}<div class="pcm-brand"><img src="${esc(book.actorImg)}" alt=""><div><small>// НЕЙРО-АРХИВ ${esc(themeLabel)} ${esc(NEURO_ARCHIVE_VERSION)}</small><select data-actor>${state.actors.map((item) => opt(item.id ?? item._id, actor.id ?? actor._id, item.name)).join("")}</select></div></div><span data-save-badge data-mode="${state.storageMode}">${state.storageMode === "server" ? "SYNC ✓" : "LOCAL"}</span><button data-action="appearance" title="Вид и размер текста"><b>${fa("fa-palette")}</b><span>Вид</span></button><button class="pcm-save-now" data-action="save" title="Синхронизировать (Ctrl+S)"><b>${fa("fa-arrows-rotate")}</b><span>SYNC</span></button><button data-action="export" title="Экспорт JSON"><b>${fa("fa-file-export")}</b><span>Бэкап</span></button><button data-action="import" title="Импорт JSON"><b>${fa("fa-file-import")}</b><span>Импорт</span></button><input type="file" accept=".json,application/json" data-import hidden></header>
       <div class="pcm-layout"><aside>${nav("dashboard", "Обзор", "fa-table-columns")}
         <small class="pcm-caption">КАРТОТЕКА</small>${Object.entries(SECTIONS)
           .map(([key, item]) => nav(key, item.label, item.icon, counts[key]))
@@ -1397,7 +2118,7 @@ export function createNeuroArchiveController(
       globalThis.CONFIG?.ux?.FilePicker;
     let path = "";
     if (Picker?.upload) {
-      const folder = "personal-chronicle-macro";
+      const folder = "neuro-archive";
       try {
         await Picker.createDirectory?.("data", folder);
       } catch (_error) {
@@ -1467,11 +2188,15 @@ export function createNeuroArchiveController(
     const entry = blankEntry(type, seed);
     if (LOCATION_LINK_TYPES.has(type) && options.locationId)
       setEntryLocations(entry, [options.locationId]);
+    if (type === "quests" && options.giverId)
+      entry.giverId = options.giverId;
     notebook().entries[type].push(entry);
     state.section = type;
     state.openId = entry.id;
     state.quick = "";
-    if (type === "locations" || options.edit) {
+
+    const shouldEdit = options.edit || !String(seed || "").trim();
+    if (shouldEdit) {
       state.previousView = previous;
       state.viewMode = "edit";
       state.viewId = entry.id;
@@ -1480,10 +2205,7 @@ export function createNeuroArchiveController(
         state.returnLocationId = options.locationId;
       }
     } else {
-      state.viewMode = "list";
-      state.viewId = null;
-      state.returnLocationId = null;
-      state.previousView = null;
+      openExistingEntry(entry);
     }
     dirty();
     render();
@@ -1530,32 +2252,338 @@ export function createNeuroArchiveController(
     );
   }
 
+  function tokenKey(token) {
+    const document = token?.document ?? token;
+    return String(document?.id ?? document?._id ?? token?.id ?? "");
+  }
+
+  function sceneIdentity(scene = globalThis.canvas?.scene) {
+    return {
+      scene,
+      id: String(scene?.id ?? scene?._id ?? ""),
+      uuid: String(scene?.uuid ?? ""),
+      name: String(scene?.name ?? "").trim(),
+    };
+  }
+
   function currentSceneLocation(book) {
-    const scene = globalThis.canvas?.scene;
-    if (!scene) return null;
-    const sceneId = String(scene.id ?? scene._id ?? "");
-    const sceneUuid = String(scene.uuid ?? "");
-    return (
-      book.entries.locations.find(
-        (entry) =>
-          (sceneUuid && entry.sourceSceneUuid === sceneUuid) ||
-          (sceneId && entry.sourceSceneId === sceneId) ||
-          normalizeName(entry.title) === normalizeName(scene.name),
-      ) ?? null
+    const identity = sceneIdentity();
+    if (!identity.scene) return null;
+    const stable = book.entries.locations.find(
+      (entry) =>
+        (identity.uuid && entry.sourceSceneUuid === identity.uuid) ||
+        (identity.id && entry.sourceSceneId === identity.id),
     );
+    if (stable) return stable;
+    return (
+      book.entries.locations.find((entry) => {
+        const hasStableId = entry.sourceSceneUuid || entry.sourceSceneId;
+        return (
+          !hasStableId &&
+          identity.name &&
+          normalizeName(entry.title) === normalizeName(identity.name)
+        );
+      }) ?? null
+    );
+  }
+
+  function sceneCaptureToken() {
+    const canvas = globalThis.canvas;
+    if (!canvas?.scene) return null;
+
+    const actor =
+      actorById(state.store.activeActorId) ?? game?.user?.character ?? null;
+    const actorId = String(actor?.id ?? actor?._id ?? "");
+    if (actorId) {
+      const actorToken = Array.from(canvas.tokens?.placeables ?? []).find(
+        (token) => {
+          const tokenActorId = String(
+            token?.actor?.id ??
+              token?.actor?._id ??
+              token?.document?.actorId ??
+              "",
+          );
+          return tokenActorId === actorId;
+        },
+      );
+      if (actorToken) return actorToken;
+    }
+
+    const controlled = Array.from(canvas.tokens?.controlled ?? []).filter(
+      Boolean,
+    );
+    return controlled[0] ?? null;
+  }
+
+  function controlledTokenIds() {
+    return Array.from(globalThis.canvas?.tokens?.controlled ?? [])
+      .map((token) => tokenKey(token))
+      .filter(Boolean);
+  }
+
+  function restoreControlledTokens(ids = []) {
+    const canvas = globalThis.canvas;
+    const wanted = new Set(ids.map(String));
+    try {
+      canvas?.tokens?.releaseAll?.();
+    } catch (_error) {}
+    for (const token of Array.from(canvas?.tokens?.placeables ?? [])) {
+      if (!wanted.has(tokenKey(token))) continue;
+      try {
+        token.control?.({ releaseOthers: false });
+      } catch (_error) {}
+    }
+  }
+
+  function nextRenderFrame() {
+    return new Promise((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(resolve)),
+    );
+  }
+
+  function fileFromDataUrl(dataUrl, name = "neuro-archive-token-vision.webp") {
+    const match = String(dataUrl ?? "").match(/^data:([^;,]+)?(?:;base64)?,(.*)$/s);
+    if (!match) return null;
+    const mime = match[1] || "image/webp";
+    try {
+      const payload = match[2] || "";
+      const bytes = Uint8Array.from(
+        atob(payload),
+        (character) => character.charCodeAt(0),
+      );
+      return new File([bytes], name, { type: mime });
+    } catch (_error) {
+      return null;
+    }
+  }
+
+  async function captureVisibleSceneFromToken(token) {
+    const canvas = globalThis.canvas;
+    if (!canvas?.scene || !token) return "";
+    const sourceCanvas =
+      canvas.app?.canvas ??
+      canvas.app?.renderer?.canvas ??
+      canvas.app?.view ??
+      canvas.app?.renderer?.view ??
+      null;
+
+    const previousControlled = controlledTokenIds();
+    const stage = canvas.stage;
+    const previousView = {
+      x: Number(stage?.pivot?.x ?? 0),
+      y: Number(stage?.pivot?.y ?? 0),
+      scale: Number(stage?.scale?.x ?? 1) || 1,
+    };
+    const center = token.center ?? {
+      x:
+        Number(token?.document?.x ?? token?.x ?? 0) +
+        Number(token?.w ?? 0) / 2,
+      y:
+        Number(token?.document?.y ?? token?.y ?? 0) +
+        Number(token?.h ?? 0) / 2,
+    };
+
+    try {
+      try {
+        token.control?.({ releaseOthers: true });
+      } catch (_error) {}
+      try {
+        if (canvas.animatePan)
+          await canvas.animatePan({
+            x: center.x,
+            y: center.y,
+            scale: previousView.scale,
+            duration: 0,
+          });
+        else
+          canvas.pan?.({
+            x: center.x,
+            y: center.y,
+            scale: previousView.scale,
+          });
+      } catch (_error) {}
+      try {
+        canvas.perception?.update?.(
+          { refreshVision: true, refreshLighting: true },
+          true,
+        );
+      } catch (_error) {}
+      await nextRenderFrame();
+
+      const encoded = await extractFoundryViewportBase64(canvas);
+      if (encoded) {
+        const frameFile = fileFromDataUrl(
+          encoded,
+          `neuro-archive-token-vision-${Date.now()}.webp`,
+        );
+        if (frameFile) return await uploadClipboardImage(frameFile, "token-vision");
+      }
+
+      if (
+        !sourceCanvas ||
+        !Number(sourceCanvas.width) ||
+        !Number(sourceCanvas.height)
+      )
+        return "";
+      const sourceWidth = Math.max(1, Number(sourceCanvas.width) || 1);
+      const sourceHeight = Math.max(1, Number(sourceCanvas.height) || 1);
+      const maxDimension = 1400;
+      const scale = Math.min(
+        1,
+        maxDimension / Math.max(sourceWidth, sourceHeight),
+      );
+      const snapshot = document.createElement("canvas");
+      snapshot.width = Math.max(1, Math.round(sourceWidth * scale));
+      snapshot.height = Math.max(1, Math.round(sourceHeight * scale));
+      const context = snapshot.getContext("2d", { alpha: false });
+      if (!context) return "";
+      context.fillStyle = "#000";
+      context.fillRect(0, 0, snapshot.width, snapshot.height);
+      context.drawImage(
+        sourceCanvas,
+        0,
+        0,
+        sourceWidth,
+        sourceHeight,
+        0,
+        0,
+        snapshot.width,
+        snapshot.height,
+      );
+      const fallbackBase64 =
+        (await (globalThis.foundry?.helpers?.media?.ImageHelper ?? globalThis.ImageHelper)?.canvasToBase64?.(
+          snapshot,
+          "image/webp",
+          0.82,
+        )) ?? snapshot.toDataURL?.("image/webp", 0.82) ?? "";
+      if (!(await captureDataUrlLooksUsable(fallbackBase64))) {
+        console.warn("Нейро-архив: резервный WebGL canvas тоже вернул пустой/однотонный кадр");
+        return "";
+      }
+      const file = fileFromDataUrl(
+        fallbackBase64,
+        `neuro-archive-token-vision-${Date.now()}.webp`,
+      );
+      return file ? await uploadClipboardImage(file, "token-vision") : "";
+    } catch (error) {
+      console.warn(
+        "Нейро-архив: безопасный снимок зрения токена не создан",
+        error,
+      );
+      return "";
+    } finally {
+      try {
+        if (canvas.animatePan)
+          await canvas.animatePan({
+            x: previousView.x,
+            y: previousView.y,
+            scale: previousView.scale,
+            duration: 0,
+          });
+        else
+          canvas.pan?.({
+            x: previousView.x,
+            y: previousView.y,
+            scale: previousView.scale,
+          });
+      } catch (_error) {}
+      restoreControlledTokens(previousControlled);
+      try {
+        canvas.perception?.update?.(
+          { refreshVision: true, refreshLighting: true },
+          true,
+        );
+      } catch (_error) {}
+    }
+  }
+
+  async function ensureSceneLocation(
+    book,
+    { create = true, refreshCapture = true } = {},
+  ) {
+    const identity = sceneIdentity();
+    if (!identity.scene)
+      return {
+        location: null,
+        created: false,
+        changed: false,
+        captured: false,
+      };
+
+    let location = currentSceneLocation(book);
+    let created = false;
+    let changed = false;
+    if (!location && create) {
+      location = blankEntry("locations");
+      location.title = identity.name || "Текущая точка";
+      location.kind = "Точка со сцены";
+      location.firstVisited = new Date().toISOString().slice(0, 10);
+      location.sourceSceneUuid = identity.uuid;
+      location.sourceSceneId = identity.id;
+      book.entries.locations.push(location);
+      created = true;
+      changed = true;
+    }
+    if (!location)
+      return { location: null, created, changed, captured: false };
+
+    if (identity.uuid && !location.sourceSceneUuid) {
+      location.sourceSceneUuid = identity.uuid;
+      changed = true;
+    }
+    if (identity.id && !location.sourceSceneId) {
+      location.sourceSceneId = identity.id;
+      changed = true;
+    }
+
+    const rawBackground = String(
+      identity.scene?.background?.src ?? identity.scene?.img ?? "",
+    );
+    if (rawBackground && location.image === rawBackground) {
+      location.image = "";
+      location.sceneCaptureMode = "";
+      changed = true;
+    }
+
+    let captured = false;
+    if (refreshCapture) {
+      const token = sceneCaptureToken();
+      if (!token) {
+        notify(
+          "Нет токена, от зрения которого можно безопасно сохранить точку. Запись создана без изображения.",
+          "warn",
+        );
+      } else {
+        const image = await captureVisibleSceneFromToken(token);
+        if (image) {
+          location.image = image;
+          location.sceneCaptureMode = "token-vision";
+          location.sceneCaptureTokenId = tokenKey(token);
+          location.sceneCaptureAt = now();
+          captured = true;
+          changed = true;
+        } else {
+          notify(
+            "Не удалось создать безопасный снимок. Полный фон сцены не сохранён.",
+            "warn",
+          );
+        }
+      }
+    }
+    if (changed) location.updatedAt = now();
+    return { location, created, changed, captured };
   }
 
   function linkSceneContacts(book, scene, location) {
     if (!scene || !location) return 0;
-    const sceneId = String(scene.id ?? scene._id ?? "");
-    const sceneUuid = String(scene.uuid ?? "");
-    const sceneName = normalizeName(scene.name);
+    const identity = sceneIdentity(scene);
     let linked = 0;
     for (const contact of book.entries.people) {
       const cameFromScene =
-        (sceneUuid && contact.sourceSceneUuid === sceneUuid) ||
-        (sceneId && contact.sourceSceneId === sceneId) ||
-        (sceneName && normalizeName(contact.firstMet) === sceneName);
+        (identity.uuid && contact.sourceSceneUuid === identity.uuid) ||
+        (identity.id && contact.sourceSceneId === identity.id) ||
+        (identity.name &&
+          normalizeName(contact.firstMet) === normalizeName(identity.name));
       if (!cameFromScene || entryLocationIds(contact).includes(location.id))
         continue;
       setEntryLocations(contact, [...entryLocationIds(contact), location.id]);
@@ -1564,7 +2592,7 @@ export function createNeuroArchiveController(
     return linked;
   }
 
-  function importFromTokens() {
+  async function importFromTokens() {
     const tokens = selectedTokens();
     if (!tokens.length)
       return notify(
@@ -1573,7 +2601,10 @@ export function createNeuroArchiveController(
       );
     const book = notebook();
     const scene = globalThis.canvas?.scene;
-    const sceneLocation = currentSceneLocation(book);
+    const sceneResult = scene
+      ? await ensureSceneLocation(book, { create: true, refreshCapture: true })
+      : { location: null, changed: false, created: false };
+    const sceneLocation = sceneResult.location;
     const seen = new Set();
     const added = [];
     const duplicates = [];
@@ -1640,7 +2671,7 @@ export function createNeuroArchiveController(
       book.entries.people.push(entry);
       added.push(entry);
     }
-    if (added.length || enriched) dirty();
+    if (added.length || enriched || sceneResult.changed) dirty();
     resetView("people");
     if (added.length === 1 && tokens.length === 1) {
       state.viewMode = "person";
@@ -1655,69 +2686,187 @@ export function createNeuroArchiveController(
     if (duplicates.length)
       parts.push(`уже были в архиве: ${duplicates.length}`);
     if (enriched) parts.push(`обновлены источники: ${enriched}`);
+    if (sceneResult.created && sceneLocation)
+      parts.push(`точка: ${sceneLocation.title}`);
     notify(
       `Импорт целей завершён — ${parts.join(", ") || "нет новых токенов"}.`,
     );
   }
 
-  function importFromScene() {
+  async function importFromScene() {
     const scene = globalThis.canvas?.scene;
     if (!scene) return notify("Нет активной сцены.", "warn");
     const book = notebook();
-    const sceneId = String(scene.id ?? scene._id ?? "");
-    const sceneUuid = String(scene.uuid ?? "");
-    const name = String(scene.name || "Сцена").trim();
-    const duplicate = book.entries.locations.find(
-      (entry) =>
-        (sceneUuid && entry.sourceSceneUuid === sceneUuid) ||
-        (sceneId && entry.sourceSceneId === sceneId) ||
-        normalizeName(entry.title) === normalizeName(name),
-    );
-    if (duplicate) {
-      let changed = false;
-      if (sceneUuid && !duplicate.sourceSceneUuid) {
-        duplicate.sourceSceneUuid = sceneUuid;
-        changed = true;
-      }
-      if (sceneId && !duplicate.sourceSceneId) {
-        duplicate.sourceSceneId = sceneId;
-        changed = true;
-      }
-      const image = scene.background?.src || scene.img || "";
-      if (image && !duplicate.image) {
-        duplicate.image = image;
-        changed = true;
-      }
-      const linked = linkSceneContacts(book, scene, duplicate);
-      if (changed || linked) {
-        duplicate.updatedAt = now();
-        dirty();
-      }
-      resetView("locations");
-      state.viewMode = "location";
-      state.viewId = duplicate.id;
-      render();
-      notify(
-        `Точка «${name}» уже существует — открыто её досье${linked ? ` и привязано контактов: ${linked}` : ""}.`,
-      );
-      return;
-    }
-    const entry = blankEntry("locations");
-    entry.title = name;
-    entry.image = scene.background?.src || scene.img || "";
-    entry.firstVisited = new Date().toISOString().slice(0, 10);
-    entry.sourceSceneUuid = sceneUuid;
-    entry.sourceSceneId = sceneId;
-    book.entries.locations.push(entry);
-    const linked = linkSceneContacts(book, scene, entry);
-    dirty();
+    const result = await ensureSceneLocation(book, {
+      create: true,
+      refreshCapture: true,
+    });
+    if (!result.location)
+      return notify("Не удалось определить текущую сцену.", "error");
+    const linked = linkSceneContacts(book, scene, result.location);
+    if (result.changed || linked) dirty();
     resetView("locations");
     state.viewMode = "location";
-    state.viewId = entry.id;
+    state.viewId = result.location.id;
     render();
     notify(
-      `Точка «${name}» добавлена из сцены${linked ? `; привязано контактов: ${linked}` : ""}.`,
+      result.created
+        ? `Точка «${result.location.title}» добавлена${linked ? `; привязано контактов: ${linked}` : ""}.`
+        : `Точка «${result.location.title}» обновлена безопасным снимком${linked ? `; привязано контактов: ${linked}` : ""}.`,
     );
+  }
+
+  async function linkedContactActor(person) {
+    const actorId = String(person?.sourceActorId ?? "");
+    if (actorId) {
+      const direct =
+        game?.actors?.get?.(actorId) ??
+        Array.from(game?.actors?.contents ?? []).find(
+          (actor) => String(actor?.id ?? actor?._id ?? "") === actorId,
+        );
+      if (direct) return direct;
+    }
+    const uuid = String(person?.sourceActorUuid ?? "");
+    if (uuid && typeof globalThis.fromUuid === "function") {
+      try {
+        return await globalThis.fromUuid(uuid);
+      } catch (_error) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  function contactMessageThread(person) {
+    const messages = Array.isArray(person.messages) ? person.messages : [];
+    if (!messages.length)
+      return '<p class="muted pcm-message-empty">Переписка пока пуста.</p>';
+    return `<div class="pcm-message-thread">${messages
+      .slice()
+      .sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)))
+      .map(
+        (message) =>
+          `<article class="pcm-message ${message.direction === "in" ? "is-incoming" : "is-outgoing"}"><header><b>${message.direction === "in" ? esc(person.title) : esc(message.sourceActorName || notebook().actorName)}</b><time>${esc(String(message.createdAt || "").replace("T", " ").slice(0, 16))}</time></header><p>${esc(message.body).replaceAll("\n", "<br>")}</p></article>`,
+      )
+      .join("")}</div>`;
+  }
+
+  async function sendMessageToContact(person, body) {
+    const text = String(body ?? "").trim();
+    if (!text) {
+      notify("Введите сообщение контакту.", "warn");
+      return false;
+    }
+
+    const archiveActor =
+      actorById(state.store.activeActorId) ?? game?.user?.character ?? null;
+    const senderId = String(game?.user?.id ?? game?.user?._id ?? "");
+    const messageDirection = contactMessageDirection({
+      isGM: Boolean(game?.user?.isGM),
+      archiveUserId: state.archiveUserId,
+      currentUserId: userId,
+    });
+    const gmReply = messageDirection === "in";
+    const archiveActorId = String(archiveActor?.id ?? archiveActor?._id ?? "");
+    const archiveActorName = String(archiveActor?.name ?? notebook().actorName ?? "Оперативник");
+    const message = {
+      id: uid(),
+      direction: messageDirection,
+      body: text,
+      createdAt: now(),
+      senderUserId: senderId,
+      senderName: String(game?.user?.name ?? (gmReply ? "GM" : "Игрок")),
+      sourceActorId: archiveActorId,
+      sourceActorName: gmReply ? String(person.title ?? "Контакт") : archiveActorName,
+      archiveUserId: String(state.archiveUserId ?? ""),
+      archiveActorId,
+      contactId: String(person.id ?? ""),
+      contactName: String(person.title ?? "Контакт"),
+    };
+    person.messages ??= [];
+    person.messages.push(message);
+    person.updatedAt = now();
+    dirty();
+    render();
+
+    // Переписка — синхронная игровая функция. Не ждём обычный debounce,
+    // чтобы GM сразу увидел сообщение игрока, а игрок — ответ GM.
+    await saveServer(true);
+
+    const recipientActor = gmReply ? archiveActor : await linkedContactActor(person);
+    const recipients = selectContactMessageRecipientIds({
+      users: game?.users?.contents ?? (game?.users ? Array.from(game.users) : []),
+      senderId,
+      actor: recipientActor,
+    });
+    const speaker =
+      globalThis.ChatMessage?.getSpeaker?.({ actor: archiveActor }) ?? undefined;
+    const fromName = gmReply ? String(person.title ?? "Контакт") : archiveActorName;
+    const toName = gmReply ? archiveActorName : String(person.title ?? "Контакт");
+    const data = {
+      content: `<div class="pcm-chat pcm-contact-message"><small>НЕЙРО-СВЯЗЬ // ${esc(fromName)} → ${esc(toName)}</small><p>${esc(text).replaceAll("\n", "<br>")}</p></div>`,
+      whisper: recipients,
+      speaker,
+      flags: {
+        cyberpunkRemaster: {
+          neuroArchive: {
+            contactMessage: { ...message },
+          },
+        },
+      },
+    };
+    try {
+      await ChatMessage.create(data);
+      notify(
+        gmReply
+          ? `Ответ от имени «${person.title}» отправлен игроку.`
+          : `Сообщение контакту «${person.title}» отправлено.`,
+      );
+      return true;
+    } catch (error) {
+      console.warn("Нейро-архив RED: сообщение контакту не доставлено в чат", error);
+      notify(
+        "Сообщение сохранено в Нейро-Архиве, но доставить его в чат не удалось.",
+        "warn",
+      );
+      return false;
+    }
+  }
+
+  function ingestContactMessage(payload) {
+    if (!payload || typeof payload !== "object") return false;
+    const archiveOwner = String(payload.archiveUserId ?? "");
+    if (archiveOwner && archiveOwner !== String(state.archiveUserId ?? "")) return false;
+    const archiveActorId = String(payload.archiveActorId ?? payload.sourceActorId ?? "");
+    const book = state.store.notebooks?.[archiveActorId] ??
+      (archiveActorId === String(state.store.activeActorId ?? "") ? notebook() : null);
+    if (!book) return false;
+    const person = book.entries?.people?.find(
+      (entry) => String(entry.id ?? "") === String(payload.contactId ?? ""),
+    );
+    if (!person) return false;
+    person.messages ??= [];
+    if (person.messages.some((message) => String(message.id) === String(payload.id)))
+      return false;
+    person.messages.push({
+      id: String(payload.id || uid()),
+      direction: payload.direction === "in" ? "in" : "out",
+      body: String(payload.body ?? ""),
+      createdAt: String(payload.createdAt ?? now()),
+      senderUserId: String(payload.senderUserId ?? ""),
+      senderName: String(payload.senderName ?? ""),
+      sourceActorId: String(payload.sourceActorId ?? ""),
+      sourceActorName: String(payload.sourceActorName ?? ""),
+      archiveUserId: archiveOwner,
+      archiveActorId,
+      contactId: String(payload.contactId ?? person.id ?? ""),
+      contactName: String(payload.contactName ?? person.title ?? "Контакт"),
+    });
+    person.updatedAt = String(payload.createdAt ?? now());
+    state.store.updatedAt = now();
+    saveLocal();
+    if (state.root?.isConnected) render();
+    return true;
   }
 
   async function sendToChat(entry, isPublic) {
@@ -1850,7 +2999,7 @@ export function createNeuroArchiveController(
     try {
       const payload = JSON.parse(await file.text());
       if (
-        !["personal-chronicle-macro", "neuro-archive"].includes(payload.app) ||
+        payload.app !== "neuro-archive" ||
         !payload.data?.notebooks
       )
         throw new Error("Неверный формат копии");
@@ -1884,6 +3033,32 @@ export function createNeuroArchiveController(
     '<div class="pcm-window" role="dialog" aria-label="Нейро-Архив"></div>';
   state.root = root;
 
+  root.addEventListener("contextmenu", (event) => {
+    const card = event.target.closest?.(
+      "[data-entry-id].pcm-card, [data-entry-id].pcm-location-card, [data-entry-id].pcm-person-tile, [data-entry-id].pcm-detail",
+    );
+    if (!card) return;
+    const entry = entryById(card.dataset.entryId);
+    if (!entry) return;
+    event.preventDefault();
+    event.stopPropagation();
+    state.contextMenu = {
+      entryId: entry.id,
+      x: event.clientX,
+      y: event.clientY,
+    };
+    state.contextTagEditorOpen = false;
+    mountContextMenu();
+  });
+
+  const outsideContextPointerHandler = (event) => {
+    if (!state.contextMenu) return;
+    const host = document.querySelector?.("[data-neuro-archive-context-host]");
+    if (host?.contains?.(event.target)) return;
+    closeContextMenu();
+  };
+  document.addEventListener("pointerdown", outsideContextPointerHandler, true);
+
   root.addEventListener("input", (event) => {
     const target = event.target;
     if (target.matches("[data-theme-field]")) {
@@ -1897,6 +3072,22 @@ export function createNeuroArchiveController(
       if (output) output.textContent = `${theme.fontSize}px`;
       applyAppearance();
       dirty();
+      return;
+    }
+    if (target.matches("[data-contact-search]")) {
+      state.contactQuery = target.value;
+      const query = String(target.value || "").trim().toLowerCase();
+      for (const card of root.querySelectorAll(".pcm-contact-list-card[data-search]"))
+        card.hidden = Boolean(query && !String(card.dataset.search || "").includes(query));
+      return;
+    }
+    if (target.matches("[data-quick-person-field]")) {
+      const entry = findEntry(target);
+      if (entry?.type === "people") {
+        entry[target.dataset.quickPersonField] = target.value;
+        entry.updatedAt = now();
+        dirty();
+      }
       return;
     }
     if (target.matches("[data-search-box]")) {
@@ -1962,6 +3153,21 @@ export function createNeuroArchiveController(
 
   root.addEventListener("change", async (event) => {
     const target = event.target;
+    if (target.matches("[data-contact-role-filter]")) {
+      state.contactRoleFilter = target.value || "all";
+      render();
+      return;
+    }
+    if (target.matches("[data-contact-tag-filter]")) {
+      state.contactTagFilter = target.value || "all";
+      render();
+      return;
+    }
+    if (target.matches("[data-contact-sort]")) {
+      state.contactSort = target.value || "recent";
+      render();
+      return;
+    }
     if (target.matches("[data-archive-user]")) {
       await switchArchiveUser(target.value);
       return;
@@ -2088,11 +3294,11 @@ export function createNeuroArchiveController(
       return;
     }
     if (action === "from-token") {
-      importFromTokens();
+      await importFromTokens();
       return;
     }
     if (action === "from-scene") {
-      importFromScene();
+      await importFromScene();
       return;
     }
     if (action === "template") {
@@ -2118,18 +3324,8 @@ export function createNeuroArchiveController(
     }
     if (action === "open-entry") {
       const targetEntry = entryById(button.dataset.entryId);
-      if (targetEntry?.type === "locations") {
-        resetView("locations");
-        state.viewMode = "location";
-        state.viewId = targetEntry.id;
-      } else if (targetEntry?.type === "people") {
-        resetView("people");
-        state.viewMode = "person";
-        state.viewId = targetEntry.id;
-      } else {
-        resetView(button.dataset.section);
-        state.openId = button.dataset.entryId;
-      }
+      if (!targetEntry) return;
+      openExistingEntry(targetEntry);
       render();
       return;
     }
@@ -2192,14 +3388,54 @@ export function createNeuroArchiveController(
       return;
     }
     if (action === "open-related" && entry) {
-      state.previousView = viewSnapshot();
-      state.viewMode = "edit";
-      state.viewId = entry.id;
-      state.openId = entry.id;
+      openExistingEntry(entry, {
+        returnLocationId:
+          state.viewMode === "location" ? state.viewId : null,
+      });
       render();
       return;
     }
+    if (action === "compose-person-message" && entry?.type === "people") {
+      const input = root.querySelector(
+        `[data-entry-id="${entry.id}"] [data-person-message-input]`,
+      );
+      input?.focus?.();
+      input?.scrollIntoView?.({ block: "center", behavior: "smooth" });
+      return;
+    }
+    if (action === "send-person-message" && entry?.type === "people") {
+      const input = root.querySelector(
+        `[data-entry-id="${entry.id}"] [data-person-message-input]`,
+      );
+      const sent = await sendMessageToContact(entry, input?.value ?? "");
+      if (sent && input) input.value = "";
+      return;
+    }
+    if (action === "add-person-gig" && entry?.type === "people") {
+      addEntry("quests", "", {
+        edit: true,
+        giverId: entry.id,
+        previousView: viewSnapshot(),
+      });
+      return;
+    }
+    if (action === "add-person-clue" && entry?.type === "people") {
+      addEntry("clues", "", {
+        edit: true,
+        personId: entry.id,
+        previousView: viewSnapshot(),
+      });
+      return;
+    }
     if (action === "edit-entry" && entry) {
+      if (entry.type === "people") {
+        const enabling = state.quickEditPersonId !== entry.id;
+        state.quickEditPersonId = enabling ? entry.id : null;
+        if (state.viewMode !== "person" || state.viewId !== entry.id)
+          openExistingEntry(entry);
+        render();
+        return;
+      }
       state.previousView = viewSnapshot();
       state.viewMode = "edit";
       state.viewId = entry.id;
@@ -2491,6 +3727,15 @@ export function createNeuroArchiveController(
     await pasteImage(file, entry, target);
   });
 
+  const createChatMessageHandler = (chatMessage) => {
+    const payload =
+      chatMessage?.flags?.cyberpunkRemaster?.neuroArchive?.contactMessage ??
+      chatMessage?.getFlag?.("cyberpunkRemaster", "neuroArchive")?.contactMessage ??
+      null;
+    if (payload) ingestContactMessage(payload);
+  };
+  globalThis.Hooks?.on?.("createChatMessage", createChatMessageHandler);
+
   const keyboardHandler = (event) => {
     if (
       (event.ctrlKey || event.metaKey) &&
@@ -2513,6 +3758,10 @@ export function createNeuroArchiveController(
       return;
     }
     if (event.key !== "Escape" || !state.root.isConnected) return;
+    if (state.contextMenu) {
+      closeContextMenu();
+      return;
+    }
     if (state.lightbox) {
       state.lightbox = null;
       render();
@@ -2565,10 +3814,21 @@ export function createNeuroArchiveController(
     async close() {
       return closeArchive();
     },
+    ingestContactMessage,
     destroy() {
       clearTimeout(state.saveTimer);
       document.removeEventListener("keydown", keyboardHandler);
+      document.removeEventListener(
+        "pointerdown",
+        outsideContextPointerHandler,
+        true,
+      );
       window.removeEventListener("beforeunload", unloadHandler);
+      globalThis.Hooks?.off?.("createChatMessage", createChatMessageHandler);
+      closeContextMenu();
+      document
+        .querySelector?.("[data-neuro-archive-context-host]")
+        ?.remove?.();
       state.root = null;
     },
   };

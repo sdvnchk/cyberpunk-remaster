@@ -1,9 +1,9 @@
 <div class="cyberpunk-forge-shell">
   <header class="cyberpunk-forge-hero">
     <div>
-      <span class="cyberpunk-forge-kicker">SF2E CYBERPUNK REMASTER</span>
+      <span class="cyberpunk-forge-kicker">CYBERPUNK REMASTER · SF2E</span>
       <h1>Киберпанк-Кузница NPC</h1>
-      <p>Статблок, оружие, броня, программы и установленный хром — только из вашей библиотеки.</p>
+      <p>NPC, оружие, броня, снаряжение, импланты и ПКТ — из встроенных компендиев Cyberpunk Remaster.</p>
     </div>
     <div class="cyberpunk-forge-catalog-status {{#if catalogError}}has-error{{/if}}">
       {{#if catalogError}}
@@ -12,7 +12,7 @@
       {{else}}
         <strong>{{catalogStats.items}}</strong>
         <span>предметов</span>
-        <small>{{catalogStats.weapons}} оружия · {{catalogStats.armor}} брони · {{catalogStats.cyberware}} хрома · {{catalogStats.programs}} программ</small>
+        <small>{{catalogStats.weapons}} оружия · {{catalogStats.armor}} брони · {{catalogStats.gear}} снаряжения · {{catalogStats.cyberware}} хрома<br>Cyberpunk Remaster {{catalogStats.remaster}}</small>
       {{/if}}
     </div>
   </header>
@@ -20,7 +20,16 @@
   <input type="hidden" name="preset" value="corporate-patrol">
 
   <div class="cyberpunk-forge-layout">
-    <main class="cyberpunk-forge-body">
+    <div class="cyberpunk-forge-main-column">
+      <nav class="neon-forge-worktabs" aria-label="Разделы Кузницы">
+        <button type="button" class="is-active" data-forge-worktab="builder"><i class="fa-solid fa-microchip"></i> Конструктор</button>
+        <button type="button" data-forge-worktab="attributes"><i class="fa-solid fa-sliders"></i> Мод. атрибутов</button>
+        <button type="button" data-forge-worktab="skills"><i class="fa-solid fa-list-check"></i> Навыки</button>
+        <button type="button" data-forge-worktab="abilities"><i class="fa-solid fa-bolt"></i> Действия и пассивы</button>
+      </nav>
+
+      <main class="cyberpunk-forge-body">
+      <div class="neon-forge-worktab-panel" data-forge-worktab-panel="builder">
       <section class="cyberpunk-forge-panel">
         <div class="cyberpunk-forge-section-heading">
           <div>
@@ -29,12 +38,11 @@
           </div>
         </div>
 
-        <div class="cyberpunk-forge-preset-groups">
+        <div class="neon-forge-preset-accordion" aria-label="Категории пресетов">
           {{#each presetGroups}}
-          <details class="cyberpunk-forge-preset-group" {{#if @first}}open{{/if}}>
+          <details class="neon-forge-preset-group" {{#if @first}}open{{/if}}>
             <summary>
-              <i class="{{icon}}"></i>
-              <span>{{label}}</span>
+              <span><i class="{{icon}}"></i><strong>{{label}}</strong></span>
               <small>{{presets.length}}</small>
             </summary>
             <div class="cyberpunk-forge-preset-grid">
@@ -72,6 +80,19 @@
               <option value="elite">Элитный</option>
             </select>
           </label>
+          <label>
+            <span>Роль</span>
+            <select name="roleId">
+              {{#each roles}}<option value="{{id}}">{{label}}</option>{{/each}}
+            </select>
+          </label>
+          <label>
+            <span>Правила математики</span>
+            <select name="proficiencyMode">
+              <option value="pwl">Proficiency without Level (PWL)</option>
+              <option value="standard">Обычные правила SF2e</option>
+            </select>
+          </label>
           <label class="cyberpunk-forge-seed">
             <span>Seed варианта</span>
             <span class="cyberpunk-forge-seed-row">
@@ -82,6 +103,7 @@
             </span>
           </label>
         </div>
+        <p class="cyberpunk-forge-note"><i class="fa-solid fa-scale-balanced"></i> <strong>PWL:</strong> уровень вычитается из КБ, атак, КС, Восприятия, спасбросков и навыков. <strong>Обычные правила SF2e:</strong> используются исходные значения таблиц NPC. ОЗ, урон и модификаторы характеристик не меняются переключателем.</p>
         <p class="cyberpunk-forge-note is-hidden" data-forge-batch-note>
           Каждый участник группы получит отдельный seed, роль и случайный набор предметов внутри стиля пресета.
         </p>
@@ -97,9 +119,6 @@
             <label><span>Атака</span><select name="tier_attack">{{#each tiers}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
             <label><span>Урон</span><select name="tier_damage">{{#each tiers}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
             <label><span>Восприятие</span><select name="tier_perception">{{#each tiers}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
-            <label><span>Стойкость</span><select name="tier_fortitude">{{#each tiers}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
-            <label><span>Рефлекс</span><select name="tier_reflex">{{#each tiers}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
-            <label><span>Воля</span><select name="tier_will">{{#each tiers}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
             <label><span>КС способностей</span><select name="tier_dc">{{#each tiers}}<option value="{{value}}">{{label}}</option>{{/each}}</select></label>
           </div>
         </details>
@@ -115,6 +134,15 @@
             <i class="fa-solid fa-rotate"></i> Обновить библиотеку
           </button>
         </div>
+
+        <div class="neon-forge-source-picker">
+          <div class="neon-forge-source-title"><i class="fa-solid fa-database"></i><span>Источник предметов</span></div>
+          <label class="neon-forge-source-card">
+            <input type="checkbox" name="sourceRemaster" data-forge-source checked>
+            <span><strong>Cyberpunk Remaster</strong><small>Встроенные Item-компендиумы модуля</small></span>
+          </label>
+        </div>
+        {{#each catalogSourceWarnings}}<p class="cyberpunk-forge-error">{{this}}</p>{{/each}}
 
         <div class="cyberpunk-forge-fields">
           <label>
@@ -133,6 +161,36 @@
               <option value="standard">Обычное</option>
               <option value="rich">Богатое</option>
             </select>
+          </label>
+        </div>
+
+        <div class="cyberpunk-forge-fields cyberpunk-forge-pkt-choice">
+          <label>
+            <span>Какую ПКТ-конверсию установить</span>
+            <select name="pktBodyId" data-forge-pkt-body>
+              <option value="">Без ПКТ</option>
+              <option value="random">Случайная доступная конверсия</option>
+              {{#if pktBodies.length}}
+              <optgroup label="Конверсии / корпуса ПКТ">
+                {{#each pktBodies}}<option value="{{itemId}}" data-pkt-body-key="{{nameKey}}" {{#unless available}}disabled{{/unless}}>{{label}}</option>{{/each}}
+              </optgroup>
+              {{/if}}
+            </select>
+            <small>Первое окно выбирает саму конверсию / корпус ПКТ.</small>
+          </label>
+          <label>
+            <span>Какую модель ПКТ установить</span>
+            <select name="pktModelKey" data-forge-pkt-model>
+              <option value="">Без модели</option>
+              <option value="random">Случайная совместимая модель</option>
+              {{#if pktModels.length}}
+              <optgroup label="Модели ПКТ">
+                {{#each pktModels}}<option value="{{key}}" data-pkt-body-id="{{requiredBodyId}}" data-pkt-body-key="{{requiredBodyKey}}" {{#unless available}}disabled{{/unless}}>{{label}}</option>{{/each}}
+              </optgroup>
+              {{/if}}
+            </select>
+            <small>Второе окно выбирает конкретную модель, совместимую с выбранной конверсией.</small>
+            {{#if pktCatalogError}}<small class="cyberpunk-forge-error">{{pktCatalogError}}</small>{{/if}}
           </label>
         </div>
 
@@ -254,7 +312,155 @@
           <i class="fa-solid fa-wand-magic-sparkles"></i> Создать макрос запуска
         </button>
       </section>
-    </main>
+      </div>
+
+      <section class="cyberpunk-forge-panel neon-forge-worktab-panel is-hidden" data-forge-worktab-panel="attributes">
+        <div class="cyberpunk-forge-section-heading">
+          <div>
+            <span class="cyberpunk-forge-step">05</span>
+            <h2>Модификаторы атрибутов и спасброски NPC</h2>
+          </div>
+        </div>
+        <p class="cyberpunk-forge-note"><strong>Авто</strong> сначала берёт профиль выбранной <strong>роли</strong>, затем корректирует его по выбору <strong>«Кто это»</strong>. Если изменить атрибут вручную, связанные автоматические спасброски и навыки перестраиваются вслед за итоговым модификатором. <strong>Свое значение</strong> записывает указанное число напрямую.</p>
+
+        <h3 class="neon-forge-stat-subheading"><i class="fa-solid fa-dumbbell"></i> Модификаторы атрибутов</h3>
+        <div class="neon-forge-skill-grid neon-forge-attribute-grid">
+          {{#each attributeOptions}}
+          <label class="neon-forge-skill-card neon-forge-attribute-card neon-forge-stat-card">
+            <span><strong>{{label}}</strong><small>{{short}} · {{slug}}</small></span>
+            <span class="neon-forge-stat-controls">
+              <select name="ability_{{slug}}" data-forge-stat-mode data-forge-custom-target="ability_{{slug}}_value">
+                {{#each ../attributeTiers}}<option value="{{value}}">{{label}}</option>{{/each}}
+              </select>
+              <input class="neon-forge-stat-custom is-hidden" type="number" name="ability_{{slug}}_value" min="-20" max="30" step="1" placeholder="Значение" disabled>
+            </span>
+          </label>
+          {{/each}}
+        </div>
+
+        <h3 class="neon-forge-stat-subheading"><i class="fa-solid fa-shield-halved"></i> Спасброски</h3>
+        <p class="cyberpunk-forge-note neon-forge-compact-note">В режиме <strong>Авто</strong>: Стойкость реагирует на итоговое <strong>Телосложение</strong>, Рефлекс — на <strong>Ловкость</strong>, Воля — на <strong>Мудрость</strong>. Выбранная вручную ступень или точное значение спасброска имеет приоритет.</p>
+        <div class="neon-forge-skill-grid neon-forge-save-grid">
+          {{#each saveOptions}}
+          <label class="neon-forge-skill-card neon-forge-attribute-card neon-forge-stat-card">
+            <span><strong>{{label}}</strong><small>{{short}} · от {{abilityLabel}}</small></span>
+            <span class="neon-forge-stat-controls">
+              <select name="tier_{{slug}}" data-forge-stat-mode data-forge-custom-target="save_{{slug}}_value">
+                {{#each ../saveTiers}}<option value="{{value}}">{{label}}</option>{{/each}}
+              </select>
+              <input class="neon-forge-stat-custom is-hidden" type="number" name="save_{{slug}}_value" min="-30" max="80" step="1" placeholder="Значение" disabled>
+            </span>
+          </label>
+          {{/each}}
+        </div>
+        <p class="cyberpunk-forge-note"><i class="fa-solid fa-link"></i> Навыки в режиме <strong>Авто + мои правки</strong> теперь используют уже итоговые модификаторы атрибутов: Акробатика/Скрытность/Воровство/Пилотирование — Ловкость; Атлетика — Сила; Компьютеры/Ремесло/Общество — Интеллект; Медицина/Выживание — Мудрость; социальные навыки — Харизма. Ручная ступень конкретного навыка всё равно имеет приоритет.</p>
+      </section>
+
+      <section class="cyberpunk-forge-panel neon-forge-worktab-panel is-hidden" data-forge-worktab-panel="skills">
+        <div class="cyberpunk-forge-section-heading">
+          <div>
+            <span class="cyberpunk-forge-step">06</span>
+            <h2>Навыки NPC</h2>
+          </div>
+        </div>
+        <p class="cyberpunk-forge-note">Только немагические навыки, подходящие для киберпанк-профиля. В режиме Авто набор и качество навыков зависят одновременно от «Кто это» и выбранной роли; ручные значения ниже имеют приоритет. Значения используют ту же уровневую шкалу NPC SF2e, что и остальные показатели Кузницы.</p>
+        <div class="neon-forge-skill-mode">
+          <label>
+            <span>Режим навыков</span>
+            <select name="skillSelectionMode">
+              <option value="auto">Авто + мои правки</option>
+              <option value="manual">Только выбранные мной</option>
+            </select>
+          </label>
+        </div>
+        <div class="neon-forge-skill-grid">
+          {{#each skillOptions}}
+          <label class="neon-forge-skill-card">
+            <span><strong>{{label}}</strong><small>{{slug}}</small></span>
+            <select name="skill_{{slug}}">
+              {{#each ../skillTiers}}<option value="{{value}}">{{label}}</option>{{/each}}
+            </select>
+          </label>
+          {{/each}}
+        </div>
+      </section>
+
+      <section class="cyberpunk-forge-panel neon-forge-worktab-panel is-hidden" data-forge-worktab-panel="abilities">
+        <div class="cyberpunk-forge-section-heading">
+          <div>
+            <span class="cyberpunk-forge-step">07</span>
+            <h2>Действия и пассивные способности</h2>
+          </div>
+        </div>
+        <p class="cyberpunk-forge-note">Создаются как настоящие SF2e Item типа <strong>action</strong> и попадают в разделы Действия/Пассивные на листе NPC. Магические признаки запрещены. В описании можно использовать <code>@Check[...]</code>, <code>@Damage[...]</code>, <code>@Trait[...]</code> и переменные <code>{dc}</code>, <code>{damage}</code>, <code>{healing}</code>, <code>{tempHp}</code>.</p>
+
+        <div class="neon-forge-ability-list">
+          {{#each abilitySlots}}
+          <details class="neon-forge-ability-card" data-forge-ability-row="{{index}}" {{#if @first}}open{{/if}}>
+            <summary>
+              <span><i class="fa-solid fa-bolt"></i><strong>Способность {{index}}</strong></span>
+              <label class="neon-forge-ability-enabled">
+                <input type="checkbox" name="ability{{index}}_enabled" data-forge-ability-enabled> Использовать
+              </label>
+            </summary>
+            <div class="neon-forge-ability-body">
+              <label class="neon-forge-ability-template">
+                <span>Шаблон без магии</span>
+                <select name="ability{{index}}_template" data-forge-ability-template>
+                  <option value="">Своя способность</option>
+                  {{#each ../abilityTemplates}}<option value="{{id}}">{{label}}</option>{{/each}}
+                </select>
+              </label>
+              <label class="neon-forge-ability-name">
+                <span>Название</span>
+                <input type="text" name="ability{{index}}_name" placeholder="Например: Реагирующий удар">
+              </label>
+              <div class="neon-forge-ability-meta">
+                <label><span>Тип</span><select name="ability{{index}}_actionType" data-forge-ability-action-type>
+                  <option value="action">Действие</option>
+                  <option value="reaction">Реакция</option>
+                  <option value="free">Свободное действие</option>
+                  <option value="passive">Пассивная</option>
+                </select></label>
+                <label><span>Действий</span><select name="ability{{index}}_actions" data-forge-ability-actions>
+                  <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                </select></label>
+                <label><span>Категория</span><select name="ability{{index}}_category">
+                  <option value="offensive">Атакующая</option>
+                  <option value="defensive">Защитная</option>
+                  <option value="interaction">Взаимодействие</option>
+                </select></label>
+                <label><span>Частота</span><select name="ability{{index}}_frequencyPer">
+                  <option value="">Без ограничения</option>
+                  <option value="turn">За ход</option>
+                  <option value="round">За раунд</option>
+                  <option value="PT1M">За минуту</option>
+                  <option value="PT10M">За 10 минут</option>
+                  <option value="PT1H">За час</option>
+                  <option value="day">За день</option>
+                  <option value="P1W">За неделю</option>
+                </select></label>
+                <label><span>Использований</span><input type="number" name="ability{{index}}_frequencyMax" value="1" min="1" max="99" step="1"></label>
+              </div>
+              <label>
+                <span>Признаки <small>через запятую</small></span>
+                <input type="text" name="ability{{index}}_traits" placeholder="move, manipulate, tech, auditory">
+              </label>
+              <label>
+                <span>Описание и механика</span>
+                <textarea name="ability{{index}}_description" rows="5" placeholder="Триггер, требования, эффект, @Check и @Damage..."></textarea>
+              </label>
+              <label>
+                <span>Rule Elements <small>JSON-массив, необязательно</small></span>
+                <textarea name="ability{{index}}_rules" rows="3" spellcheck="false">[]</textarea>
+              </label>
+            </div>
+          </details>
+          {{/each}}
+        </div>
+      </section>
+      </main>
+    </div>
 
     <aside class="cyberpunk-forge-preview-panel">
       <div class="cyberpunk-forge-section-heading">
@@ -280,7 +486,7 @@
     <span><i class="fa-solid fa-shield-halved"></i> Humanity NPC не рассчитывается. Импланты создаются сразу установленными.</span>
     <div>
       <button type="button" class="cyberpunk-forge-primary" data-forge-submit>
-        <i class="fa-solid fa-microchip"></i> Создать NPC
+        <i class="fa-solid fa-microchip"></i> Создать через Киберпанк-Кузницу NPC
       </button>
     </div>
   </footer>

@@ -1,22 +1,21 @@
-.cyberpunk-forge-application {
-  --forge-red: #b01822;
-  --forge-red-bright: #df2532;
-  --forge-gold: #e9ba63;
+.cpel-neon-forge-application{
+  --forge-red: #087e84;
+  --forge-red-bright: #19ddd6;
+  --forge-gold: #8dfaf2;
   --forge-ink: #161419;
   --forge-panel: rgba(24, 20, 27, 0.94);
   --forge-panel-soft: rgba(43, 34, 47, 0.82);
-  --forge-border: rgba(233, 186, 99, 0.28);
+  --forge-border: rgba(141, 250, 242, 0.28);
   --forge-text: #f0e9df;
   --forge-muted: #b8aeb6;
   min-width: min(360px, 95vw);
 }
-
-.cyberpunk-forge-application .window-content {
+.cpel-neon-forge-application .window-content{
   padding: 0;
   overflow: hidden;
   color: var(--forge-text);
   background:
-    linear-gradient(135deg, rgba(176, 24, 34, 0.14), transparent 35%),
+    linear-gradient(135deg, rgba(0, 126, 132, 0.14), transparent 35%),
     radial-gradient(
       circle at 95% 0%,
       rgba(102, 41, 119, 0.26),
@@ -24,19 +23,16 @@
     ),
     #100e13;
 }
-
-.cyberpunk-forge-content {
+.cpel-neon-forge-application .cyberpunk-forge-content{
   min-height: 0;
 }
-
-.cyberpunk-forge-shell {
+.cpel-neon-forge-application .cyberpunk-forge-shell{
   display: flex;
   flex-direction: column;
   height: 100%;
   min-height: 0;
 }
-
-.cyberpunk-forge-hero {
+.cpel-neon-forge-application .cyberpunk-forge-hero{
   display: flex;
   flex: 0 0 auto;
   gap: 22px;
@@ -45,35 +41,30 @@
   padding: 18px 22px;
   border-bottom: 1px solid var(--forge-border);
   background:
-    linear-gradient(90deg, rgba(176, 24, 34, 0.26), transparent 46%),
+    linear-gradient(90deg, rgba(0, 126, 132, 0.26), transparent 46%),
     rgba(8, 7, 10, 0.76);
 }
-
-.cyberpunk-forge-kicker {
+.cpel-neon-forge-application .cyberpunk-forge-kicker{
   color: var(--forge-gold);
   font: 700 0.68rem/1.2 var(--font-sans, sans-serif);
   letter-spacing: 0.19em;
 }
-
-.cyberpunk-forge-hero h1,
-.cyberpunk-forge-section-heading h2 {
+.cpel-neon-forge-application .cyberpunk-forge-hero h1,
+.cpel-neon-forge-application .cyberpunk-forge-section-heading h2{
   margin: 2px 0;
   border: 0;
   color: var(--forge-text);
   font-family: var(--font-primary, sans-serif);
 }
-
-.cyberpunk-forge-hero h1 {
+.cpel-neon-forge-application .cyberpunk-forge-hero h1{
   font-size: 1.65rem;
 }
-
-.cyberpunk-forge-hero p {
+.cpel-neon-forge-application .cyberpunk-forge-hero p{
   margin: 3px 0 0;
   color: var(--forge-muted);
   font-size: 0.82rem;
 }
-
-.cyberpunk-forge-catalog-status {
+.cpel-neon-forge-application .cyberpunk-forge-catalog-status{
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 0 8px;
@@ -83,108 +74,99 @@
   border-radius: 7px;
   background: rgba(0, 0, 0, 0.28);
 }
-
-.cyberpunk-forge-catalog-status strong {
+.cpel-neon-forge-application .cyberpunk-forge-catalog-status strong{
   grid-row: span 2;
   align-self: center;
   color: var(--forge-gold);
   font-size: 1.45rem;
 }
-
-.cyberpunk-forge-catalog-status span {
+.cpel-neon-forge-application .cyberpunk-forge-catalog-status span{
   font-weight: 700;
 }
-
-.cyberpunk-forge-catalog-status small {
+.cpel-neon-forge-application .cyberpunk-forge-catalog-status small{
   color: var(--forge-muted);
   font-size: 0.65rem;
 }
-
-.cyberpunk-forge-catalog-status.has-error {
+.cpel-neon-forge-application .cyberpunk-forge-catalog-status.has-error{
   grid-template-columns: auto 1fr;
-  color: #ff8c92;
+  color: #8bfff7;
 }
-
-.cyberpunk-forge-layout {
+.cpel-neon-forge-application .cyberpunk-forge-layout{
   display: grid;
   flex: 1 1 auto;
   grid-template-columns: minmax(0, 1fr) minmax(260px, 33%);
   min-height: 0;
   overflow: hidden;
 }
-
-.cyberpunk-forge-body {
+.cpel-neon-forge-application .cyberpunk-forge-main-column{
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-width: 0;
   min-height: 0;
-  padding: 16px;
+  overflow: hidden;
+}
+.cpel-neon-forge-application .cyberpunk-forge-body{
+  min-height: 0;
+  padding: 10px 16px 16px;
   overflow: auto;
   scrollbar-color: var(--forge-red) rgba(0, 0, 0, 0.25);
 }
-
-.cyberpunk-forge-panel,
-.cyberpunk-forge-preview-panel {
+.cpel-neon-forge-application .cyberpunk-forge-panel,
+.cpel-neon-forge-application .cyberpunk-forge-preview-panel{
   border: 1px solid var(--forge-border);
   border-radius: 8px;
   background: var(--forge-panel);
   box-shadow: 0 7px 20px rgba(0, 0, 0, 0.2);
 }
-
-.cyberpunk-forge-panel {
+.cpel-neon-forge-application .cyberpunk-forge-panel{
   margin-bottom: 14px;
   padding: 14px;
 }
-
-.cyberpunk-forge-preview-panel {
+.cpel-neon-forge-application .cyberpunk-forge-preview-panel{
   min-height: 0;
   margin: 16px 16px 16px 0;
   padding: 14px;
   overflow: auto;
 }
-
-.cyberpunk-forge-section-heading {
+.cpel-neon-forge-application .cyberpunk-forge-section-heading{
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 12px;
 }
-
-.cyberpunk-forge-section-heading > div {
+.cpel-neon-forge-application .cyberpunk-forge-section-heading > div{
   display: flex;
   align-items: center;
   gap: 8px;
 }
-
-.cyberpunk-forge-section-heading h2 {
+.cpel-neon-forge-application .cyberpunk-forge-section-heading h2{
   font-size: 1.05rem;
 }
-
-.cyberpunk-forge-step {
+.cpel-neon-forge-application .cyberpunk-forge-step{
   display: inline-grid;
   min-width: 29px;
   height: 25px;
   place-items: center;
   padding: 0 5px;
-  border: 1px solid rgba(223, 37, 50, 0.7);
+  border: 1px solid rgba(25, 221, 214, 0.7);
   border-radius: 4px;
   color: #fff;
-  background: rgba(176, 24, 34, 0.35);
+  background: rgba(0, 126, 132, 0.35);
   font: 800 0.65rem/1 var(--font-sans, sans-serif);
   letter-spacing: 0.06em;
 }
-
-.cyberpunk-forge-preset-groups {
+.cpel-neon-forge-application .cyberpunk-forge-preset-groups{
   display: grid;
   gap: 7px;
   margin-bottom: 14px;
 }
-
-.cyberpunk-forge-preset-group {
+.cpel-neon-forge-application .cyberpunk-forge-preset-group{
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.025);
 }
-
-.cyberpunk-forge-preset-group > summary {
+.cpel-neon-forge-application .cyberpunk-forge-preset-group > summary{
   display: flex;
   gap: 8px;
   align-items: center;
@@ -194,31 +176,26 @@
   list-style: none;
   font-weight: 700;
 }
-
-.cyberpunk-forge-preset-group > summary::-webkit-details-marker {
+.cpel-neon-forge-application .cyberpunk-forge-preset-group > summary::-webkit-details-marker{
   display: none;
 }
-
-.cyberpunk-forge-preset-group > summary i {
+.cpel-neon-forge-application .cyberpunk-forge-preset-group > summary i{
   width: 18px;
   color: var(--forge-gold);
   text-align: center;
 }
-
-.cyberpunk-forge-preset-group > summary small {
+.cpel-neon-forge-application .cyberpunk-forge-preset-group > summary small{
   margin-left: auto;
   color: var(--forge-muted);
 }
-
-.cyberpunk-forge-preset-grid {
+.cpel-neon-forge-application .cyberpunk-forge-preset-grid{
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 7px;
   padding: 0 8px 8px;
 }
-
-.cyberpunk-forge-preset,
-.cyberpunk-forge-options label {
+.cpel-neon-forge-application .cyberpunk-forge-preset,
+.cpel-neon-forge-application .cyberpunk-forge-options label{
   display: flex;
   min-width: 0;
   gap: 9px;
@@ -228,115 +205,99 @@
   color: var(--forge-text);
   background: rgba(0, 0, 0, 0.2);
 }
-
-button.cyberpunk-forge-preset {
+.cpel-neon-forge-application button.cyberpunk-forge-preset{
   width: 100%;
   min-height: 52px;
   padding: 7px 9px;
   text-align: left;
 }
-
-.cyberpunk-forge-preset:hover,
-.cyberpunk-forge-preset.is-selected {
+.cpel-neon-forge-application .cyberpunk-forge-preset:hover,
+.cpel-neon-forge-application .cyberpunk-forge-preset.is-selected{
   border-color: var(--forge-gold);
   background:
-    linear-gradient(90deg, rgba(176, 24, 34, 0.34), transparent),
+    linear-gradient(90deg, rgba(0, 126, 132, 0.34), transparent),
     rgba(0, 0, 0, 0.28);
   box-shadow: inset 3px 0 0 var(--forge-red-bright);
 }
-
-.cyberpunk-forge-preset > i {
+.cpel-neon-forge-application .cyberpunk-forge-preset > i{
   width: 22px;
   color: var(--forge-gold);
   font-size: 1rem;
   text-align: center;
 }
-
-.cyberpunk-forge-preset span,
-.cyberpunk-forge-options span {
+.cpel-neon-forge-application .cyberpunk-forge-preset span,
+.cpel-neon-forge-application .cyberpunk-forge-options span{
   display: grid;
   min-width: 0;
 }
-
-.cyberpunk-forge-preset strong,
-.cyberpunk-forge-options strong {
+.cpel-neon-forge-application .cyberpunk-forge-preset strong,
+.cpel-neon-forge-application .cyberpunk-forge-options strong{
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
-.cyberpunk-forge-preset small,
-.cyberpunk-forge-options small {
+.cpel-neon-forge-application .cyberpunk-forge-preset small,
+.cpel-neon-forge-application .cyberpunk-forge-options small{
   overflow: hidden;
   color: var(--forge-muted);
   font-size: 0.65rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
-.cyberpunk-forge-fields {
+.cpel-neon-forge-application .cyberpunk-forge-fields{
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
-
-.cyberpunk-forge-fields-core {
+.cpel-neon-forge-application .cyberpunk-forge-fields-core{
   grid-template-columns: 2fr repeat(3, minmax(90px, 1fr));
 }
-
-.cyberpunk-forge-fields-core .cyberpunk-forge-seed {
+.cpel-neon-forge-application .cyberpunk-forge-fields-core .cyberpunk-forge-seed{
   grid-column: 1 / -1;
 }
-
-.cyberpunk-forge-fields label,
-.cyberpunk-forge-tier-grid label,
-.cyberpunk-forge-rebuild > label:not(.cyberpunk-forge-checkline) {
+.cpel-neon-forge-application .cyberpunk-forge-fields label,
+.cpel-neon-forge-application .cyberpunk-forge-tier-grid label,
+.cpel-neon-forge-application .cyberpunk-forge-rebuild > label:not(.cyberpunk-forge-checkline){
   display: grid;
   gap: 4px;
 }
-
-.cyberpunk-forge-fields label > span,
-.cyberpunk-forge-tier-grid label > span,
-.cyberpunk-forge-rebuild label > span {
+.cpel-neon-forge-application .cyberpunk-forge-fields label > span,
+.cpel-neon-forge-application .cyberpunk-forge-tier-grid label > span,
+.cpel-neon-forge-application .cyberpunk-forge-rebuild label > span{
   color: var(--forge-muted);
   font-size: 0.72rem;
   font-weight: 700;
 }
-
-.cyberpunk-forge-fields input,
-.cyberpunk-forge-fields select,
-.cyberpunk-forge-tier-grid select,
-.cyberpunk-forge-rebuild select,
-.cyberpunk-forge-library-row select {
+.cpel-neon-forge-application .cyberpunk-forge-fields input,
+.cpel-neon-forge-application .cyberpunk-forge-fields select,
+.cpel-neon-forge-application .cyberpunk-forge-tier-grid select,
+.cpel-neon-forge-application .cyberpunk-forge-rebuild select,
+.cpel-neon-forge-application .cyberpunk-forge-library-row select{
   width: 100%;
   min-height: 32px;
-  border: 1px solid rgba(233, 186, 99, 0.25);
+  border: 1px solid rgba(141, 250, 242, 0.25);
   border-radius: 5px;
   color: var(--forge-text);
   background: #19161d;
 }
-
-.cyberpunk-forge-fields input:focus,
-.cyberpunk-forge-fields select:focus,
-.cyberpunk-forge-tier-grid select:focus,
-.cyberpunk-forge-rebuild select:focus {
+.cpel-neon-forge-application .cyberpunk-forge-fields input:focus,
+.cpel-neon-forge-application .cyberpunk-forge-fields select:focus,
+.cpel-neon-forge-application .cyberpunk-forge-tier-grid select:focus,
+.cpel-neon-forge-application .cyberpunk-forge-rebuild select:focus{
   border-color: var(--forge-gold);
-  outline: 1px solid rgba(233, 186, 99, 0.4);
+  outline: 1px solid rgba(141, 250, 242, 0.4);
 }
-
-.cyberpunk-forge-seed-row {
+.cpel-neon-forge-application .cyberpunk-forge-seed-row{
   display: grid;
   grid-template-columns: minmax(0, 1fr) 34px;
   gap: 6px;
 }
-
-.cyberpunk-forge-director {
+.cpel-neon-forge-application .cyberpunk-forge-director{
   margin-top: 12px;
-  border: 1px solid rgba(233, 186, 99, 0.18);
+  border: 1px solid rgba(141, 250, 242, 0.18);
   border-radius: 6px;
   background: rgba(0, 0, 0, 0.15);
 }
-
-.cyberpunk-forge-director > summary {
+.cpel-neon-forge-application .cyberpunk-forge-director > summary{
   display: flex;
   gap: 8px;
   align-items: center;
@@ -346,110 +307,92 @@ button.cyberpunk-forge-preset {
   list-style: none;
   font-weight: 700;
 }
-
-.cyberpunk-forge-director > summary::-webkit-details-marker {
+.cpel-neon-forge-application .cyberpunk-forge-director > summary::-webkit-details-marker{
   display: none;
 }
-
-.cyberpunk-forge-director > summary i {
+.cpel-neon-forge-application .cyberpunk-forge-director > summary i{
   color: var(--forge-gold);
 }
-
-.cyberpunk-forge-director > summary small {
+.cpel-neon-forge-application .cyberpunk-forge-director > summary small{
   margin-left: auto;
   color: var(--forge-muted);
   font-weight: 400;
 }
-
-.cyberpunk-forge-tier-grid {
+.cpel-neon-forge-application .cyberpunk-forge-tier-grid{
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   padding: 0 10px 10px;
 }
-
-.cyberpunk-forge-options {
+.cpel-neon-forge-application .cyberpunk-forge-options{
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   margin-top: 12px;
 }
-
-.cyberpunk-forge-options-operation {
+.cpel-neon-forge-application .cyberpunk-forge-options-operation{
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
-
-.cyberpunk-forge-options label {
+.cpel-neon-forge-application .cyberpunk-forge-options label{
   min-height: 44px;
   padding: 7px 9px;
   cursor: pointer;
 }
-
-.cyberpunk-forge-options label:has(input:checked) {
-  border-color: rgba(233, 186, 99, 0.7);
-  background: rgba(176, 24, 34, 0.2);
+.cpel-neon-forge-application .cyberpunk-forge-options label:has(input:checked){
+  border-color: rgba(141, 250, 242, 0.7);
+  background: rgba(0, 126, 132, 0.2);
 }
-
-.cyberpunk-forge-options input {
+.cpel-neon-forge-application .cyberpunk-forge-options input{
   flex: 0 0 auto;
 }
-
-.cyberpunk-forge-options i {
+.cpel-neon-forge-application .cyberpunk-forge-options i{
   margin-right: 5px;
   color: var(--forge-gold);
 }
-
-.cyberpunk-forge-note,
-.cyberpunk-forge-preview-help,
-.cyberpunk-forge-selected,
-.cyberpunk-forge-rebuild {
+.cpel-neon-forge-application .cyberpunk-forge-note,
+.cpel-neon-forge-application .cyberpunk-forge-preview-help,
+.cpel-neon-forge-application .cyberpunk-forge-selected,
+.cpel-neon-forge-application .cyberpunk-forge-rebuild{
   margin: 10px 0 0;
   padding: 8px 10px;
-  border: 1px solid rgba(233, 186, 99, 0.18);
+  border: 1px solid rgba(141, 250, 242, 0.18);
   border-radius: 5px;
   color: var(--forge-muted);
-  background: rgba(233, 186, 99, 0.055);
+  background: rgba(141, 250, 242, 0.055);
   font-size: 0.72rem;
 }
-
-.cyberpunk-forge-selected {
+.cpel-neon-forge-application .cyberpunk-forge-selected{
   display: flex;
   align-items: center;
   gap: 8px;
   margin-bottom: 10px;
   color: var(--forge-text);
 }
-
-.cyberpunk-forge-selected i {
+.cpel-neon-forge-application .cyberpunk-forge-selected i{
   color: var(--forge-gold);
 }
-
-.cyberpunk-forge-selected.is-empty {
+.cpel-neon-forge-application .cyberpunk-forge-selected.is-empty{
   color: var(--forge-muted);
 }
-
-.cyberpunk-forge-rebuild {
+.cpel-neon-forge-application .cyberpunk-forge-rebuild{
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: end;
   gap: 10px;
 }
-
-.cyberpunk-forge-checkline {
+.cpel-neon-forge-application .cyberpunk-forge-checkline{
   display: flex;
   gap: 7px;
   align-items: center;
   min-height: 32px;
 }
-
-.cyberpunk-forge-library-row {
+.cpel-neon-forge-application .cyberpunk-forge-library-row{
   display: grid;
   grid-template-columns: minmax(160px, 1fr) repeat(5, 34px);
   gap: 6px;
 }
-
-.cyberpunk-forge-library-row button,
-.cyberpunk-forge-icon-button {
+.cpel-neon-forge-application .cyberpunk-forge-library-row button,
+.cpel-neon-forge-application .cyberpunk-forge-icon-button{
   display: grid;
   min-width: 32px;
   place-items: center;
@@ -458,16 +401,14 @@ button.cyberpunk-forge-preset {
   color: var(--forge-text);
   background: rgba(0, 0, 0, 0.26);
 }
-
-.cyberpunk-forge-history {
+.cpel-neon-forge-application .cyberpunk-forge-history{
   display: grid;
   gap: 4px;
   max-height: 120px;
   margin: 10px 0;
   overflow: auto;
 }
-
-.cyberpunk-forge-history > div {
+.cpel-neon-forge-application .cyberpunk-forge-history > div{
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
   gap: 8px;
@@ -476,42 +417,36 @@ button.cyberpunk-forge-preset {
   background: rgba(255, 255, 255, 0.025);
   font-size: 0.7rem;
 }
-
-.cyberpunk-forge-history time {
+.cpel-neon-forge-application .cyberpunk-forge-history time{
   color: var(--forge-muted);
 }
-
-.cyberpunk-forge-preview-title {
+.cpel-neon-forge-application .cyberpunk-forge-preview-title{
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
   font-size: 1rem;
 }
-
-.cyberpunk-forge-preview-title span {
+.cpel-neon-forge-application .cyberpunk-forge-preview-title span{
   padding: 3px 7px;
   border-radius: 999px;
   color: #fff;
   background: var(--forge-red);
   font-size: 0.68rem;
 }
-
-.cyberpunk-forge-preview-panel p {
+.cpel-neon-forge-application .cyberpunk-forge-preview-panel p{
   color: var(--forge-muted);
   font-size: 0.75rem;
 }
-
-.cyberpunk-forge-statline {
+.cpel-neon-forge-application .cyberpunk-forge-statline{
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 5px;
   margin: 10px 0;
 }
-
-.cyberpunk-forge-statline span {
+.cpel-neon-forge-application .cyberpunk-forge-statline span{
   padding: 6px;
-  border: 1px solid rgba(233, 186, 99, 0.16);
+  border: 1px solid rgba(141, 250, 242, 0.16);
   border-radius: 4px;
   color: var(--forge-gold);
   background: rgba(0, 0, 0, 0.2);
@@ -519,48 +454,40 @@ button.cyberpunk-forge-preset {
   font-weight: 700;
   text-align: center;
 }
-
-.cyberpunk-forge-preview-meta {
+.cpel-neon-forge-application .cyberpunk-forge-preview-meta{
   line-height: 1.45;
 }
-
-.cyberpunk-forge-preview-loadout,
-.cyberpunk-forge-warnings {
+.cpel-neon-forge-application .cyberpunk-forge-preview-loadout,
+.cpel-neon-forge-application .cyberpunk-forge-warnings{
   display: grid;
   gap: 5px;
   margin: 9px 0;
   padding: 0;
   list-style: none;
 }
-
-.cyberpunk-forge-preview-loadout li,
-.cyberpunk-forge-warnings li {
+.cpel-neon-forge-application .cyberpunk-forge-preview-loadout li,
+.cpel-neon-forge-application .cyberpunk-forge-warnings li{
   padding: 6px 7px;
-  border-left: 2px solid rgba(233, 186, 99, 0.55);
+  border-left: 2px solid rgba(141, 250, 242, 0.55);
   background: rgba(255, 255, 255, 0.025);
   font-size: 0.7rem;
 }
-
-.cyberpunk-forge-warnings li {
+.cpel-neon-forge-application .cyberpunk-forge-warnings li{
   border-left-color: #ff7b82;
   color: #ffc4c7;
 }
-
-.cyberpunk-forge-preview-help {
+.cpel-neon-forge-application .cyberpunk-forge-preview-help{
   display: flex;
   gap: 8px;
   margin-top: 14px;
 }
-
-.cyberpunk-forge-preview-help i {
+.cpel-neon-forge-application .cyberpunk-forge-preview-help i{
   color: var(--forge-gold);
 }
-
-.cyberpunk-forge-preview-help p {
+.cpel-neon-forge-application .cyberpunk-forge-preview-help p{
   margin: 0;
 }
-
-.cyberpunk-forge-footer {
+.cpel-neon-forge-application .cyberpunk-forge-footer{
   display: flex;
   flex: 0 0 auto;
   align-items: center;
@@ -571,27 +498,23 @@ button.cyberpunk-forge-preset {
   border-top: 1px solid var(--forge-border);
   background: rgba(8, 7, 10, 0.96);
 }
-
-.cyberpunk-forge-footer > span {
+.cpel-neon-forge-application .cyberpunk-forge-footer > span{
   color: var(--forge-muted);
   font-size: 0.7rem;
 }
-
-.cyberpunk-forge-footer > span i {
+.cpel-neon-forge-application .cyberpunk-forge-footer > span i{
   color: var(--forge-gold);
 }
-
-.cyberpunk-forge-primary,
-.cyberpunk-forge-ghost,
-.cyberpunk-forge-link-button {
+.cpel-neon-forge-application .cyberpunk-forge-primary,
+.cpel-neon-forge-application .cyberpunk-forge-ghost,
+.cpel-neon-forge-application .cyberpunk-forge-link-button{
   width: auto;
   border: 1px solid var(--forge-border);
   border-radius: 5px;
   color: var(--forge-text);
   background: rgba(0, 0, 0, 0.24);
 }
-
-.cyberpunk-forge-primary {
+.cpel-neon-forge-application .cyberpunk-forge-primary{
   min-width: 150px;
   min-height: 36px;
   border-color: #ef4b55;
@@ -599,126 +522,109 @@ button.cyberpunk-forge-preset {
   background: linear-gradient(180deg, #c32631, #85151d);
   font-weight: 800;
 }
-
-.cyberpunk-forge-primary:hover {
+.cpel-neon-forge-application .cyberpunk-forge-primary:hover{
   background: linear-gradient(180deg, #e1303d, #a51a24);
 }
-
-.cyberpunk-forge-ghost,
-.cyberpunk-forge-link-button {
+.cpel-neon-forge-application .cyberpunk-forge-ghost,
+.cpel-neon-forge-application .cyberpunk-forge-link-button{
   padding: 5px 8px;
   font-size: 0.7rem;
 }
-
-.cyberpunk-forge-link-button {
+.cpel-neon-forge-application .cyberpunk-forge-link-button{
   margin-top: 8px;
 }
-
-.cyberpunk-forge-muted {
+.cpel-neon-forge-application .cyberpunk-forge-muted{
   color: var(--forge-muted);
 }
-
-.cyberpunk-forge-error {
+.cpel-neon-forge-application .cyberpunk-forge-error{
   padding: 9px;
   border: 1px solid rgba(255, 82, 94, 0.55);
   border-radius: 5px;
   color: #ffd1d4 !important;
-  background: rgba(176, 24, 34, 0.2);
+  background: rgba(0, 126, 132, 0.2);
 }
-
-.cyberpunk-forge-application .is-hidden {
+.cpel-neon-forge-application .is-hidden{
   display: none !important;
 }
-
-.cyberpunk-forge-interface-tags {
+.cpel-neon-forge-application .cyberpunk-forge-interface-tags{
   margin: 0 0 8px !important;
   padding: 6px 8px;
-  border: 1px solid rgba(176, 24, 34, 0.4);
+  border: 1px solid rgba(0, 126, 132, 0.4);
   border-radius: 4px;
-  background: rgba(176, 24, 34, 0.08);
+  background: rgba(0, 126, 132, 0.08);
 }
-
-@media (max-width: 760px) {
-  .cyberpunk-forge-layout {
+@media (max-width: 760px){.cpel-neon-forge-application .cyberpunk-forge-layout{
     grid-template-columns: 1fr;
     overflow: auto;
   }
-
-  .cyberpunk-forge-body {
+.cpel-neon-forge-application .cyberpunk-forge-main-column{
+    display: block;
+    min-height: auto;
     overflow: visible;
   }
-
-  .cyberpunk-forge-preview-panel {
+.cpel-neon-forge-application .cyberpunk-forge-body{
+    overflow: visible;
+  }
+.cpel-neon-forge-application .cyberpunk-forge-preview-panel{
     margin: 0 16px 16px;
     overflow: visible;
   }
-
-  .cyberpunk-forge-fields-core,
-  .cyberpunk-forge-tier-grid,
-  .cyberpunk-forge-options-operation {
+.cpel-neon-forge-application .cyberpunk-forge-fields-core,
+.cpel-neon-forge-application .cyberpunk-forge-tier-grid,
+.cpel-neon-forge-application .cyberpunk-forge-options-operation{
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 500px) {
-  .cyberpunk-forge-hero,
-  .cyberpunk-forge-footer {
+  }}
+@media (max-width: 500px){.cpel-neon-forge-application .cyberpunk-forge-hero,
+.cpel-neon-forge-application .cyberpunk-forge-footer{
     align-items: stretch;
     flex-direction: column;
   }
-
-  .cyberpunk-forge-catalog-status {
+.cpel-neon-forge-application .cyberpunk-forge-catalog-status{
     min-width: 0;
   }
-
-  .cyberpunk-forge-preset-grid,
-  .cyberpunk-forge-fields,
-  .cyberpunk-forge-fields-core,
-  .cyberpunk-forge-tier-grid,
-  .cyberpunk-forge-options,
-  .cyberpunk-forge-options-operation,
-  .cyberpunk-forge-rebuild {
+.cpel-neon-forge-application .cyberpunk-forge-preset-grid,
+.cpel-neon-forge-application .cyberpunk-forge-fields,
+.cpel-neon-forge-application .cyberpunk-forge-fields-core,
+.cpel-neon-forge-application .cyberpunk-forge-tier-grid,
+.cpel-neon-forge-application .cyberpunk-forge-options,
+.cpel-neon-forge-application .cyberpunk-forge-options-operation,
+.cpel-neon-forge-application .cyberpunk-forge-rebuild{
     grid-template-columns: 1fr;
   }
-
-  .cyberpunk-forge-primary {
+.cpel-neon-forge-application .cyberpunk-forge-primary{
     width: 100%;
-  }
-}
-
+  }}
 /* Киберпанк-каркас окна: угловые панели, сигнальные линии и терминальная типографика. */
-.cyberpunk-forge-application {
+.cpel-neon-forge-application{
   --forge-cyan: #46d9dc;
   --forge-cyan-soft: rgba(70, 217, 220, 0.13);
   --forge-grid: rgba(70, 217, 220, 0.035);
   overflow: hidden;
-  border: 1px solid rgba(223, 37, 50, 0.72);
+  border: 1px solid rgba(25, 221, 214, 0.72);
   border-radius: 0;
   background: #09070b;
   box-shadow:
-    0 0 0 1px rgba(233, 186, 99, 0.2),
-    0 0 32px rgba(176, 24, 34, 0.26),
+    0 0 0 1px rgba(141, 250, 242, 0.2),
+    0 0 32px rgba(0, 126, 132, 0.26),
     0 26px 70px rgba(0, 0, 0, 0.72);
 }
-
-.cyberpunk-forge-application .window-header {
+.cpel-neon-forge-application .window-header{
   min-height: 38px;
-  border-bottom: 1px solid rgba(223, 37, 50, 0.62);
+  border-bottom: 1px solid rgba(25, 221, 214, 0.62);
   color: var(--forge-text);
   background:
-    linear-gradient(90deg, rgba(176, 24, 34, 0.45), transparent 42%),
+    linear-gradient(90deg, rgba(0, 126, 132, 0.45), transparent 42%),
     repeating-linear-gradient(
       90deg,
       transparent 0 17px,
-      rgba(233, 186, 99, 0.05) 17px 18px
+      rgba(141, 250, 242, 0.05) 17px 18px
     ),
     #08070a;
   font-family: Consolas, "Roboto Mono", monospace;
   letter-spacing: 0.055em;
   text-transform: uppercase;
 }
-
-.cyberpunk-forge-application .window-header::after {
+.cpel-neon-forge-application .window-header::after{
   width: 54px;
   height: 3px;
   margin-left: 8px;
@@ -731,10 +637,9 @@ button.cyberpunk-forge-preset {
     transparent 78% 84%,
     var(--forge-gold) 84%
   );
-  box-shadow: 0 0 8px rgba(223, 37, 50, 0.55);
+  box-shadow: 0 0 8px rgba(25, 221, 214, 0.55);
 }
-
-.cyberpunk-forge-application .window-content {
+.cpel-neon-forge-application .window-content{
   position: relative;
   background:
     linear-gradient(var(--forge-grid) 1px, transparent 1px),
@@ -744,7 +649,7 @@ button.cyberpunk-forge-preset {
       rgba(70, 217, 220, 0.13),
       transparent 34%
     ),
-    linear-gradient(135deg, rgba(176, 24, 34, 0.16), transparent 36%), #0c0a0f;
+    linear-gradient(135deg, rgba(0, 126, 132, 0.16), transparent 36%), #0c0a0f;
   background-size:
     28px 28px,
     28px 28px,
@@ -752,13 +657,11 @@ button.cyberpunk-forge-preset {
     auto,
     auto;
 }
-
-.cyberpunk-forge-shell {
+.cpel-neon-forge-application .cyberpunk-forge-shell{
   position: relative;
   isolation: isolate;
 }
-
-.cyberpunk-forge-shell::after {
+.cpel-neon-forge-application .cyberpunk-forge-shell::after{
   position: absolute;
   z-index: 20;
   inset: 0;
@@ -771,25 +674,22 @@ button.cyberpunk-forge-preset {
     rgba(255, 255, 255, 0.022) 3px 4px
   );
 }
-
-.cyberpunk-forge-shell > * {
+.cpel-neon-forge-application .cyberpunk-forge-shell > *{
   position: relative;
   z-index: 1;
 }
-
-.cyberpunk-forge-hero {
+.cpel-neon-forge-application .cyberpunk-forge-hero{
   min-height: 105px;
   border-bottom-color: rgba(70, 217, 220, 0.28);
   background:
     linear-gradient(
       112deg,
-      rgba(176, 24, 34, 0.38) 0 32%,
+      rgba(0, 126, 132, 0.38) 0 32%,
       transparent 32.2% 100%
     ),
     linear-gradient(90deg, rgba(7, 6, 9, 0.96), rgba(15, 11, 17, 0.9));
 }
-
-.cyberpunk-forge-hero::before {
+.cpel-neon-forge-application .cyberpunk-forge-hero::before{
   position: absolute;
   bottom: -1px;
   left: 22px;
@@ -802,25 +702,22 @@ button.cyberpunk-forge-preset {
     var(--forge-gold) 70%,
     transparent
   );
-  box-shadow: 0 0 9px rgba(223, 37, 50, 0.58);
+  box-shadow: 0 0 9px rgba(25, 221, 214, 0.58);
 }
-
-.cyberpunk-forge-kicker,
-.cyberpunk-forge-section-heading h2,
-.cyberpunk-forge-fields label > span:first-child,
-.cyberpunk-forge-director > summary {
+.cpel-neon-forge-application .cyberpunk-forge-kicker,
+.cpel-neon-forge-application .cyberpunk-forge-section-heading h2,
+.cpel-neon-forge-application .cyberpunk-forge-fields label > span:first-child,
+.cpel-neon-forge-application .cyberpunk-forge-director > summary{
   font-family: Consolas, "Roboto Mono", monospace;
 }
-
-.cyberpunk-forge-kicker {
+.cpel-neon-forge-application .cyberpunk-forge-kicker{
   display: inline-flex;
   align-items: center;
   gap: 7px;
   color: var(--forge-cyan);
   text-shadow: 0 0 9px rgba(70, 217, 220, 0.35);
 }
-
-.cyberpunk-forge-kicker::before {
+.cpel-neon-forge-application .cyberpunk-forge-kicker::before{
   width: 7px;
   height: 7px;
   content: "";
@@ -829,19 +726,17 @@ button.cyberpunk-forge-preset {
   box-shadow: 0 0 8px var(--forge-cyan);
   transform: rotate(45deg);
 }
-
-.cyberpunk-forge-hero h1 {
+.cpel-neon-forge-application .cyberpunk-forge-hero h1{
   font-family: Consolas, "Roboto Mono", monospace;
   letter-spacing: 0.025em;
   text-transform: uppercase;
   text-shadow:
-    2px 0 rgba(223, 37, 50, 0.45),
+    2px 0 rgba(25, 221, 214, 0.45),
     -1px 0 rgba(70, 217, 220, 0.22);
 }
-
-.cyberpunk-forge-catalog-status,
-.cyberpunk-forge-panel,
-.cyberpunk-forge-preview-panel {
+.cpel-neon-forge-application .cyberpunk-forge-catalog-status,
+.cpel-neon-forge-application .cyberpunk-forge-panel,
+.cpel-neon-forge-application .cyberpunk-forge-preview-panel{
   position: relative;
   border-radius: 0;
   clip-path: polygon(
@@ -853,37 +748,32 @@ button.cyberpunk-forge-preset {
     0 10px
   );
 }
-
-.cyberpunk-forge-panel,
-.cyberpunk-forge-preview-panel {
-  border-color: rgba(233, 186, 99, 0.3);
+.cpel-neon-forge-application .cyberpunk-forge-panel,
+.cpel-neon-forge-application .cyberpunk-forge-preview-panel{
+  border-color: rgba(141, 250, 242, 0.3);
   background: linear-gradient(
     145deg,
     rgba(42, 31, 45, 0.92),
     rgba(17, 14, 20, 0.96)
   );
   box-shadow:
-    inset 2px 0 0 rgba(176, 24, 34, 0.64),
+    inset 2px 0 0 rgba(0, 126, 132, 0.64),
     0 10px 25px rgba(0, 0, 0, 0.25);
 }
-
-.cyberpunk-forge-preview-panel {
+.cpel-neon-forge-application .cyberpunk-forge-preview-panel{
   box-shadow:
     inset 2px 0 0 rgba(70, 217, 220, 0.52),
     0 10px 25px rgba(0, 0, 0, 0.25);
 }
-
-.cyberpunk-forge-section-heading {
+.cpel-neon-forge-application .cyberpunk-forge-section-heading{
   padding-bottom: 8px;
   border-bottom: 1px solid rgba(70, 217, 220, 0.13);
 }
-
-.cyberpunk-forge-section-heading h2 {
+.cpel-neon-forge-application .cyberpunk-forge-section-heading h2{
   letter-spacing: 0.025em;
   text-transform: uppercase;
 }
-
-.cyberpunk-forge-step {
+.cpel-neon-forge-application .cyberpunk-forge-step{
   border-radius: 0;
   clip-path: polygon(
     5px 0,
@@ -893,79 +783,70 @@ button.cyberpunk-forge-preset {
     0 100%,
     0 5px
   );
-  box-shadow: 0 0 10px rgba(223, 37, 50, 0.22);
+  box-shadow: 0 0 10px rgba(25, 221, 214, 0.22);
 }
-
-.cyberpunk-forge-preview-panel .cyberpunk-forge-step {
+.cpel-neon-forge-application .cyberpunk-forge-preview-panel .cyberpunk-forge-step{
   border-color: rgba(70, 217, 220, 0.62);
   color: var(--forge-cyan);
   background: var(--forge-cyan-soft);
   box-shadow: 0 0 10px rgba(70, 217, 220, 0.2);
 }
-
-.cyberpunk-forge-application input:not([type="checkbox"]),
-.cyberpunk-forge-application select,
-.cyberpunk-forge-application textarea {
-  border: 1px solid rgba(233, 186, 99, 0.25);
+.cpel-neon-forge-application input:not([type="checkbox"]),
+.cpel-neon-forge-application select,
+.cpel-neon-forge-application textarea{
+  border: 1px solid rgba(141, 250, 242, 0.25);
   border-radius: 0;
   color: var(--forge-text);
   background: rgba(3, 3, 5, 0.68);
   font-family: Consolas, "Roboto Mono", monospace;
 }
-
-.cyberpunk-forge-application input:not([type="checkbox"]):focus,
-.cyberpunk-forge-application select:focus,
-.cyberpunk-forge-application textarea:focus {
+.cpel-neon-forge-application input:not([type="checkbox"]):focus,
+.cpel-neon-forge-application select:focus,
+.cpel-neon-forge-application textarea:focus{
   outline: none;
   border-color: var(--forge-cyan);
   box-shadow:
     0 0 0 1px rgba(70, 217, 220, 0.16),
     0 0 11px rgba(70, 217, 220, 0.16);
 }
-
-.cyberpunk-forge-preset,
-.cyberpunk-forge-options label,
-.cyberpunk-forge-director,
-.cyberpunk-forge-note,
-.cyberpunk-forge-preview-help,
-.cyberpunk-forge-selected,
-.cyberpunk-forge-rebuild,
-.cyberpunk-forge-library-row button,
-.cyberpunk-forge-icon-button,
-.cyberpunk-forge-primary,
-.cyberpunk-forge-ghost,
-.cyberpunk-forge-link-button {
+.cpel-neon-forge-application .cyberpunk-forge-preset,
+.cpel-neon-forge-application .cyberpunk-forge-options label,
+.cpel-neon-forge-application .cyberpunk-forge-director,
+.cpel-neon-forge-application .cyberpunk-forge-note,
+.cpel-neon-forge-application .cyberpunk-forge-preview-help,
+.cpel-neon-forge-application .cyberpunk-forge-selected,
+.cpel-neon-forge-application .cyberpunk-forge-rebuild,
+.cpel-neon-forge-application .cyberpunk-forge-library-row button,
+.cpel-neon-forge-application .cyberpunk-forge-icon-button,
+.cpel-neon-forge-application .cyberpunk-forge-primary,
+.cpel-neon-forge-application .cyberpunk-forge-ghost,
+.cpel-neon-forge-application .cyberpunk-forge-link-button{
   border-radius: 0;
 }
-
-.cyberpunk-forge-preset:hover,
-.cyberpunk-forge-options label:hover {
+.cpel-neon-forge-application .cyberpunk-forge-preset:hover,
+.cpel-neon-forge-application .cyberpunk-forge-options label:hover{
   border-color: rgba(70, 217, 220, 0.52);
   background: rgba(70, 217, 220, 0.07);
 }
-
-.cyberpunk-forge-preset.is-selected {
+.cpel-neon-forge-application .cyberpunk-forge-preset.is-selected{
   border-color: var(--forge-red-bright);
   background:
-    linear-gradient(90deg, rgba(176, 24, 34, 0.33), transparent),
+    linear-gradient(90deg, rgba(0, 126, 132, 0.33), transparent),
     rgba(0, 0, 0, 0.24);
   box-shadow:
     inset 3px 0 0 var(--forge-red-bright),
-    0 0 13px rgba(176, 24, 34, 0.18);
+    0 0 13px rgba(0, 126, 132, 0.18);
 }
-
-.cyberpunk-forge-statline span {
+.cpel-neon-forge-application .cyberpunk-forge-statline span{
   border-radius: 0;
   font-family: Consolas, "Roboto Mono", monospace;
 }
-
-.cyberpunk-forge-footer {
-  border-top-color: rgba(223, 37, 50, 0.62);
+.cpel-neon-forge-application .cyberpunk-forge-footer{
+  border-top-color: rgba(25, 221, 214, 0.62);
   background:
-    linear-gradient(90deg, rgba(176, 24, 34, 0.15), transparent 45%), #08070a;
+    linear-gradient(90deg, rgba(0, 126, 132, 0.15), transparent 45%), #08070a;
 }
-
-.cyberpunk-forge-primary {
+.cpel-neon-forge-application .cyberpunk-forge-primary{
   border-color: var(--forge-red-bright);
   clip-path: polygon(
     8px 0,
@@ -980,11 +861,1132 @@ button.cyberpunk-forge-preset {
   text-transform: uppercase;
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.07),
-    0 0 15px rgba(176, 24, 34, 0.2);
+    0 0 15px rgba(0, 126, 132, 0.2);
+}
+@media (prefers-reduced-motion: reduce){.cpel-neon-forge-application .cyberpunk-forge-shell::after{
+    display: none;
+  }}
+/* Киберпанк-Кузница NPC: отдельный выбор ПКТ */
+.cpel-neon-forge-application .cyberpunk-forge-pkt-choice{ margin-top: 0.75rem; }
+.cpel-neon-forge-application .cyberpunk-forge-pkt-choice label{ grid-column: 1 / -1; }
+/* Киберпанк-Кузница NPC: настоящие вкладки категорий пресетов */
+.cpel-neon-forge-application .neon-forge-preset-tabs{ display:flex; flex-wrap:wrap; gap:.4rem; margin:.65rem 0 .75rem; }
+.cpel-neon-forge-application .neon-forge-preset-tab{ display:flex; align-items:center; gap:.4rem; border:1px solid rgba(36,230,223,.35); background:rgba(10,12,18,.82); padding:.45rem .65rem; cursor:pointer; }
+.cpel-neon-forge-application .neon-forge-preset-tab.is-active{ box-shadow:0 0 0 1px rgba(36,230,223,.65) inset, 0 0 14px rgba(29,214,207,.16); }
+.cpel-neon-forge-application .neon-forge-preset-tab small{ opacity:.7; }
+.cpel-neon-forge-application .neon-forge-preset-panel.is-hidden{ display:none; }
+/* Киберпанк-Кузница NPC 1.4.1 — SF2e teal terminal theme */
+.cpel-neon-forge-application{
+  --forge-red: #087e84;
+  --forge-red-bright: #11d6d1;
+  --forge-gold: #d8f5ef;
+  --forge-cyan: #20e9e0;
+  --forge-cyan-soft: rgba(32, 233, 224, 0.12);
+  --forge-ink: #001013;
+  --forge-panel: rgba(2, 28, 31, 0.96);
+  --forge-panel-soft: rgba(4, 45, 48, 0.84);
+  --forge-border: rgba(49, 222, 213, 0.34);
+  --forge-text: #e9ffff;
+  --forge-muted: #95c7c7;
+  --forge-grid: rgba(36, 220, 212, 0.055);
+  border-color: rgba(29, 214, 207, 0.72);
+  background: #001014;
+  box-shadow: 0 0 0 1px rgba(114, 247, 237, 0.12), 0 0 34px rgba(0, 199, 194, 0.17), 0 26px 70px rgba(0,0,0,.78);
+}
+.cpel-neon-forge-application .window-header{
+  border-bottom-color: rgba(29,214,207,.65);
+  background: linear-gradient(90deg, rgba(0,116,124,.45), transparent 44%), repeating-linear-gradient(90deg, transparent 0 17px, rgba(29,214,207,.06) 17px 18px), #001014;
+}
+.cpel-neon-forge-application .window-header::after{
+  background: linear-gradient(90deg, #18d9d3 0 58%, transparent 58% 64%, #c8fff8 64% 79%, transparent 79% 86%, #c7fffa 86%);
+  box-shadow: 0 0 9px rgba(29,214,207,.5);
+}
+.cpel-neon-forge-application .window-content{
+  background: linear-gradient(var(--forge-grid) 1px, transparent 1px), linear-gradient(90deg,var(--forge-grid) 1px,transparent 1px), radial-gradient(circle at 12% 0%, rgba(0,167,166,.18), transparent 36%), radial-gradient(circle at 95% 12%, rgba(13,98,108,.17), transparent 32%), #001417;
+  background-size: 28px 28px,28px 28px,auto,auto,auto;
+}
+.cpel-neon-forge-application .cyberpunk-forge-hero{
+  background: linear-gradient(115deg, rgba(0,123,129,.34) 0 34%, transparent 34.2%), linear-gradient(90deg,#001014,#03252a);
+  border-bottom-color: rgba(32,233,224,.35);
+}
+.cpel-neon-forge-application .cyberpunk-forge-hero::before{ background: linear-gradient(90deg,#16e2db,#d7fff9 72%,transparent); box-shadow: 0 0 10px rgba(28,225,217,.5); }
+.cpel-neon-forge-application .cyberpunk-forge-panel,
+.cpel-neon-forge-application .cyberpunk-forge-preview-panel{ border-color: rgba(41,220,211,.32); background: linear-gradient(145deg,rgba(2,38,41,.96),rgba(1,21,24,.98)); box-shadow: inset 2px 0 0 rgba(18,201,196,.55),0 10px 25px rgba(0,0,0,.3); }
+.cpel-neon-forge-application .cyberpunk-forge-preview-panel{ box-shadow: inset 2px 0 0 rgba(78,244,234,.72),0 10px 25px rgba(0,0,0,.3); }
+.cpel-neon-forge-application .cyberpunk-forge-step{ color:#ddffff; border-color:rgba(30,224,215,.62); background:rgba(0,122,127,.35); box-shadow:0 0 10px rgba(29,214,207,.18); }
+.cpel-neon-forge-application .cyberpunk-forge-primary{ border-color:#27ebe1; color:#001315; background:linear-gradient(180deg,#35efe5,#0fa49f); text-shadow:none; }
+.cpel-neon-forge-application .cyberpunk-forge-primary:hover{ background:linear-gradient(180deg,#71fff7,#17beb8); }
+.cpel-neon-forge-application .cyberpunk-forge-footer{ border-top-color:rgba(29,214,207,.62); background:linear-gradient(90deg,rgba(0,116,122,.18),transparent 50%),#001014; }
+.cpel-neon-forge-application .cyberpunk-forge-preset.is-selected{ border-color:#24e6df; background:linear-gradient(90deg,rgba(3,142,145,.33),transparent),rgba(0,0,0,.22); box-shadow:inset 3px 0 0 #2ef2e8,0 0 13px rgba(0,195,190,.17); }
+.cpel-neon-forge-application .cyberpunk-forge-preset:hover,
+.cpel-neon-forge-application .cyberpunk-forge-options label:hover{ border-color:rgba(39,235,225,.58); background:rgba(11,160,161,.09); }
+.cpel-neon-forge-application input:not([type="checkbox"]),
+.cpel-neon-forge-application select,
+.cpel-neon-forge-application textarea{ border-color:rgba(37,220,211,.28); background:rgba(0,12,15,.76); }
+.cpel-neon-forge-application .neon-forge-preset-accordion{ display:grid; gap:8px; margin:10px 0 14px; }
+.cpel-neon-forge-application .neon-forge-preset-group{ border:1px solid rgba(39,221,212,.32); background:rgba(0,39,42,.58); }
+.cpel-neon-forge-application .neon-forge-preset-group > summary{ display:flex; align-items:center; justify-content:space-between; gap:10px; min-height:42px; padding:8px 12px; cursor:pointer; list-style:none; color:#dffffb; background:linear-gradient(90deg,rgba(0,109,113,.28),rgba(0,37,40,.72)); font-family:Consolas,"Roboto Mono",monospace; text-transform:uppercase; }
+.cpel-neon-forge-application .neon-forge-preset-group > summary::-webkit-details-marker{ display:none; }
+.cpel-neon-forge-application .neon-forge-preset-group > summary span{ display:flex; align-items:center; gap:10px; }
+.cpel-neon-forge-application .neon-forge-preset-group > summary i{ width:20px; color:#50f6ec; text-align:center; }
+.cpel-neon-forge-application .neon-forge-preset-group > summary small{ min-width:28px; padding:2px 7px; border:1px solid rgba(70,239,228,.34); color:#9bf4ed; text-align:center; }
+.cpel-neon-forge-application .neon-forge-preset-group[open]{ border-color:rgba(56,238,228,.64); box-shadow:inset 3px 0 0 #19d8d2,0 0 13px rgba(0,190,186,.12); }
+.cpel-neon-forge-application .neon-forge-preset-group[open] > summary{ border-bottom:1px solid rgba(55,230,220,.26); }
+.cpel-neon-forge-application .neon-forge-preset-group .cyberpunk-forge-preset-grid{ padding:9px; }
+.cpel-neon-forge-application .neon-forge-source-picker{ display:grid; grid-template-columns:auto 1fr 1fr; gap:8px; align-items:stretch; margin:10px 0 14px; }
+.cpel-neon-forge-application .neon-forge-source-title{ display:flex; align-items:center; gap:7px; padding:8px 10px; border-left:3px solid #24ddd6; color:#bffbf6; background:rgba(0,90,94,.18); font-size:.72rem; font-weight:800; text-transform:uppercase; }
+.cpel-neon-forge-application .neon-forge-source-card{ display:flex!important; align-items:center; gap:9px; margin:0!important; padding:8px 10px!important; border:1px solid rgba(39,221,212,.3)!important; background:rgba(1,31,34,.76)!important; }
+.cpel-neon-forge-application .neon-forge-source-card > span{ display:grid; gap:2px; }
+.cpel-neon-forge-application .neon-forge-source-card strong{ color:#eafffd; font-size:.72rem; }
+.cpel-neon-forge-application .neon-forge-source-card small{ color:#8cc6c5; font-size:.62rem; }
+.cpel-neon-forge-application .neon-forge-source-card input:checked + span strong{ color:#50f5ec; }
+.cpel-neon-forge-application .neon-forge-source-card:has(input:checked){ border-color:rgba(55,239,228,.68)!important; box-shadow:inset 3px 0 0 #1edbd4; }
+.cpel-neon-forge-application .neon-forge-source-card:has(input:disabled){ opacity:.48; }
+.cpel-neon-forge-application .cyberpunk-forge-pkt-choice select{ border-color:rgba(70,239,229,.52); box-shadow:inset 3px 0 0 rgba(23,213,205,.45); }
+@media (max-width:760px){.cpel-neon-forge-application .neon-forge-source-picker{ grid-template-columns:1fr; }}
+/* GM NPC cyberware tab */
+.tab.cpel-neon-cyberware{ min-height:0; overflow:hidden; }
+.cpel-neon-cw-tab{ height:100%; overflow:auto; padding:10px; color:#dffefa; background:linear-gradient(rgba(16,210,201,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(16,210,201,.04) 1px,transparent 1px),#001518; background-size:26px 26px; font-family:var(--font-primary,sans-serif); }
+.cpel-neon-cw-tab .cw-header{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; padding:9px 11px; border:1px solid rgba(41,226,216,.55); border-left:4px solid #1fe0d8; background:linear-gradient(90deg,rgba(0,108,112,.34),rgba(0,33,36,.72)); }
+.cpel-neon-cw-tab .cw-header > div{ display:flex; align-items:center; gap:8px; }
+.cpel-neon-cw-tab .cw-header i{color:#55fff4}
+.cpel-neon-cw-tab .cw-header strong{font-size:1.05rem;text-transform:uppercase}
+.cpel-neon-cw-tab .cw-header small,
+.cpel-neon-cw-tab .cw-header>span{color:#8dc9c7;font-size:.68rem}
+.cpel-neon-cw-tab .cw-section{ margin:9px 0; padding:9px; border:1px solid rgba(35,190,185,.28); background:rgba(0,29,32,.72); }
+.cpel-neon-cw-tab .cw-section h3{ display:flex;align-items:center;gap:7px;margin:0 0 8px;padding-bottom:6px;border-bottom:1px solid rgba(50,220,210,.24);color:#63fff4;font-size:.82rem;text-transform:uppercase; }
+.cpel-neon-cw-tab .cw-list,
+.cpel-neon-cw-tab .cw-modules{ display:grid; gap:5px; }
+.cpel-neon-cw-tab .cw-item,
+.cpel-neon-cw-tab .cw-module{ display:grid; grid-template-columns:28px minmax(0,1fr) auto auto; gap:7px; align-items:center; min-height:34px; padding:4px 6px; border:1px solid rgba(37,176,172,.22); background:rgba(1,19,22,.75); }
+.cpel-neon-cw-tab .cw-item img,
+.cpel-neon-cw-tab .cw-module img,
+.cpel-neon-cw-tab .cw-base header img{ width:26px;height:26px;object-fit:cover;border:1px solid rgba(72,238,228,.32); }
+.cpel-neon-cw-tab .cw-item-name{ min-width:0!important;text-align:left!important;border:0!important;color:#eafffd!important;background:transparent!important;white-space:normal; }
+.cpel-neon-cw-tab .cw-item button:last-child,
+.cpel-neon-cw-tab .cw-module button:last-child{ width:28px;min-width:28px;padding:3px; }
+.cpel-neon-cw-tab .cw-columns{ display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px; }
+.cpel-neon-cw-tab .cw-base-grid,
+.cpel-neon-cw-tab .cw-model-grid{ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px; }
+.cpel-neon-cw-tab .cw-base,
+.cpel-neon-cw-tab .cw-model{ padding:8px;border:1px solid rgba(45,207,199,.32);background:rgba(0,22,25,.85); }
+.cpel-neon-cw-tab .cw-base header{ display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:7px;align-items:center; }
+.cpel-neon-cw-tab .cw-base header>span{color:#6ff8ef;font:700 .72rem Consolas,monospace}
+.cpel-neon-cw-tab .cw-slotbar{height:5px;margin:6px 0;background:rgba(255,255,255,.07)}
+.cpel-neon-cw-tab .cw-slotbar i{display:block;height:100%;width:min(100%,calc(var(--cw-fill) * 10%));background:#25e4dc;box-shadow:0 0 6px rgba(37,228,220,.45)}
+.cpel-neon-cw-tab .cw-drop-zone.cw-drop-hover{border-color:#7cfff7;box-shadow:inset 0 0 18px rgba(44,238,227,.16)}
+.cpel-neon-cw-tab .cw-model{ display:grid;gap:7px }
+.cpel-neon-cw-tab .cw-model>div{display:grid;gap:2px}
+.cpel-neon-cw-tab .cw-model small{color:#8fc6c5}
+.cpel-neon-cw-tab .cw-model label{display:grid;gap:3px;font-size:.68rem}
+.cpel-neon-cw-tab .cw-model button{border:1px solid rgba(40,224,214,.4);color:#dffefa;background:rgba(0,104,108,.2)}
+.cpel-neon-cw-tab .cw-model-error{color:#91fff7!important}
+.cpel-neon-cw-tab .cw-warning,
+.cpel-neon-cw-tab .cw-empty{margin:8px 0;padding:8px 10px;border:1px solid rgba(36,224,214,.48);background:rgba(0,61,65,.18);color:#ddfffb}
+.cpel-neon-cw-tab .cw-empty{display:grid;place-items:center;gap:6px;min-height:100px;border-color:rgba(40,220,210,.32);background:rgba(0,63,67,.13);color:#aee9e5}
+.cpel-neon-cw-tab .cw-inventory .cw-item{grid-template-columns:28px minmax(0,1fr) auto minmax(110px,auto) auto}
+.cpel-neon-cw-tab .cw-base select,
+.cpel-neon-cw-tab .cw-model select,
+.cpel-neon-cw-tab .cw-inventory select{min-height:28px;color:#eafffd;background:#001417;border:1px solid rgba(39,207,199,.32)}
+@media (max-width:900px){.cpel-neon-cw-tab .cw-columns,
+.cpel-neon-cw-tab .cw-base-grid,
+.cpel-neon-cw-tab .cw-model-grid{grid-template-columns:1fr}
+.cpel-neon-cw-tab .cw-inventory .cw-item{grid-template-columns:28px minmax(0,1fr) auto}
+.cpel-neon-cw-tab .cw-inventory select{grid-column:2/-1}}
+/* v1.4.3 — final SF2e cyan/teal pass + stable preset icon geometry. */
+.cpel-neon-forge-application{
+  --forge-red: #087e84;
+  --forge-red-bright: #1de0d8;
+  --forge-gold: #93fff7;
+  --forge-cyan: #35f3ea;
+  --forge-cyan-soft: rgba(53, 243, 234, 0.13);
+  --forge-ink: #001014;
+  --forge-panel: rgba(1, 28, 32, 0.97);
+  --forge-panel-soft: rgba(3, 47, 51, 0.88);
+  --forge-border: rgba(49, 232, 222, 0.40);
+  --forge-text: #ecfffd;
+  --forge-muted: #9bd2d0;
+  --forge-grid: rgba(37, 226, 217, 0.06);
+  border-color: rgba(37, 226, 217, 0.72) !important;
+  background: #001014 !important;
+}
+.cpel-neon-forge-application .window-header{
+  border-bottom-color: rgba(37, 226, 217, 0.72) !important;
+  background:
+    linear-gradient(90deg, rgba(0, 111, 118, 0.46), transparent 42%),
+    repeating-linear-gradient(90deg, transparent 0 17px, rgba(51, 239, 229, 0.07) 17px 18px),
+    #001014 !important;
+}
+.cpel-neon-forge-application .window-header::before{
+  background: linear-gradient(90deg, transparent, #35f3ea, transparent) !important;
+}
+.cpel-neon-forge-application .window-header::after{
+  background: linear-gradient(90deg, #35f3ea 0 58%, transparent 58% 64%, #b8fff9 64% 80%, transparent 80% 87%, #ecfffd 87%) !important;
+  box-shadow: 0 0 9px rgba(53, 243, 234, 0.52) !important;
+}
+.cpel-neon-forge-application .window-content{
+  background:
+    linear-gradient(var(--forge-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--forge-grid) 1px, transparent 1px),
+    radial-gradient(circle at 10% -3%, rgba(0, 183, 184, 0.18), transparent 34%),
+    radial-gradient(circle at 94% 8%, rgba(19, 116, 124, 0.16), transparent 34%),
+    #001417 !important;
+  background-size: 28px 28px, 28px 28px, auto, auto, auto !important;
+}
+.cpel-neon-forge-application .cyberpunk-forge-hero{
+  border-bottom-color: rgba(53, 243, 234, 0.38) !important;
+  background:
+    linear-gradient(115deg, rgba(0, 124, 130, 0.38) 0 34%, transparent 34.2%),
+    linear-gradient(90deg, #001014, #02282d) !important;
+}
+.cpel-neon-forge-application .cyberpunk-forge-hero::before{
+  background: linear-gradient(90deg, #35f3ea, #c8fff9 72%, transparent) !important;
+  box-shadow: 0 0 11px rgba(53, 243, 234, 0.55) !important;
+}
+.cpel-neon-forge-application .cyberpunk-forge-hero h1{
+  text-shadow: 2px 0 rgba(53, 243, 234, 0.28), -1px 0 rgba(136, 255, 248, 0.18) !important;
+}
+.cpel-neon-forge-application .cyberpunk-forge-panel,
+.cpel-neon-forge-application .cyberpunk-forge-preview-panel{
+  border-color: rgba(49, 232, 222, 0.38) !important;
+  background: linear-gradient(145deg, rgba(2, 39, 43, 0.97), rgba(1, 20, 24, 0.99)) !important;
+  box-shadow: inset 2px 0 0 rgba(35, 226, 216, 0.64), 0 10px 25px rgba(0,0,0,.32) !important;
+}
+.cpel-neon-forge-application .cyberpunk-forge-preview-panel{
+  box-shadow: inset 2px 0 0 rgba(109, 255, 246, 0.78), 0 10px 25px rgba(0,0,0,.32) !important;
+}
+.cpel-neon-forge-application .cyberpunk-forge-step{
+  border-color: rgba(53, 243, 234, 0.68) !important;
+  color: #e7fffd !important;
+  background: rgba(0, 126, 132, 0.38) !important;
+  box-shadow: 0 0 10px rgba(53, 243, 234, 0.22) !important;
+}
+.cpel-neon-forge-application .cyberpunk-forge-catalog-status strong,
+.cpel-neon-forge-application .cyberpunk-forge-kicker,
+.cpel-neon-forge-application .cyberpunk-forge-preset > i,
+.cpel-neon-forge-application .neon-forge-preset-group > summary i,
+.cpel-neon-forge-application .cyberpunk-forge-director > summary i,
+.cpel-neon-forge-application .cyberpunk-forge-option i{
+  color: #63fff6 !important;
+}
+.cpel-neon-forge-application input:not([type="checkbox"]),
+.cpel-neon-forge-application select,
+.cpel-neon-forge-application textarea{
+  border-color: rgba(53, 226, 217, 0.33) !important;
+  color: #ecfffd !important;
+  background: rgba(0, 13, 16, 0.82) !important;
+}
+.cpel-neon-forge-application input:not([type="checkbox"]):focus,
+.cpel-neon-forge-application select:focus,
+.cpel-neon-forge-application textarea:focus{
+  border-color: #35f3ea !important;
+  outline-color: rgba(53, 243, 234, 0.35) !important;
+  box-shadow: 0 0 0 1px rgba(53, 243, 234, 0.13), 0 0 11px rgba(53, 243, 234, 0.16) !important;
+}
+.cpel-neon-forge-application .cyberpunk-forge-primary{
+  border-color: #35f3ea !important;
+  color: #001315 !important;
+  background: linear-gradient(180deg, #61fff6, #14aaa6) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.10), 0 0 15px rgba(53, 243, 234, 0.24) !important;
+  text-shadow: none !important;
+}
+.cpel-neon-forge-application .cyberpunk-forge-primary:hover:not(:disabled){
+  background: linear-gradient(180deg, #9bfff9, #20c8c2) !important;
+}
+.cpel-neon-forge-application .cyberpunk-forge-footer{
+  border-top-color: rgba(53, 243, 234, 0.62) !important;
+  background: linear-gradient(90deg, rgba(0, 117, 123, 0.19), transparent 50%), #001014 !important;
+}
+.cpel-neon-forge-application .cyberpunk-forge-preset:hover,
+.cpel-neon-forge-application .cyberpunk-forge-options label:hover,
+.cpel-neon-forge-application .cyberpunk-forge-preset.is-selected{
+  border-color: rgba(66, 247, 237, 0.72) !important;
+}
+.cpel-neon-forge-application .cyberpunk-forge-preset.is-selected{
+  background: linear-gradient(90deg, rgba(0, 143, 146, 0.36), transparent), rgba(0,0,0,.23) !important;
+  box-shadow: inset 3px 0 0 #35f3ea, 0 0 14px rgba(53,243,234,.16) !important;
+}
+.cpel-neon-forge-application .neon-forge-source-title,
+.cpel-neon-forge-application .neon-forge-source-card:has(input:checked),
+.cpel-neon-forge-application .neon-forge-preset-group[open]{
+  border-color: rgba(67, 248, 238, 0.70) !important;
+}
+/* Preset icons: fixed cells prevent Font Awesome glyphs from drifting into text. */
+.cpel-neon-forge-application .neon-forge-preset-group > summary{
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+.cpel-neon-forge-application .neon-forge-preset-group > summary > span{
+  display: grid !important;
+  grid-template-columns: 30px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 10px !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+.cpel-neon-forge-application .neon-forge-preset-group > summary i{
+  display: grid !important;
+  width: 30px !important;
+  height: 30px !important;
+  margin: 0 !important;
+  place-items: center !important;
+  line-height: 1 !important;
+  text-align: center !important;
+}
+.cpel-neon-forge-application .neon-forge-preset-group > summary strong{
+  min-width: 0 !important;
+  line-height: 1.15 !important;
+}
+.cpel-neon-forge-application .neon-forge-preset-group > summary small{
+  flex: 0 0 auto !important;
+  margin-left: 10px !important;
+}
+.cpel-neon-forge-application button.cyberpunk-forge-preset{
+  display: grid !important;
+  grid-template-columns: 38px minmax(0, 1fr) !important;
+  align-items: center !important;
+  column-gap: 10px !important;
+  min-height: 58px !important;
+  padding: 7px 10px !important;
+}
+.cpel-neon-forge-application .cyberpunk-forge-preset > i{
+  display: grid !important;
+  width: 38px !important;
+  height: 38px !important;
+  margin: 0 !important;
+  place-items: center !important;
+  align-self: center !important;
+  justify-self: center !important;
+  font-size: 1rem !important;
+  line-height: 1 !important;
+  text-align: center !important;
+}
+.cpel-neon-forge-application .cyberpunk-forge-preset > span{
+  display: grid !important;
+  min-width: 0 !important;
+  align-content: center !important;
+  gap: 2px !important;
+  text-align: left !important;
+}
+.cpel-neon-forge-application .cyberpunk-forge-preset > span > strong,
+.cpel-neon-forge-application .cyberpunk-forge-preset > span > small{
+  min-width: 0 !important;
+  margin: 0 !important;
+  line-height: 1.18 !important;
+}
+.cpel-neon-forge-application .cyberpunk-forge-preset > span > small{
+  white-space: normal !important;
+  overflow: hidden !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .cyberpunk-forge-shell::after {
-    display: none;
-  }
+/* v1.4.5 — strict local scope and alignment */
+.cpel-neon-forge-application button.cyberpunk-forge-preset {
+  display:grid !important;
+  grid-template-columns:42px minmax(0,1fr) !important;
+  align-items:center !important;
+  justify-items:stretch !important;
+  gap:10px !important;
+  min-height:58px !important;
+  padding:8px 10px !important;
+  text-align:left !important;
 }
+.cpel-neon-forge-application button.cyberpunk-forge-preset > i {
+  position:static !important;
+  display:grid !important;
+  width:36px !important;
+  height:36px !important;
+  margin:0 !important;
+  padding:0 !important;
+  place-items:center !important;
+  align-self:center !important;
+  justify-self:center !important;
+  overflow:visible !important;
+  border:0 !important;
+  background:transparent !important;
+  font-size:1rem !important;
+  line-height:1 !important;
+  text-indent:0 !important;
+  transform:none !important;
+}
+.cpel-neon-forge-application button.cyberpunk-forge-preset > span {
+  display:grid !important;
+  min-width:0 !important;
+  align-content:center !important;
+  gap:2px !important;
+  text-align:left !important;
+}
+.cpel-neon-forge-application .neon-forge-preset-group > summary > span {
+  display:grid !important;
+  grid-template-columns:32px minmax(0,1fr) !important;
+  align-items:center !important;
+  gap:9px !important;
+  min-width:0 !important;
+}
+.cpel-neon-forge-application .neon-forge-preset-group > summary i {
+  position:static !important;
+  display:grid !important;
+  width:30px !important;
+  height:30px !important;
+  margin:0 !important;
+  place-items:center !important;
+  line-height:1 !important;
+  transform:none !important;
+}
+
+/* NPC Chrome tab — layout closer to the main cyberware sheet while remaining isolated. */
+.cpel-neon-cw-tab .cw-humanity {
+  padding:10px 12px;
+  border:1px solid rgba(53,243,234,.35);
+  background:linear-gradient(180deg,rgba(4,29,34,.94),rgba(6,20,27,.96));
+}
+.cpel-neon-cw-tab .cw-humanity h3 { margin:0 0 8px; color:#eaffff; font-size:.92rem; text-transform:uppercase; }
+.cpel-neon-cw-tab .cw-humanity-bar { height:8px; overflow:hidden; border:1px solid rgba(53,243,234,.26); background:#08161b; }
+.cpel-neon-cw-tab .cw-humanity-bar > i { display:block; height:100%; width:var(--cw-humanity,0%); background:linear-gradient(90deg,#1bd3cc,#55fff4); box-shadow:0 0 10px rgba(53,243,234,.45); }
+.cpel-neon-cw-tab .cw-humanity-stats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin-top:8px; }
+.cpel-neon-cw-tab .cw-humanity-stat { display:grid; gap:2px; padding:5px 7px; border-left:2px solid rgba(53,243,234,.45); background:rgba(0,0,0,.18); }
+.cpel-neon-cw-tab .cw-humanity-stat small { color:#82c8c7; text-transform:uppercase; font-size:.58rem; }
+.cpel-neon-cw-tab .cw-humanity-stat strong,.cpel-neon-cw-tab .cw-humanity-stat input { color:#eaffff; font:700 .88rem Consolas,monospace; }
+.cpel-neon-cw-tab .cw-humanity-stat input { width:100%; min-width:0; height:25px; padding:2px 5px; border:1px solid rgba(53,243,234,.32); background:#00171b; }
+.cpel-neon-cw-tab .cw-base-dock { display:flex; gap:5px; overflow-x:auto; padding:6px 0 2px; scrollbar-color:#25e4dc rgba(0,0,0,.2); }
+.cpel-neon-cw-tab .cw-base-chip { flex:0 0 auto; display:flex; align-items:center; gap:6px; min-width:150px; padding:5px 7px; border:1px solid rgba(53,243,234,.24); background:rgba(0,24,29,.86); }
+.cpel-neon-cw-tab .cw-base-chip strong { color:#eaffff; font-size:.69rem; white-space:nowrap; }
+.cpel-neon-cw-tab .cw-base-chip span { margin-left:auto; color:#63fff6; font:700 .64rem Consolas,monospace; }
+.cpel-neon-cw-tab .cw-pkt-toolbar { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:7px; align-items:end; margin:7px 0; }
+.cpel-neon-cw-tab .cw-pkt-toolbar label { display:grid; gap:3px; min-width:0; color:#9bd5d3; font-size:.66rem; }
+.cpel-neon-cw-tab .cw-pkt-toolbar select { min-width:0; min-height:31px; border:1px solid rgba(53,243,234,.34); color:#eaffff; background:#001519; }
+.cpel-neon-cw-tab .cw-pkt-toolbar button { min-height:31px; border:1px solid rgba(53,243,234,.42); color:#eaffff; background:rgba(0,113,118,.24); }
+.cpel-neon-cw-tab .cw-pkt-toolbar button:hover:not(:disabled) { border-color:#55fff4; background:rgba(0,142,145,.34); }
+.cpel-neon-cw-tab .cw-pkt-toolbar button:disabled { opacity:.45; }
+.cpel-neon-cw-tab .cw-pkt-components { display:flex; flex-wrap:wrap; gap:4px; margin-top:6px; }
+.cpel-neon-cw-tab .cw-pkt-components span { padding:2px 5px; border:1px solid rgba(53,243,234,.19); background:rgba(0,0,0,.20); color:#ccefed; font-size:.61rem; }
+.cpel-neon-cw-tab .cw-section-title-row { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.cpel-neon-cw-tab .cw-section-title-row h3 { flex:1; }
+@media (max-width:900px){
+ .cpel-neon-cw-tab .cw-humanity-stats{grid-template-columns:repeat(2,minmax(0,1fr));}
+ .cpel-neon-cw-tab .cw-pkt-toolbar{grid-template-columns:1fr;}
+}
+
+
+/* v1.4.7 — NPC Chrome parity with player Chrome + reliable sheet scrolling */
+.tab.cpel-neon-cyberware,
+.tab.cpel-neon-cyberware.active {
+  position:relative !important;
+  height:100% !important;
+  max-height:100% !important;
+  min-height:0 !important;
+  overflow-x:hidden !important;
+  overflow-y:auto !important;
+  overscroll-behavior:contain;
+  scrollbar-gutter:stable;
+  scrollbar-width:thin;
+  scrollbar-color:#f02b51 #07141b;
+}
+.tab.cpel-neon-cyberware .cpel-neon-cw-tab {
+  --cw-red:#f02b51;
+  --cw-red-soft:rgba(240,43,81,.22);
+  --cw-teal:#18d7d0;
+  --cw-line:#155765;
+  height:auto !important;
+  min-height:100% !important;
+  overflow:visible !important;
+  padding:12px 14px 28px !important;
+  color:#e8edf0 !important;
+  background:linear-gradient(180deg,#111720 0%,#09131b 100%) !important;
+}
+.tab.cpel-neon-cyberware::-webkit-scrollbar{width:10px}
+.tab.cpel-neon-cyberware::-webkit-scrollbar-track{background:#07141b;border-left:1px solid #143947}
+.tab.cpel-neon-cyberware::-webkit-scrollbar-thumb{background:#d92b4d;border:2px solid #07141b}
+
+.cpel-neon-cw-tab .cw-humanity,
+.cpel-neon-cw-tab .cw-section {
+  margin:0 0 14px !important;
+  padding:10px !important;
+  border:1px solid var(--cw-line) !important;
+  background:linear-gradient(180deg,rgba(17,26,37,.98),rgba(9,18,27,.98)) !important;
+  box-shadow:none !important;
+}
+.cpel-neon-cw-tab .cw-humanity {
+  border-color:rgba(240,43,81,.52) !important;
+}
+.cpel-neon-cw-tab .cw-humanity h3,
+.cpel-neon-cw-tab .cw-section h3 {
+  display:block !important;
+  margin:0 0 9px !important;
+  padding:0 0 7px !important;
+  border:0 !important;
+  border-bottom:1px solid rgba(80,126,145,.38) !important;
+  color:#f4f3f1 !important;
+  font-family:Georgia,"Times New Roman",serif !important;
+  font-size:1.02rem !important;
+  font-weight:700 !important;
+  letter-spacing:.045em !important;
+  text-transform:uppercase !important;
+}
+.cpel-neon-cw-tab .cw-humanity-bar {
+  height:9px !important;
+  border:1px solid #4d3440 !important;
+  background:#17202a !important;
+}
+.cpel-neon-cw-tab .cw-humanity-bar>i {
+  background:linear-gradient(90deg,#27d8cf,#48ece3) !important;
+  box-shadow:none !important;
+}
+.cpel-neon-cw-tab .cw-humanity-stats {
+  grid-template-columns:110px 110px 110px minmax(150px,1fr) !important;
+}
+.cpel-neon-cw-tab .cw-humanity-stat {
+  border-left:0 !important;
+  background:transparent !important;
+  padding:3px 5px !important;
+}
+.cpel-neon-cw-tab .cw-humanity-stat small {color:#8ea2ad !important}
+.cpel-neon-cw-tab .cw-humanity-stat strong,
+.cpel-neon-cw-tab .cw-humanity-stat input {
+  min-height:30px !important;
+  border:1px solid #1c5865 !important;
+  color:#f6f6f4 !important;
+  background:#08131b !important;
+  font:700 1rem Consolas,monospace !important;
+}
+.cpel-neon-cw-tab .cw-humanity-stat:last-child strong {
+  border:0 !important;
+  color:#ef3156 !important;
+  background:transparent !important;
+}
+
+.cpel-neon-cw-tab .cw-section-title-row {align-items:center !important}
+.cpel-neon-cw-tab .cw-base-dock {
+  margin:-2px -2px 2px !important;
+  padding:5px 4px 7px !important;
+  border-bottom:1px solid var(--cw-red) !important;
+  scrollbar-color:var(--cw-red) #08131b !important;
+}
+.cpel-neon-cw-tab .cw-base-chip {
+  min-width:175px !important;
+  border:1px solid #582238 !important;
+  background:#111922 !important;
+}
+.cpel-neon-cw-tab .cw-base-chip strong {color:#e9e9e7 !important}
+.cpel-neon-cw-tab .cw-base-chip span {color:#ef3156 !important}
+
+.cpel-neon-cw-tab .cw-model-grid {grid-template-columns:1fr !important}
+.cpel-neon-cw-tab .cw-model {
+  border:1px solid #276c5e !important;
+  background:linear-gradient(90deg,rgba(12,44,43,.36),rgba(10,22,31,.9)) !important;
+}
+.cpel-neon-cw-tab .cw-model>div>strong {color:#f1f2ef !important;font-size:.8rem}
+.cpel-neon-cw-tab .cw-model>div>small {color:#9db0b7 !important}
+.cpel-neon-cw-tab .cw-model button {border-color:#883146 !important;background:#111923 !important}
+.cpel-neon-cw-tab .cw-model button:hover:not(:disabled){border-color:#f02b51 !important;background:#21131b !important}
+
+.cpel-neon-cw-tab .cw-item,
+.cpel-neon-cw-tab .cw-module,
+.cpel-neon-cw-tab .cw-base header {
+  min-height:34px !important;
+  border:1px solid #7e263b !important;
+  background:#111820 !important;
+}
+.cpel-neon-cw-tab .cw-item img,
+.cpel-neon-cw-tab .cw-module img,
+.cpel-neon-cw-tab .cw-base header img {
+  border:0 !important;
+  background:#121820 !important;
+}
+.cpel-neon-cw-tab .cw-item-name {color:#efefec !important;font-weight:700 !important}
+.cpel-neon-cw-tab .cw-install-btn,
+.cpel-neon-cw-tab .cw-unlink-btn {
+  border:1px solid #7f2439 !important;
+  color:#f15a73 !important;
+  background:#0d151c !important;
+}
+.cpel-neon-cw-tab .cw-base {
+  border:0 !important;
+  background:transparent !important;
+  padding:0 0 10px !important;
+}
+.cpel-neon-cw-tab .cw-base-grid {grid-template-columns:1fr !important}
+.cpel-neon-cw-tab .cw-base header {
+  grid-template-columns:30px minmax(0,1fr) auto auto !important;
+  padding:3px 6px !important;
+}
+.cpel-neon-cw-tab .cw-slotbar {height:4px !important;background:#15212a !important}
+.cpel-neon-cw-tab .cw-slotbar i {background:#ef3156 !important;box-shadow:none !important}
+.cpel-neon-cw-tab .cw-modules {margin-top:6px !important;padding-left:8px !important}
+.cpel-neon-cw-tab .cw-columns {grid-template-columns:1fr !important}
+.cpel-neon-cw-tab .cw-pkt-components span {
+  border-color:#4e2432 !important;
+  background:#151820 !important;
+  color:#ddd !important;
+}
+.cpel-neon-cw-tab select,
+.cpel-neon-cw-tab .cw-pkt-toolbar select {
+  border:1px solid #225c68 !important;
+  color:#edf4f3 !important;
+  background:#07151c !important;
+}
+.cpel-neon-cw-tab .cw-pkt-toolbar button {
+  border:1px solid #7f263b !important;
+  color:#f3f1ef !important;
+  background:#111820 !important;
+}
+.cpel-neon-cw-tab .cw-warning {border-color:#9b5a25 !important;background:#241b11 !important;color:#ffd28e !important}
+@media(max-width:720px){
+  .cpel-neon-cw-tab .cw-humanity-stats{grid-template-columns:repeat(2,minmax(0,1fr)) !important}
+}
+
+
+/* v1.4.8 — NPC Chrome mirrors the active cyberpunk-remaster player tab.
+   These rules only add scrolling, collapsible sections, and the model switcher;
+   visual colors/layout are intentionally inherited from Remaster. */
+.tab.cpel-neon-cyberware.cpel-player-chrome-mirror,
+.tab.cpel-neon-cyberware.cpel-player-chrome-mirror.active {
+  min-height:0 !important;
+  height:100% !important;
+  max-height:100% !important;
+  overflow-y:auto !important;
+  overflow-x:hidden !important;
+  overscroll-behavior:contain;
+  scrollbar-gutter:stable;
+}
+.tab.cpel-neon-cyberware.cpel-player-chrome-mirror > .cw-tab {
+  min-height:100%;
+  height:auto;
+  overflow:visible;
+}
+.tab.cpel-neon-cyberware .cpel-collapse-enabled > h3,
+.tab.cpel-neon-cyberware .cpel-collapse-enabled > .cw-section-title-row {
+  position:relative;
+}
+.tab.cpel-neon-cyberware .cpel-cw-collapse-toggle {
+  float:right;
+  width:26px;
+  min-width:26px;
+  height:24px;
+  min-height:24px;
+  margin:-3px 0 -2px auto;
+  padding:0;
+  border:1px solid currentColor;
+  border-radius:2px;
+  color:inherit;
+  background:transparent;
+  line-height:1;
+}
+.tab.cpel-neon-cyberware .cw-section-title-row .cpel-cw-collapse-toggle {
+  float:none;
+  flex:0 0 26px;
+}
+.tab.cpel-neon-cyberware .cpel-cw-collapse-toggle:hover {
+  filter:brightness(1.35);
+}
+.tab.cpel-neon-cyberware .cpel-collapsed > :not(h3):not(.cw-section-title-row) {
+  display:none !important;
+}
+.tab.cpel-neon-cyberware .cpel-pkt-switcher {
+  display:grid;
+  grid-template-columns:minmax(240px,1fr) minmax(220px,1fr) auto;
+  gap:8px;
+  align-items:end;
+  margin:7px 0 10px;
+  padding:8px;
+  border:1px solid rgba(30,210,205,.38);
+  background:rgba(0,25,29,.34);
+}
+.tab.cpel-neon-cyberware .cpel-pkt-switcher > label,
+.tab.cpel-neon-cyberware .cpel-pkt-switch-choices > label {
+  display:grid;
+  gap:3px;
+  min-width:0;
+}
+.tab.cpel-neon-cyberware .cpel-pkt-switcher span {
+  font-size:.68rem;
+  opacity:.82;
+}
+.tab.cpel-neon-cyberware .cpel-pkt-switcher select {
+  width:100%;
+  min-width:0;
+}
+.tab.cpel-neon-cyberware .cpel-pkt-switch-choices {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:6px;
+  min-width:0;
+}
+.tab.cpel-neon-cyberware .cpel-pkt-switch-apply {
+  min-height:30px;
+  white-space:nowrap;
+}
+@media(max-width:900px){
+  .tab.cpel-neon-cyberware .cpel-pkt-switcher{grid-template-columns:1fr;}
+}
+
+/* v1.4.9 — Forge work tabs, skill editor, and rules-aware nonmagical abilities */
+.cpel-neon-forge-application .neon-forge-worktabs {
+  position:sticky;
+  top:0;
+  z-index:12;
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:6px;
+  margin:16px 16px 0;
+  padding:5px;
+  border:1px solid rgba(51,243,234,.42);
+  background:rgba(2,20,25,.94);
+  box-shadow:0 5px 18px rgba(0,0,0,.28);
+  backdrop-filter:blur(6px);
+}
+.cpel-neon-forge-application .neon-forge-worktabs button {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  min-height:34px;
+  margin:0;
+  border:1px solid rgba(51,243,234,.22);
+  color:#b6d9d8;
+  background:rgba(5,40,45,.62);
+  font-weight:800;
+  letter-spacing:.03em;
+}
+.cpel-neon-forge-application .neon-forge-worktabs button:hover,
+.cpel-neon-forge-application .neon-forge-worktabs button.is-active {
+  border-color:#35f3ea;
+  color:#efffff;
+  background:linear-gradient(180deg,rgba(9,91,96,.92),rgba(4,52,58,.92));
+  box-shadow:inset 0 0 0 1px rgba(80,255,245,.08),0 0 14px rgba(41,216,209,.12);
+}
+.cpel-neon-forge-application .neon-forge-worktab-panel.is-hidden { display:none !important; }
+.cpel-neon-forge-application .neon-forge-worktab-panel > .cyberpunk-forge-panel:first-child,
+.cpel-neon-forge-application section.neon-forge-worktab-panel { margin-top:0; }
+
+.cpel-neon-forge-application .neon-forge-skill-mode {
+  display:grid;
+  grid-template-columns:minmax(240px,420px);
+  margin:10px 0 12px;
+}
+.cpel-neon-forge-application .neon-forge-skill-mode label,
+.cpel-neon-forge-application .neon-forge-skill-card,
+.cpel-neon-forge-application .neon-forge-ability-body > label,
+.cpel-neon-forge-application .neon-forge-ability-meta label {
+  display:grid;
+  gap:4px;
+}
+.cpel-neon-forge-application .neon-forge-skill-grid {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:7px;
+}
+.cpel-neon-forge-application .neon-forge-skill-card {
+  grid-template-columns:minmax(0,1fr) minmax(145px,190px);
+  align-items:center;
+  gap:10px;
+  padding:8px 9px;
+  border:1px solid rgba(45,164,166,.34);
+  background:rgba(3,29,34,.62);
+}
+.cpel-neon-forge-application .neon-forge-skill-card > span {
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  gap:8px;
+  min-width:0;
+}
+.cpel-neon-forge-application .neon-forge-skill-card small {
+  color:#6b9296;
+  font:600 .62rem Consolas,monospace;
+}
+.cpel-neon-forge-application .neon-forge-skill-card select,
+.cpel-neon-forge-application .neon-forge-skill-mode select {
+  width:100%;
+}
+
+.cpel-neon-forge-application .neon-forge-ability-list {
+  display:grid;
+  gap:8px;
+  margin-top:10px;
+}
+.cpel-neon-forge-application .neon-forge-ability-card {
+  border:1px solid rgba(44,146,154,.42);
+  background:linear-gradient(180deg,rgba(4,31,36,.76),rgba(2,20,26,.78));
+}
+.cpel-neon-forge-application .neon-forge-ability-card.is-enabled {
+  border-color:rgba(53,243,234,.68);
+  box-shadow:inset 3px 0 0 rgba(53,243,234,.72);
+}
+.cpel-neon-forge-application .neon-forge-ability-card > summary {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  min-height:38px;
+  padding:7px 10px;
+  cursor:pointer;
+  list-style:none;
+  color:#d7eeee;
+  background:rgba(5,50,56,.42);
+}
+.cpel-neon-forge-application .neon-forge-ability-card > summary::-webkit-details-marker { display:none; }
+.cpel-neon-forge-application .neon-forge-ability-card > summary > span {
+  display:flex;
+  align-items:center;
+  gap:7px;
+}
+.cpel-neon-forge-application .neon-forge-ability-enabled {
+  display:flex;
+  align-items:center;
+  gap:5px;
+  white-space:nowrap;
+  color:#9bc2c1;
+  font-size:.72rem;
+}
+.cpel-neon-forge-application .neon-forge-ability-body {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:9px;
+  padding:10px;
+  border-top:1px solid rgba(44,146,154,.28);
+}
+.cpel-neon-forge-application .neon-forge-ability-template,
+.cpel-neon-forge-application .neon-forge-ability-name,
+.cpel-neon-forge-application .neon-forge-ability-meta,
+.cpel-neon-forge-application .neon-forge-ability-body > label:nth-last-child(-n+3) {
+  grid-column:1 / -1;
+}
+.cpel-neon-forge-application .neon-forge-ability-meta {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(135px,1fr));
+  gap:8px;
+}
+.cpel-neon-forge-application .neon-forge-ability-meta label.is-disabled { opacity:.45; }
+.cpel-neon-forge-application .neon-forge-ability-body textarea {
+  width:100%;
+  min-height:74px;
+  resize:vertical;
+  font-family:inherit;
+  line-height:1.35;
+}
+.cpel-neon-forge-application .neon-forge-ability-body textarea[name$="_rules"] {
+  min-height:58px;
+  font-family:Consolas,"Courier New",monospace;
+  font-size:.72rem;
+}
+.cpel-neon-forge-application .cyberpunk-forge-note code {
+  padding:1px 4px;
+  border:1px solid rgba(53,243,234,.18);
+  color:#8ef5ef;
+  background:rgba(0,0,0,.22);
+}
+@media(max-width:900px) {
+  .cpel-neon-forge-application .neon-forge-worktabs { grid-template-columns:1fr; }
+  .cpel-neon-forge-application .neon-forge-skill-grid { grid-template-columns:1fr; }
+  .cpel-neon-forge-application .neon-forge-ability-meta { grid-template-columns:1fr; }
+}
+
+
+/* v1.4.15 — NPC-only total Stress Cost. Strictly scoped to CPEL tab. */
+.tab.cpel-neon-cyberware .cw-stress-total {
+  margin-top: .55rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  padding: .45rem .6rem;
+  border: 1px solid rgba(57, 219, 222, .42);
+  background: rgba(2, 29, 35, .72);
+}
+.tab.cpel-neon-cyberware .cw-stress-total-label {
+  display: flex;
+  align-items: baseline;
+  gap: .55rem;
+  min-width: 0;
+}
+.tab.cpel-neon-cyberware .cw-stress-total-label > span {
+  color: #8deff0;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.tab.cpel-neon-cyberware .cw-stress-total-label > strong {
+  color: #fff;
+  font-size: 1.05rem;
+}
+.tab.cpel-neon-cyberware .cw-stress-total-label > small {
+  color: #8daeb5;
+}
+.tab.cpel-neon-cyberware .cw-stress-roll {
+  flex: 0 0 auto;
+  border: 1px solid #39dbde;
+  background: #06363d;
+  color: #eaffff;
+  padding: .3rem .55rem;
+}
+.tab.cpel-neon-cyberware .cw-stress-roll:hover {
+  background: #0a4c55;
+}
+.tab.cpel-neon-cyberware .cw-stress-none {
+  color: #718b91;
+  font-size: .8rem;
+}
+
+/* v1.4.29 — dedicated ability-modifier editor */
+.cpel-neon-forge-application .neon-forge-attribute-grid {
+  margin-top:10px;
+}
+.cpel-neon-forge-application .neon-forge-attribute-card strong {
+  color:#e8ffff;
+}
+
+/* v1.4.31 — linked attributes, saves and exact numeric overrides */
+.cpel-neon-forge-application .neon-forge-stat-subheading {
+  margin:14px 0 6px;
+  color:#dffffc;
+  font-size:.9rem;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+}
+.cpel-neon-forge-application .neon-forge-stat-subheading i { color:#35f3ea; margin-right:6px; }
+.cpel-neon-forge-application .neon-forge-stat-card { grid-template-columns:minmax(0,1fr) minmax(210px,280px); }
+.cpel-neon-forge-application .neon-forge-stat-controls { display:grid; grid-template-columns:1fr; gap:5px; }
+.cpel-neon-forge-application .neon-forge-stat-controls select,
+.cpel-neon-forge-application .neon-forge-stat-controls input { width:100%; min-width:0; }
+.cpel-neon-forge-application .neon-forge-stat-custom.is-hidden { display:none !important; }
+.cpel-neon-forge-application .neon-forge-save-grid { margin-top:7px; }
+.cpel-neon-forge-application .neon-forge-compact-note { margin:5px 0 8px; }
+@media (max-width: 760px) {
+  .cpel-neon-forge-application .neon-forge-stat-card { grid-template-columns:1fr; }
+}
+
+/* v2.8.5 — classic Cyberpunk Remaster forge theme */
+.cpel-neon-forge-application {
+  --forge-red: #b01822;
+  --forge-red-bright: #df2532;
+  --forge-gold: #e9ba63;
+  --forge-cyan: #46d9dc;
+  --forge-cyan-soft: rgba(70, 217, 220, 0.13);
+  --forge-ink: #161419;
+  --forge-panel: rgba(24, 20, 27, 0.94);
+  --forge-panel-soft: rgba(43, 34, 47, 0.82);
+  --forge-border: rgba(233, 186, 99, 0.28);
+  --forge-text: #f0e9df;
+  --forge-muted: #b8aeb6;
+  --forge-grid: rgba(70, 217, 220, 0.035);
+  border-color: rgba(223, 37, 50, 0.72) !important;
+  background: #09070b !important;
+  box-shadow:
+    0 0 0 1px rgba(233, 186, 99, 0.2),
+    0 0 32px rgba(176, 24, 34, 0.26),
+    0 26px 70px rgba(0, 0, 0, 0.72) !important;
+}
+
+.cpel-neon-forge-application .window-header {
+  border-bottom-color: rgba(223, 37, 50, 0.62) !important;
+  color: var(--forge-text) !important;
+  background:
+    linear-gradient(90deg, rgba(176, 24, 34, 0.45), transparent 42%),
+    repeating-linear-gradient(90deg, transparent 0 17px, rgba(233, 186, 99, 0.05) 17px 18px),
+    #08070a !important;
+}
+.cpel-neon-forge-application .window-header::before {
+  background: linear-gradient(90deg, transparent, rgba(223, 37, 50, 0.9), var(--forge-gold), transparent) !important;
+}
+.cpel-neon-forge-application .window-header::after {
+  background: linear-gradient(
+    90deg,
+    var(--forge-red-bright) 0 54%,
+    transparent 54% 62%,
+    var(--forge-cyan) 62% 78%,
+    transparent 78% 84%,
+    var(--forge-gold) 84%
+  ) !important;
+  box-shadow: 0 0 8px rgba(223, 37, 50, 0.55) !important;
+}
+.cpel-neon-forge-application .window-content {
+  background:
+    linear-gradient(var(--forge-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--forge-grid) 1px, transparent 1px),
+    radial-gradient(circle at 90% -5%, rgba(70, 217, 220, 0.13), transparent 34%),
+    linear-gradient(135deg, rgba(176, 24, 34, 0.16), transparent 36%),
+    #0c0a0f !important;
+  background-size: 28px 28px, 28px 28px, auto, auto, auto !important;
+}
+.cpel-neon-forge-application .cyberpunk-forge-hero {
+  border-bottom-color: rgba(70, 217, 220, 0.28) !important;
+  background:
+    linear-gradient(112deg, rgba(176, 24, 34, 0.38) 0 32%, transparent 32.2% 100%),
+    linear-gradient(90deg, rgba(7, 6, 9, 0.96), rgba(15, 11, 17, 0.9)) !important;
+}
+.cpel-neon-forge-application .cyberpunk-forge-hero::before {
+  background: linear-gradient(90deg, var(--forge-red-bright), var(--forge-gold) 70%, transparent) !important;
+  box-shadow: 0 0 9px rgba(223, 37, 50, 0.58) !important;
+}
+.cpel-neon-forge-application .cyberpunk-forge-hero h1 {
+  color: var(--forge-text) !important;
+  text-shadow: 2px 0 rgba(223, 37, 50, 0.45), -1px 0 rgba(70, 217, 220, 0.22) !important;
+}
+.cpel-neon-forge-application .cyberpunk-forge-kicker {
+  color: var(--forge-cyan) !important;
+  text-shadow: 0 0 9px rgba(70, 217, 220, 0.35) !important;
+}
+.cpel-neon-forge-application .cyberpunk-forge-kicker::before {
+  border-color: var(--forge-cyan) !important;
+  background: rgba(70, 217, 220, 0.35) !important;
+  box-shadow: 0 0 8px var(--forge-cyan) !important;
+}
+.cpel-neon-forge-application .cyberpunk-forge-panel,
+.cpel-neon-forge-application .cyberpunk-forge-preview-panel {
+  border-color: rgba(233, 186, 99, 0.3) !important;
+  background: linear-gradient(145deg, rgba(42, 31, 45, 0.92), rgba(17, 14, 20, 0.96)) !important;
+  box-shadow: inset 2px 0 0 rgba(176, 24, 34, 0.64), 0 10px 25px rgba(0, 0, 0, 0.25) !important;
+}
+.cpel-neon-forge-application .cyberpunk-forge-preview-panel {
+  box-shadow: inset 2px 0 0 rgba(70, 217, 220, 0.52), 0 10px 25px rgba(0, 0, 0, 0.25) !important;
+}
+.cpel-neon-forge-application .cyberpunk-forge-section-heading {
+  border-bottom-color: rgba(70, 217, 220, 0.13) !important;
+}
+.cpel-neon-forge-application .cyberpunk-forge-step {
+  border-color: rgba(223, 37, 50, 0.7) !important;
+  color: #fff !important;
+  background: rgba(176, 24, 34, 0.35) !important;
+  box-shadow: 0 0 10px rgba(223, 37, 50, 0.22) !important;
+}
+.cpel-neon-forge-application .cyberpunk-forge-preview-panel .cyberpunk-forge-step {
+  border-color: rgba(70, 217, 220, 0.62) !important;
+  color: var(--forge-cyan) !important;
+  background: var(--forge-cyan-soft) !important;
+  box-shadow: 0 0 10px rgba(70, 217, 220, 0.2) !important;
+}
+.cpel-neon-forge-application input:not([type="checkbox"]),
+.cpel-neon-forge-application select,
+.cpel-neon-forge-application textarea {
+  border-color: rgba(233, 186, 99, 0.25) !important;
+  color: var(--forge-text) !important;
+  background: rgba(3, 3, 5, 0.68) !important;
+}
+.cpel-neon-forge-application input:not([type="checkbox"]):focus,
+.cpel-neon-forge-application select:focus,
+.cpel-neon-forge-application textarea:focus {
+  border-color: var(--forge-cyan) !important;
+  outline-color: rgba(70, 217, 220, 0.35) !important;
+  box-shadow: 0 0 0 1px rgba(70, 217, 220, 0.16), 0 0 11px rgba(70, 217, 220, 0.16) !important;
+}
+.cpel-neon-forge-application .cyberpunk-forge-catalog-status strong,
+.cpel-neon-forge-application .cyberpunk-forge-preset > i,
+.cpel-neon-forge-application .neon-forge-preset-group > summary i,
+.cpel-neon-forge-application .cyberpunk-forge-director > summary i,
+.cpel-neon-forge-application .cyberpunk-forge-option i {
+  color: var(--forge-gold) !important;
+}
+.cpel-neon-forge-application .cyberpunk-forge-preset:hover,
+.cpel-neon-forge-application .cyberpunk-forge-options label:hover {
+  border-color: rgba(70, 217, 220, 0.52) !important;
+  background: rgba(70, 217, 220, 0.07) !important;
+}
+.cpel-neon-forge-application .cyberpunk-forge-preset.is-selected {
+  border-color: var(--forge-red-bright) !important;
+  background: linear-gradient(90deg, rgba(176, 24, 34, 0.33), transparent), rgba(0, 0, 0, 0.24) !important;
+  box-shadow: inset 3px 0 0 var(--forge-red-bright), 0 0 13px rgba(176, 24, 34, 0.18) !important;
+}
+.cpel-neon-forge-application .cyberpunk-forge-primary {
+  border-color: var(--forge-red-bright) !important;
+  color: #fff !important;
+  background: linear-gradient(180deg, #c52430, #8d121b) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07), 0 0 15px rgba(176, 24, 34, 0.2) !important;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45) !important;
+}
+.cpel-neon-forge-application .cyberpunk-forge-primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, #df2532, #a91824) !important;
+}
+.cpel-neon-forge-application .cyberpunk-forge-footer {
+  border-top-color: rgba(223, 37, 50, 0.62) !important;
+  background: linear-gradient(90deg, rgba(176, 24, 34, 0.15), transparent 45%), #08070a !important;
+}
+
+/* New Forge 1.4.31 controls, restyled to the Remaster palette. */
+.cpel-neon-forge-application .neon-forge-worktabs {
+  border-color: rgba(233, 186, 99, 0.34) !important;
+  background: rgba(12, 9, 14, 0.94) !important;
+}
+.cpel-neon-forge-application .neon-forge-worktabs button {
+  border-color: rgba(233, 186, 99, 0.2) !important;
+  color: var(--forge-muted) !important;
+  background: rgba(43, 34, 47, 0.58) !important;
+}
+.cpel-neon-forge-application .neon-forge-worktabs button:hover,
+.cpel-neon-forge-application .neon-forge-worktabs button.is-active {
+  border-color: var(--forge-red-bright) !important;
+  color: var(--forge-text) !important;
+  background: linear-gradient(180deg, rgba(176, 24, 34, 0.62), rgba(65, 15, 24, 0.78)) !important;
+  box-shadow: inset 0 0 0 1px rgba(233, 186, 99, 0.08), 0 0 14px rgba(176, 24, 34, 0.14) !important;
+}
+.cpel-neon-forge-application .neon-forge-preset-group {
+  border-color: rgba(233, 186, 99, 0.28) !important;
+  background: rgba(29, 22, 31, 0.72) !important;
+}
+.cpel-neon-forge-application .neon-forge-preset-group > summary {
+  color: var(--forge-text) !important;
+  background: linear-gradient(90deg, rgba(176, 24, 34, 0.2), rgba(20, 15, 22, 0.78)) !important;
+}
+.cpel-neon-forge-application .neon-forge-preset-group > summary small {
+  border-color: rgba(233, 186, 99, 0.34) !important;
+  color: var(--forge-gold) !important;
+}
+.cpel-neon-forge-application .neon-forge-preset-group[open] {
+  border-color: rgba(223, 37, 50, 0.62) !important;
+  box-shadow: inset 3px 0 0 var(--forge-red-bright), 0 0 13px rgba(176, 24, 34, 0.12) !important;
+}
+.cpel-neon-forge-application .neon-forge-preset-group[open] > summary {
+  border-bottom-color: rgba(233, 186, 99, 0.22) !important;
+}
+.cpel-neon-forge-application .neon-forge-source-title {
+  border-left-color: var(--forge-red-bright) !important;
+  color: var(--forge-gold) !important;
+  background: rgba(176, 24, 34, 0.12) !important;
+}
+.cpel-neon-forge-application .neon-forge-source-card {
+  border-color: rgba(233, 186, 99, 0.28) !important;
+  background: rgba(20, 15, 22, 0.76) !important;
+}
+.cpel-neon-forge-application .neon-forge-source-card strong { color: var(--forge-text) !important; }
+.cpel-neon-forge-application .neon-forge-source-card small { color: var(--forge-muted) !important; }
+.cpel-neon-forge-application .neon-forge-source-card input:checked + span strong { color: var(--forge-gold) !important; }
+.cpel-neon-forge-application .neon-forge-source-card:has(input:checked) {
+  border-color: rgba(223, 37, 50, 0.68) !important;
+  box-shadow: inset 3px 0 0 var(--forge-red-bright) !important;
+}
+.cpel-neon-forge-application .cyberpunk-forge-pkt-choice select {
+  border-color: rgba(233, 186, 99, 0.42) !important;
+  box-shadow: inset 3px 0 0 rgba(176, 24, 34, 0.38) !important;
+}
+.cpel-neon-forge-application .neon-forge-skill-card,
+.cpel-neon-forge-application .neon-forge-attribute-card,
+.cpel-neon-forge-application .neon-forge-stat-card {
+  border-color: rgba(233, 186, 99, 0.28) !important;
+  background: rgba(24, 20, 27, 0.72) !important;
+}
+.cpel-neon-forge-application .neon-forge-skill-card small { color: var(--forge-muted) !important; }
+.cpel-neon-forge-application .neon-forge-ability-card {
+  border-color: rgba(233, 186, 99, 0.3) !important;
+  background: linear-gradient(180deg, rgba(33, 25, 36, 0.78), rgba(17, 13, 20, 0.84)) !important;
+}
+.cpel-neon-forge-application .neon-forge-ability-card.is-enabled {
+  border-color: rgba(223, 37, 50, 0.68) !important;
+  box-shadow: inset 3px 0 0 var(--forge-red-bright) !important;
+}
+.cpel-neon-forge-application .neon-forge-ability-card > summary {
+  color: var(--forge-text) !important;
+  background: rgba(176, 24, 34, 0.12) !important;
+}
+.cpel-neon-forge-application .neon-forge-ability-enabled { color: var(--forge-muted) !important; }
+.cpel-neon-forge-application .neon-forge-ability-body { border-top-color: rgba(233, 186, 99, 0.2) !important; }
+.cpel-neon-forge-application .cyberpunk-forge-note code {
+  border-color: rgba(233, 186, 99, 0.2) !important;
+  color: var(--forge-gold) !important;
+  background: rgba(0, 0, 0, 0.22) !important;
+}
+.cpel-neon-forge-application .neon-forge-attribute-card strong,
+.cpel-neon-forge-application .neon-forge-stat-subheading { color: var(--forge-text) !important; }
+.cpel-neon-forge-application .neon-forge-stat-subheading i { color: var(--forge-red-bright) !important; }
+

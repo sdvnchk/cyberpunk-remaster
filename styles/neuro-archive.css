@@ -2240,3 +2240,294 @@
     clip-path: none;
   }
 }
+
+
+/* Neuro Archive 4.2.0 — functional controls only; existing visual theme is preserved. */
+#pcm-root .pcm-record-open {
+  width: 100%;
+  min-height: 76px;
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr) 24px;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  text-align: left;
+  background: transparent;
+  border: 0;
+}
+#pcm-root .pcm-record-open > div:nth-child(2) {
+  min-width: 0;
+}
+#pcm-root .pcm-record-open h2,
+#pcm-root .pcm-record-open p {
+  margin: 0;
+}
+#pcm-root .pcm-record-open p {
+  margin-top: 4px;
+  color: var(--muted);
+}
+#pcm-root .pcm-tag-static {
+  display: inline-flex;
+  margin: 4px 4px 0 0;
+  padding: 2px 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.82em;
+}
+
+#pcm-root .pcm-contact-toolbar {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.5fr) repeat(3, minmax(120px, 1fr));
+  gap: 8px;
+  margin: 0 0 12px;
+}
+#pcm-root .pcm-contact-toolbar label {
+  display: grid;
+  gap: 4px;
+}
+#pcm-root .pcm-contact-toolbar label > span {
+  color: var(--muted);
+  font-size: 0.8em;
+  font-weight: 700;
+}
+#pcm-root .pcm-contact-toolbar input,
+#pcm-root .pcm-contact-toolbar select {
+  width: 100%;
+  min-height: 32px;
+  padding: 0 8px;
+  color: var(--ink);
+  background: var(--field);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+}
+
+#pcm-root .pcm-person-quick-edit {
+  margin-top: 10px;
+  display: grid;
+  gap: 10px;
+}
+#pcm-root .pcm-person-quick-edit .pcm-gallery-editor {
+  margin-top: 0;
+}
+#pcm-root .pcm-person-quick-edit textarea {
+  min-height: 84px;
+}
+
+.neuro-archive-context-host {
+  position: fixed;
+  inset: 0;
+  z-index: 10000050;
+  pointer-events: none;
+  color: var(--ink, #f0e9df);
+  font: 13px/1.35 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+.neuro-archive-context-host .pcm-context-menu-surface {
+  position: fixed;
+  width: min(360px, calc(100vw - 16px));
+  max-height: calc(100vh - 16px);
+  overflow: auto;
+  padding: 8px;
+  pointer-events: auto;
+  background: var(--panel, #18131b);
+  border: 1px solid var(--line, #df253247);
+  border-radius: 10px;
+  box-shadow: 0 18px 55px #000a;
+}
+.neuro-archive-context-host .pcm-context-menu-surface > header {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 32px;
+  gap: 8px;
+  align-items: center;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line, #df253247);
+}
+.neuro-archive-context-host .pcm-context-avatar {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: var(--field, #08090c);
+  border: 1px solid var(--line, #df253247);
+  border-radius: 7px;
+}
+.neuro-archive-context-host .pcm-context-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.neuro-archive-context-host .pcm-context-menu-surface header span:nth-child(2) {
+  min-width: 0;
+  display: grid;
+}
+.neuro-archive-context-host .pcm-context-menu-surface header small {
+  color: var(--muted, #b8aeb6);
+  font-size: 0.72em;
+}
+.neuro-archive-context-host .pcm-context-menu-surface header b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.neuro-archive-context-host button {
+  min-height: 34px;
+  padding: 5px 9px;
+  color: var(--ink, #f0e9df);
+  background: var(--field, #08090c);
+  border: 1px solid var(--line, #df253247);
+  border-radius: 7px;
+  cursor: pointer;
+}
+.neuro-archive-context-host button:hover,
+.neuro-archive-context-host button.active {
+  border-color: var(--gold, #df2532);
+  background: var(--accent-soft, #df25321f);
+}
+.neuro-archive-context-host .pcm-context-actions,
+.neuro-archive-context-host .pcm-context-chip-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+}
+.neuro-archive-context-host .pcm-context-menu-surface section {
+  margin-top: 8px;
+  padding-top: 7px;
+  border-top: 1px solid var(--line, #df253247);
+}
+.neuro-archive-context-host .pcm-context-menu-surface section > small {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--muted, #b8aeb6);
+  font-size: 0.72em;
+  font-weight: 800;
+}
+.neuro-archive-context-host .pcm-context-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.neuro-archive-context-host .pcm-context-tag-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 6px;
+  margin-top: 8px;
+}
+.neuro-archive-context-host .pcm-context-tag-editor input {
+  min-width: 0;
+  min-height: 34px;
+  padding: 0 8px;
+  color: var(--ink, #f0e9df);
+  background: var(--field, #08090c);
+  border: 1px solid var(--line, #df253247);
+  border-radius: 7px;
+}
+.neuro-archive-context-host .pcm-context-delete {
+  width: 100%;
+  margin-top: 8px;
+  color: #ec887c;
+}
+
+@media (max-width: 760px) {
+  #pcm-root .pcm-contact-toolbar {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 520px) {
+  #pcm-root .pcm-contact-toolbar {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 2.8.7 — contact messaging */
+#pcm-root .pcm-contact-comms header {
+  align-items: flex-start;
+}
+#pcm-root .pcm-contact-comms header small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.35;
+}
+#pcm-root .pcm-message-thread {
+  display: flex;
+  max-height: 280px;
+  flex-direction: column;
+  gap: 7px;
+  margin: 10px 0;
+  padding: 10px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--field) 82%, transparent);
+}
+#pcm-root .pcm-message {
+  width: min(78%, 720px);
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  background: var(--panel2);
+}
+#pcm-root .pcm-message.is-outgoing {
+  align-self: flex-end;
+  border-color: var(--gold);
+  box-shadow: inset -2px 0 0 var(--gold);
+}
+#pcm-root .pcm-message.is-incoming {
+  align-self: flex-start;
+  border-color: var(--teal);
+  box-shadow: inset 2px 0 0 var(--teal);
+}
+#pcm-root .pcm-message header {
+  display: flex;
+  min-height: 0;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+#pcm-root .pcm-message header b {
+  color: var(--heading);
+  font-size: 11px;
+}
+#pcm-root .pcm-message time {
+  color: var(--muted);
+  font: 9px/1.2 Consolas, "Roboto Mono", monospace;
+}
+#pcm-root .pcm-message p {
+  margin: 0;
+  line-height: 1.45;
+}
+#pcm-root .pcm-message-composer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: stretch;
+}
+#pcm-root .pcm-message-composer textarea {
+  min-height: 72px;
+  resize: vertical;
+  color: var(--ink);
+  background: var(--field);
+  border: 1px solid var(--line);
+}
+#pcm-root .pcm-message-composer button {
+  min-width: 132px;
+}
+#pcm-root .pcm-message-empty {
+  margin: 8px 0;
+}
+@media (max-width: 720px) {
+  #pcm-root .pcm-message {
+    width: 92%;
+  }
+  #pcm-root .pcm-message-composer {
+    grid-template-columns: 1fr;
+  }
+  #pcm-root .pcm-message-composer button {
+    width: 100%;
+  }
+}

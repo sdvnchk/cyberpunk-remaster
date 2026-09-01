@@ -2056,3 +2056,94 @@ test("author update delegates an installed-module run to the workspace", async (
   assert.equal(path.resolve(delegated.cwd), path.resolve(workspace));
   assert.equal(path.resolve(delegated.source), path.resolve(installed));
 });
+
+test("global implant capacity is 7/7/7 and PKT raises only internal/external to 14", () => {
+  const makeInstalled = (id, implantType, extraFlags = {}) =>
+    fakeItem({
+      id,
+      flags: {
+        "cyberpunk-remaster": {
+          cyberware: true,
+          installed: true,
+          implantType,
+          ...extraFlags,
+        },
+      },
+    });
+
+  const actor = {
+    items: [
+      ...Array.from({ length: 7 }, (_, i) => makeInstalled(`int-${i}`, "internal")),
+      ...Array.from({ length: 7 }, (_, i) => makeInstalled(`ext-${i}`, "external")),
+      ...Array.from({ length: 7 }, (_, i) => makeInstalled(`fashion-${i}`, "fashion")),
+    ],
+  };
+
+  const internalCandidate = fakeItem({
+    id: "int-new",
+    flags: { "cyberpunk-remaster": { cyberware: true, implantType: "internal" } },
+  });
+  const externalCandidate = fakeItem({
+    id: "ext-new",
+    flags: { "cyberpunk-remaster": { cyberware: true, implantType: "external" } },
+  });
+  const fashionCandidate = fakeItem({
+    id: "fashion-new",
+    flags: { "cyberpunk-remaster": { cyberware: true, implantType: "fashion" } },
+  });
+
+  assert.match(CyberwareTab.installationValidation(actor, internalCandidate), /7/u);
+  assert.match(CyberwareTab.installationValidation(actor, externalCandidate), /7/u);
+  assert.match(CyberwareTab.installationValidation(actor, fashionCandidate), /7/u);
+
+  actor.items.push(makeInstalled("pkt", "base", { pktBody: true }));
+  assert.equal(CyberwareTab.installationValidation(actor, internalCandidate), null);
+  assert.equal(CyberwareTab.installationValidation(actor, externalCandidate), null);
+  assert.match(CyberwareTab.installationValidation(actor, fashionCandidate), /7/u);
+
+  assert.deepEqual(CyberwareTab.implantCapacity(actor, "internal"), { used: 7, limit: 14, over: false });
+  assert.deepEqual(CyberwareTab.implantCapacity(actor, "external"), { used: 7, limit: 14, over: false });
+  assert.deepEqual(CyberwareTab.implantCapacity(actor, "fashion"), { used: 7, limit: 7, over: false });
+
+  actor.items.push(
+    ...Array.from({ length: 7 }, (_, i) => makeInstalled(`pkt-int-${i}`, "internal")),
+    ...Array.from({ length: 7 }, (_, i) => makeInstalled(`pkt-ext-${i}`, "external")),
+  );
+  assert.deepEqual(CyberwareTab.implantCapacity(actor, "internal"), { used: 14, limit: 14, over: false });
+  assert.deepEqual(CyberwareTab.implantCapacity(actor, "external"), { used: 14, limit: 14, over: false });
+  assert.match(CyberwareTab.installationValidation(actor, internalCandidate), /14/u);
+  assert.match(CyberwareTab.installationValidation(actor, externalCandidate), /14/u);
+});
+
+test("PKT cannot be removed while internal or external implants rely on the expanded capacity", () => {
+  const pkt = fakeItem({
+    id: "pkt",
+    flags: {
+      "cyberpunk-remaster": {
+        cyberware: true,
+        installed: true,
+        implantType: "base",
+        pktBody: true,
+      },
+    },
+  });
+  const actor = {
+    items: [
+      pkt,
+      ...Array.from({ length: 8 }, (_, i) =>
+        fakeItem({
+          id: `int-${i}`,
+          flags: {
+            "cyberpunk-remaster": {
+              cyberware: true,
+              installed: true,
+              implantType: "internal",
+            },
+          },
+        }),
+      ),
+    ],
+  };
+
+  assert.match(CyberwareTab.removalValidation(actor, pkt), /8.*7|7.*8/u);
+});

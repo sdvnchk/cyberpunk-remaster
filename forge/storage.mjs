@@ -13,7 +13,7 @@ function plain(value) {
 
 export function registerForgeSettings() {
   game.settings.register(MODULE_ID, SETTINGS.customPresets, {
-    name: "Кузница: пользовательские пресеты",
+    name: "Киберпанк-Кузница NPC: пользовательские пресеты",
     hint: "Скрытое хранилище пресетов ведущего.",
     scope: "world",
     config: false,
@@ -21,7 +21,7 @@ export function registerForgeSettings() {
     default: { entries: {} },
   });
   game.settings.register(MODULE_ID, SETTINGS.lastForm, {
-    name: "Кузница: последняя форма",
+    name: "Киберпанк-Кузница NPC: последняя форма",
     hint: "Последние безопасные параметры текущего пользователя.",
     scope: "user",
     config: false,
@@ -29,7 +29,7 @@ export function registerForgeSettings() {
     default: {},
   });
   game.settings.register(MODULE_ID, SETTINGS.recentHistory, {
-    name: "Кузница: история",
+    name: "Киберпанк-Кузница NPC: история",
     hint: "Последние созданные Кузницей NPC.",
     scope: "user",
     config: false,

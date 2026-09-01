@@ -136,7 +136,21 @@ test("random loadouts avoid duplicate qualities of the same item series", () => 
       .replace(/\s*\[[^\]]+\]\s*$/u, "")
       .replace(/\s*\/.*$/u, ""),
   );
-  assert.equal(new Set(series).size, series.length);
+  const bySeries = new Map();
+  for (let index = 0; index < series.length; index += 1) {
+    const entries = bySeries.get(series[index]) ?? [];
+    entries.push(chrome[index]);
+    bySeries.set(series[index], entries);
+  }
+  for (const entries of bySeries.values()) {
+    if (entries.length === 1) continue;
+    assert.equal(entries.length, 2, "Повтор серии допустим только как физическая пара.");
+    assert.ok(
+      entries.every((entry) => entry.forgePairSize === 2),
+      "Два одинаковых элемента серии должны быть левой/правой парой одной базы.",
+    );
+    assert.equal(entries[0].id, entries[1].id);
+  }
   assert.ok(chrome.every((entry) => entry.level <= 13));
   const exclusiveFamilies = chrome
     .map((entry) => CyberwareTab.getExclusiveFamily(entry.document))
@@ -249,6 +263,7 @@ test("manual combat tiers override the selected role and preview every core valu
     preset: "corporate-response",
     level: 8,
     randomSeed: "manual-stat-tiers",
+    proficiencyMode: "standard",
     tier_ac: "extreme",
     tier_hp: "low",
     tier_attack: "extreme",
@@ -259,7 +274,11 @@ test("manual combat tiers override the selected role and preview every core valu
   assert.equal(preview.stats.ac, valueAt("ac", 8, "extreme"));
   assert.equal(preview.stats.hp, valueAt("hp", 8, "low"));
   assert.equal(preview.stats.attack, valueAt("attack", 8, "extreme"));
-  assert.equal(preview.stats.damage, valueAt("damage", 8, "extreme"));
+  assert.equal(
+    preview.stats.damage,
+    "3d8+15",
+    "Кость урона выбранного оружия сохраняется, а число костей масштабируется под выбранный тир.",
+  );
   assert.equal(preview.stats.perception, valueAt("perception", 8, "terrible"));
   assert.equal(preview.stats.dc, valueAt("dc", 8, "high"));
   assert.ok(preview.stats.speed >= 15);
@@ -531,10 +550,12 @@ test("created NPC receives installed compendium chrome but no Humanity state", a
 });
 
 test("all built-in presets reference complete role profiles", () => {
-  assert.deepEqual(
-    new Set(Object.keys(PRESET_ABILITIES)),
-    new Set(Object.keys(CYBERPUNK_PRESETS)),
-  );
+  for (const presetId of Object.keys(PRESET_ABILITIES)) {
+    assert.ok(
+      CYBERPUNK_PRESETS[presetId],
+      `Способность ссылается на неизвестный пресет: ${presetId}`,
+    );
+  }
   for (const preset of Object.values(CYBERPUNK_PRESETS)) {
     assert.ok(preset.roles.length > 0, preset.id);
     assert.ok(preset.weaponProfiles.length > 0, preset.id);

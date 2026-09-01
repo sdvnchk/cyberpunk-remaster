@@ -414,7 +414,7 @@
 
   {{#if internals.length}}
   <section class="cw-section">
-    <h3 class="cw-section-heading">Внутренние</h3>
+    <h3 class="cw-section-heading cw-section-heading-with-capacity">Внутренние <span class="cw-capacity-indicator {{#if internalCapacity.over}}over{{/if}}" title="Внутренние импланты: {{internalCapacity.used}} из {{internalCapacity.limit}}"><b>{{internalCapacity.used}}/{{internalCapacity.limit}}</b></span></h3>
     <div class="cw-simple-list">
       {{#each internals}}
       <div class="cw-item-row" data-item-id="{{id}}">
@@ -436,7 +436,7 @@
 
   {{#if externals.length}}
   <section class="cw-section">
-    <h3 class="cw-section-heading">Внешние</h3>
+    <h3 class="cw-section-heading cw-section-heading-with-capacity">Внешние <span class="cw-capacity-indicator {{#if externalCapacity.over}}over{{/if}}" title="Внешние импланты: {{externalCapacity.used}} из {{externalCapacity.limit}}"><b>{{externalCapacity.used}}/{{externalCapacity.limit}}</b></span></h3>
     <div class="cw-simple-list">
       {{#each externals}}
       <div class="cw-item-row" data-item-id="{{id}}">
@@ -458,7 +458,7 @@
 
   {{#if fashion.length}}
   <section class="cw-section">
-    <h3 class="cw-section-heading">Стилевые</h3>
+    <h3 class="cw-section-heading cw-section-heading-with-capacity">Стилевые <span class="cw-capacity-indicator {{#if fashionCapacity.over}}over{{/if}}" title="Стилевые импланты: {{fashionCapacity.used}} из {{fashionCapacity.limit}}"><b>{{fashionCapacity.used}}/{{fashionCapacity.limit}}</b></span></h3>
     <div class="cw-simple-list">
       {{#each fashion}}
       <div class="cw-item-row" data-item-id="{{id}}">

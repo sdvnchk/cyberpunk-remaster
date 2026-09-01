@@ -2,7 +2,6 @@ import { pick } from "./random.mjs";
 
 export const FALLBACK_SKILL_SLUGS = Object.freeze([
   "acrobatics",
-  "arcana",
   "athletics",
   "computers",
   "crafting",
@@ -10,11 +9,8 @@ export const FALLBACK_SKILL_SLUGS = Object.freeze([
   "diplomacy",
   "intimidation",
   "medicine",
-  "nature",
-  "occultism",
   "performance",
   "piloting",
-  "religion",
   "society",
   "stealth",
   "survival",
@@ -48,9 +44,9 @@ const PRESET_SKILLS = Object.freeze({
   "street-ripperdoc": ["medicine", "crafting", "deception", "computers"],
   solo: ["athletics", "acrobatics", "survival", "stealth"],
   fixer: ["diplomacy", "deception", "society", "intimidation"],
-  nomad: ["piloting", "survival", "crafting", "nature"],
+  nomad: ["piloting", "survival", "crafting", "athletics"],
   investigator: ["society", "deception", "diplomacy", "computers"],
-  netrunner: ["computers", "arcana", "society", "stealth"],
+  netrunner: ["computers", "crafting", "society", "stealth"],
   technician: ["crafting", "computers", "thievery", "piloting"],
   medic: ["medicine", "crafting", "diplomacy", "survival"],
   cyberpsycho: ["athletics", "intimidation", "acrobatics", "survival"],
@@ -343,10 +339,11 @@ export function ammunitionQuantity(
       intensity === "minimal"
         ? 1
         : intensity === "rich"
-          ? pick([2, 3], random)
+          ? pick([3, 4, 5], random)
           : 2;
     return sourceQuantity * magazines;
   }
-  const maximum = intensity === "minimal" ? 2 : intensity === "rich" ? 4 : 3;
+  if (intensity === "rich") return 4 + Math.max(0, Math.floor(random() * 5));
+  const maximum = intensity === "minimal" ? 2 : 3;
   return 1 + Math.max(1, Math.floor(random() * maximum));
 }
