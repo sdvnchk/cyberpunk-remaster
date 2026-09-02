@@ -67,7 +67,7 @@ test("Neuro Archive registers a public module API", () => {
   assert.equal(typeof init, "function");
   init();
   assert.equal(typeof moduleRecord.api.neuroArchive.open, "function");
-  assert.equal(moduleRecord.api.neuroArchive.version, "4.2.0");
+  assert.equal(moduleRecord.api.neuroArchive.version, "4.3.0");
   assert.equal(typeof globalThis.CyberpunkRemaster.forge, "function");
   assert.equal(typeof globalThis.CyberpunkRemaster.archive, "function");
 });

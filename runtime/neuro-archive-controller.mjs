@@ -1,5 +1,5 @@
 /*
- * Нейро-Архив — модульная версия Нейро-Архива 4.2.0.
+ * Нейро-Архив — модульная версия Нейро-Архива 4.3.0.
  *
  * Данные хранятся в собственном пространстве cyberpunkRemaster.neuroArchive.
  * Старый personalChronicleMacro.data читается как резервный источник, поэтому
@@ -10,6 +10,21 @@ import {
   NEURO_ARCHIVE_VARIANT,
   NEURO_ARCHIVE_VERSION,
 } from "./neuro-archive-constants.mjs";
+import {
+  canonicalLocalKey,
+  readArchiveAppearance,
+  readUnifiedLocalData,
+  readUnifiedServerData,
+  writeArchiveAppearance,
+  writeUnifiedServerData,
+} from "./neuro-archive-store.mjs";
+import { applyArchiveTextScale, observeArchiveTextScale } from "./archive-ui-utils.mjs";
+
+const CANONICAL_ARCHIVE_PATH = "flags.cyberpunkRemaster.neuroArchive.data";
+// Legacy source probes are implemented by neuro-archive-store.mjs:
+// flags.cyberpunkRemaster?.neuroArchive?.data
+// flags.personalChronicleMacro?.data
+// flags.nightCityFieldArchive?.data
 
 export function selectContactMessageRecipientIds({
   users = [],
@@ -54,6 +69,87 @@ export function contactMessageDirection({
   return isGM && archiveOwner && currentUser && archiveOwner !== currentUser
     ? "in"
     : "out";
+}
+
+export function collectGmNeuroThreads({
+  archives = [],
+  currentUserId = "",
+  readAt = {},
+} = {}) {
+  const currentUser = String(currentUserId || "");
+  const reads = readAt && typeof readAt === "object" ? readAt : {};
+  const threads = [];
+
+  for (const archive of Array.from(archives ?? [])) {
+    const ownerUserId = String(archive?.userId ?? "");
+    if (!ownerUserId || ownerUserId === currentUser || archive?.isGM) continue;
+    const ownerUserName = String(archive?.userName ?? "Игрок");
+    const notebooks = archive?.store?.notebooks ?? {};
+
+    for (const [actorIdRaw, book] of Object.entries(notebooks)) {
+      const actorId = String(actorIdRaw || book?.actorId || "");
+      if (!actorId) continue;
+      const actorName = String(book?.actorName ?? "Оперативник");
+      const actorImg = String(book?.actorImg ?? "");
+      const people = Array.isArray(book?.entries?.people) ? book.entries.people : [];
+
+      for (const person of people) {
+        const contactId = String(person?.id ?? "");
+        if (!contactId) continue;
+        const key = `${ownerUserId}:${actorId}:${contactId}`;
+        const messages = (Array.isArray(person?.messages) ? person.messages : [])
+          .filter((message) => String(message?.body ?? "").trim())
+          .map((message) => ({
+            ...message,
+            id: String(message?.id ?? ""),
+            direction: message?.direction === "in" ? "in" : "out",
+            body: String(message?.body ?? ""),
+            createdAt: String(message?.createdAt ?? ""),
+          }))
+          .sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
+        const lastRead = String(reads[key] ?? "");
+        const unread = messages.filter(
+          (message) =>
+            message.direction === "out" &&
+            (!lastRead || String(message.createdAt) > lastRead),
+        ).length;
+        const latestMessage = messages.at(-1) ?? null;
+        threads.push({
+          key,
+          ownerUserId,
+          ownerUserName,
+          actorId,
+          actorName,
+          actorImg,
+          contactId,
+          contactName: String(person?.title ?? "Контакт"),
+          contactImage: String(person?.image ?? ""),
+          contactRole: String(person?.role ?? ""),
+          contactAttitude: String(person?.attitude ?? ""),
+          messages,
+          messageCount: messages.length,
+          unread,
+          latestMessage,
+          latestAt: String(
+            latestMessage?.createdAt ?? person?.updatedAt ?? person?.createdAt ?? "",
+          ),
+        });
+      }
+    }
+  }
+
+  return threads.sort((a, b) => {
+    if (b.unread !== a.unread) return b.unread - a.unread;
+    if (Boolean(b.messageCount) !== Boolean(a.messageCount))
+      return Number(Boolean(b.messageCount)) - Number(Boolean(a.messageCount));
+    const recent = String(b.latestAt).localeCompare(String(a.latestAt));
+    if (recent) return recent;
+    const byPlayer = a.ownerUserName.localeCompare(b.ownerUserName, "ru");
+    if (byPlayer) return byPlayer;
+    const byActor = a.actorName.localeCompare(b.actorName, "ru");
+    if (byActor) return byActor;
+    return a.contactName.localeCompare(b.contactName, "ru");
+  });
 }
 
 export async function captureDataUrlLooksUsable(dataUrl) {
@@ -400,9 +496,26 @@ export function createNeuroArchiveController(
       return String(a.name).localeCompare(String(b.name), "ru");
     });
   const localKeyFor = (ownerId) =>
-    ownerId === userId
-      ? `cyberpunk-remaster:neuro-archive:${worldId}:${userId}`
-      : `cyberpunk-remaster:neuro-archive:${worldId}:gm-${userId}:owner-${ownerId}`;
+    canonicalLocalKey({ worldId, ownerId, currentUserId: userId });
+  const gmReadLocalKey = `cyberpunk-remaster:neuro-archive:${worldId}:${userId}:gm-neuro-read-v1`;
+
+  function loadGmReadAt() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(gmReadLocalKey) || "{}");
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch (_error) {
+      return {};
+    }
+  }
+
+  function saveGmReadAt() {
+    if (!game.user?.isGM) return;
+    try {
+      localStorage.setItem(gmReadLocalKey, JSON.stringify(state.gmReadAt ?? {}));
+    } catch (error) {
+      console.warn("Нейро-архив RED: не удалось сохранить отметки прочтения GM", error);
+    }
+  }
 
   function blankStore() {
     return {
@@ -579,12 +692,7 @@ export function createNeuroArchiveController(
   }
 
   function serverData(user = game.user) {
-    const flags = user?.flags ?? user?.data?.flags ?? {};
-    return (
-      flags.cyberpunkRemaster?.neuroArchive?.data ??
-      flags.personalChronicleMacro?.data ??
-      null
-    );
+    return readUnifiedServerData(user);
   }
 
   function legacyLocalKeyFor(ownerId) {
@@ -594,13 +702,12 @@ export function createNeuroArchiveController(
   }
 
   function localData(ownerId) {
-    try {
-      const current = localStorage.getItem(localKeyFor(ownerId));
-      const legacy = current ? null : localStorage.getItem(legacyLocalKeyFor(ownerId));
-      return JSON.parse(current || legacy || "null");
-    } catch (_error) {
-      return null;
-    }
+    const legacyKeys = [legacyLocalKeyFor(ownerId)];
+    if (ownerId === userId) legacyKeys.push(`night-city-field-archive:${worldId}:${userId}`);
+    return readUnifiedLocalData(globalThis.localStorage, {
+      canonicalKey: localKeyFor(ownerId),
+      legacyKeys,
+    });
   }
 
   function archiveUserById(id) {
@@ -658,6 +765,13 @@ export function createNeuroArchiveController(
     contactRoleFilter: "all",
     contactTagFilter: "all",
     contactSort: "recent",
+    gmUserId: "",
+    gmActorId: "",
+    gmContactId: "",
+    gmMessageText: "",
+    gmReadAt: loadGmReadAt(),
+    gmLastOpenedKey: "",
+    gmLiveMessages: [],
     quickEditPersonId: null,
     contextMenu: null,
     contextTagEditorOpen: false,
@@ -697,8 +811,9 @@ export function createNeuroArchiveController(
 
   function bookAppearance(book = notebook()) {
     if (!book) return normalizeAppearance();
-    book.appearance = normalizeAppearance(book.appearance);
-    return book.appearance;
+    const appearance = normalizeAppearance(readArchiveAppearance(book, "neuro"));
+    writeArchiveAppearance(book, "neuro", appearance);
+    return appearance;
   }
 
   function applyAppearance(book = notebook()) {
@@ -727,7 +842,8 @@ export function createNeuroArchiveController(
       "--chrome": mixColors(theme.background, "#000000", 0.28),
       "--sidebar": mixColors(theme.background, "#000000", 0.18),
       "--field": colorWithAlpha(theme.background, 0.66),
-      "--font-size": `${theme.fontSize}px`,
+      "--font-size": `${DEFAULT_APPEARANCE.fontSize}px`,
+      "--archive-user-font-size": `${theme.fontSize}px`,
     };
     for (const [property, value] of Object.entries(variables))
       state.root.style.setProperty(property, value);
@@ -744,6 +860,7 @@ export function createNeuroArchiveController(
     };
     for (const [property, value] of Object.entries(applicationVariables))
       application?.style?.setProperty?.(property, value);
+    applyArchiveTextScale(state.root, { fontSize: theme.fontSize, baseFontSize: DEFAULT_APPEARANCE.fontSize });
   }
 
   function findEntry(element) {
@@ -887,7 +1004,8 @@ export function createNeuroArchiveController(
         throw new Error("Недостаточно прав для чужого архива");
       if (typeof owner?.update !== "function")
         throw new Error("User.update недоступен");
-      await owner.update({ "flags.cyberpunkRemaster.neuroArchive.data": payload });
+      // Canonical destination: flags.cyberpunkRemaster.neuroArchive.data
+      await writeUnifiedServerData(owner, payload);
       state.storageMode = "server";
       if (state.archiveUserId === ownerId && state.revision === revision)
         state.pendingServer = false;
@@ -926,12 +1044,23 @@ export function createNeuroArchiveController(
     return !state.saving;
   }
 
-  async function switchArchiveUser(ownerId) {
-    if (ownerId === state.archiveUserId) return;
-    if (ownerId !== userId && !game.user?.isGM)
-      return notify("Чужие архивы доступны только ГМу.", "error");
+  async function switchArchiveUser(
+    ownerId,
+    { section = null, renderNow = true } = {},
+  ) {
+    if (ownerId === state.archiveUserId) {
+      if (section) {
+        resetView(section);
+        if (renderNow) render();
+      }
+      return true;
+    }
+    if (ownerId !== userId && !game.user?.isGM) {
+      notify("Чужие архивы доступны только ГМу.", "error");
+      return false;
+    }
     clearTimeout(state.saveTimer);
-    if (!(await flushPendingSave())) return;
+    if (!(await flushPendingSave())) return false;
     clearTimeout(state.saveTimer);
     state.saveAgain = false;
     const owner = archiveUserById(ownerId);
@@ -948,13 +1077,14 @@ export function createNeuroArchiveController(
     state.search = "";
     state.settingsOpen = false;
     state.helpOpen = false;
-    resetView("dashboard");
-    render();
+    resetView(section ?? "dashboard");
+    if (renderNow) render();
     if (prepared.restoredLocal)
       notify(
         `Восстановлен свежий локальный черновик архива «${owner.name}».`,
         "warn",
       );
+    return true;
   }
 
   function opt(value, current, label = value) {
@@ -1592,6 +1722,257 @@ export function createNeuroArchiveController(
     </div>`;
   }
 
+  function rememberGmLiveMessage(payload) {
+    if (!game.user?.isGM || !payload || typeof payload !== "object") return;
+    const id = String(payload.id ?? "");
+    if (!id) return;
+    if (state.gmLiveMessages.some((message) => String(message.id ?? "") === id))
+      return;
+    state.gmLiveMessages.push(clone(payload));
+    if (state.gmLiveMessages.length > 240)
+      state.gmLiveMessages.splice(0, state.gmLiveMessages.length - 240);
+  }
+
+  function mergeGmLiveMessages(store, ownerId) {
+    const data = clone(store ?? blankStore());
+    for (const payload of state.gmLiveMessages) {
+      if (String(payload?.archiveUserId ?? "") !== String(ownerId ?? "")) continue;
+      const actorId = String(payload?.archiveActorId ?? payload?.sourceActorId ?? "");
+      const contactId = String(payload?.contactId ?? "");
+      const book = data.notebooks?.[actorId];
+      const person = book?.entries?.people?.find(
+        (entry) => String(entry.id ?? "") === contactId,
+      );
+      if (!person) continue;
+      person.messages ??= [];
+      if (person.messages.some((message) => String(message.id ?? "") === String(payload.id ?? "")))
+        continue;
+      person.messages.push({
+        id: String(payload.id || uid()),
+        direction: payload.direction === "in" ? "in" : "out",
+        body: String(payload.body ?? ""),
+        createdAt: String(payload.createdAt ?? now()),
+        senderUserId: String(payload.senderUserId ?? ""),
+        senderName: String(payload.senderName ?? ""),
+        sourceActorId: String(payload.sourceActorId ?? ""),
+        sourceActorName: String(payload.sourceActorName ?? ""),
+        archiveUserId: String(payload.archiveUserId ?? ownerId ?? ""),
+        archiveActorId: actorId,
+        contactId,
+        contactName: String(payload.contactName ?? person.title ?? "Контакт"),
+      });
+    }
+    return data;
+  }
+
+  function gmConversationArchives() {
+    if (!game.user?.isGM) return [];
+    return state.archiveUsers.map((user) => {
+      const ownerId = String(user?.id ?? user?._id ?? "");
+      const baseStore =
+        ownerId === String(state.archiveUserId ?? "")
+          ? state.store
+          : normalize(serverData(user));
+      return {
+        userId: ownerId,
+        userName: String(user?.name ?? "Игрок"),
+        isGM: Boolean(user?.isGM),
+        store: mergeGmLiveMessages(baseStore, ownerId),
+      };
+    });
+  }
+
+  function gmConversationThreads() {
+    if (!game.user?.isGM) return [];
+    return collectGmNeuroThreads({
+      archives: gmConversationArchives(),
+      currentUserId: userId,
+      readAt: state.gmReadAt,
+    });
+  }
+
+  function ensureGmSelection(threads) {
+    if (!threads.length) {
+      state.gmUserId = "";
+      state.gmActorId = "";
+      state.gmContactId = "";
+      return null;
+    }
+    const userIds = [...new Set(threads.map((thread) => thread.ownerUserId))];
+    if (!userIds.includes(state.gmUserId)) state.gmUserId = userIds[0];
+
+    const userThreads = threads.filter(
+      (thread) => thread.ownerUserId === state.gmUserId,
+    );
+    const actorIds = [...new Set(userThreads.map((thread) => thread.actorId))];
+    if (!actorIds.includes(state.gmActorId)) state.gmActorId = actorIds[0] ?? "";
+
+    const actorThreads = userThreads.filter(
+      (thread) => thread.actorId === state.gmActorId,
+    );
+    const contactIds = actorThreads.map((thread) => thread.contactId);
+    if (!contactIds.includes(state.gmContactId))
+      state.gmContactId = contactIds[0] ?? "";
+
+    return (
+      actorThreads.find((thread) => thread.contactId === state.gmContactId) ??
+      actorThreads[0] ??
+      userThreads[0] ??
+      threads[0]
+    );
+  }
+
+  function markGmThreadRead(thread) {
+    if (!game.user?.isGM || !thread) return;
+    const latestPlayerMessage = thread.messages
+      .filter((message) => message.direction === "out")
+      .at(-1);
+    if (latestPlayerMessage?.createdAt) {
+      const previous = String(state.gmReadAt?.[thread.key] ?? "");
+      if (!previous || String(latestPlayerMessage.createdAt) > previous) {
+        state.gmReadAt[thread.key] = String(latestPlayerMessage.createdAt);
+        saveGmReadAt();
+      }
+    }
+    state.gmLastOpenedKey = thread.key;
+  }
+
+  function gmUnreadTotal() {
+    return gmConversationThreads().reduce((sum, thread) => sum + thread.unread, 0);
+  }
+
+  function gmNetworkView() {
+    if (!game.user?.isGM)
+      return `<div class="pcm-empty"><b>${fa("fa-lock")}</b><h2>Доступ только для GM</h2><p>GM // НЕЙРО-СЕТЬ скрыта от игроков.</p></div>`;
+
+    let threads = gmConversationThreads();
+    let selected = ensureGmSelection(threads);
+    if (selected && (state.gmLastOpenedKey !== selected.key || selected.unread > 0)) {
+      markGmThreadRead(selected);
+      threads = gmConversationThreads();
+      selected = ensureGmSelection(threads);
+    }
+
+    if (!threads.length || !selected) {
+      return `<section class="pcm-gm-network"><header class="pcm-gm-network-head"><div><small>// MASTER CONTROL SPACE</small><h1>${fa("fa-tower-broadcast")} GM // НЕЙРО-СЕТЬ</h1><p>Здесь появятся контакты из синхронизированных архивов игроков. GM сможет начать разговор от имени любого контакта.</p></div></header><div class="pcm-empty"><b>${fa("fa-satellite-dish")}</b><h2>Нет доступных каналов</h2><p>У игроков пока нет синхронизированных контактов в Нейро-Архиве.</p></div></section>`;
+    }
+
+    const playerMap = new Map();
+    for (const thread of threads) {
+      const current = playerMap.get(thread.ownerUserId) ?? {
+        id: thread.ownerUserId,
+        name: thread.ownerUserName,
+        contacts: 0,
+        unread: 0,
+        latestAt: "",
+      };
+      current.contacts += 1;
+      current.unread += thread.unread;
+      if (String(thread.latestAt) > String(current.latestAt))
+        current.latestAt = thread.latestAt;
+      playerMap.set(thread.ownerUserId, current);
+    }
+    const players = [...playerMap.values()].sort(
+      (a, b) => b.unread - a.unread || String(b.latestAt).localeCompare(String(a.latestAt)) || a.name.localeCompare(b.name, "ru"),
+    );
+    const selectedUserThreads = threads.filter(
+      (thread) => thread.ownerUserId === state.gmUserId,
+    );
+    const actorMap = new Map();
+    for (const thread of selectedUserThreads) {
+      if (!actorMap.has(thread.actorId))
+        actorMap.set(thread.actorId, {
+          id: thread.actorId,
+          name: thread.actorName,
+          img: thread.actorImg,
+        });
+    }
+    const actors = [...actorMap.values()].sort((a, b) => a.name.localeCompare(b.name, "ru"));
+    const contactThreads = selectedUserThreads.filter(
+      (thread) => thread.actorId === state.gmActorId,
+    );
+    const totalUnread = threads.reduce((sum, thread) => sum + thread.unread, 0);
+    const selectedMessages = selected.messages;
+    const messageHtml = selectedMessages.length
+      ? selectedMessages
+          .map((message) => {
+            const fromPlayer = message.direction === "out";
+            const author = fromPlayer ? selected.actorName : selected.contactName;
+            return `<article class="pcm-message ${fromPlayer ? "is-incoming" : "is-outgoing"}"><header><b>${esc(author)}</b><time>${esc(String(message.createdAt || "").replace("T", " ").slice(0, 16))}</time></header><p>${esc(message.body).replaceAll("\n", "<br>")}</p></article>`;
+          })
+          .join("")
+      : `<div class="pcm-gm-empty-thread"><b>${fa("fa-satellite-dish")}</b><h3>Канал ещё не использовался</h3><p>GM может начать разговор первым от имени «${esc(selected.contactName)}».</p></div>`;
+
+    return `<section class="pcm-gm-network">
+      <header class="pcm-gm-network-head"><div><small>// MASTER CONTROL SPACE</small><h1>${fa("fa-tower-broadcast")} GM // НЕЙРО-СЕТЬ</h1><p>Единый центр личных каналов игроков. Выбери игрока, оперативника и контакт — затем отвечай от имени NPC или начинай разговор первым.</p></div><div class="pcm-gm-network-stats"><span><b>${players.length}</b> игроков</span><span><b>${threads.length}</b> контактов</span><span class="${totalUnread ? "hot" : ""}"><b>${totalUnread}</b> непрочитано</span></div></header>
+      <div class="pcm-gm-network-grid">
+        <aside class="pcm-gm-player-list"><header><small>01 // ИГРОК</small><b>Каналы пользователей</b></header>${players
+          .map(
+            (player) => `<button class="${player.id === state.gmUserId ? "active" : ""}" data-action="gm-select-player" data-gm-player="${esc(player.id)}"><span><b>${esc(player.name)}</b><small>${player.contacts} контактов</small></span>${player.unread ? `<i>${player.unread}</i>` : ""}</button>`,
+          )
+          .join("")}</aside>
+        <section class="pcm-gm-contact-list"><header><div><small>02 // ОПЕРАТИВНИК</small><b>${esc(selected.ownerUserName)}</b></div><label><span>Персонаж</span><select data-gm-actor>${actors.map((actor) => opt(actor.id, state.gmActorId, actor.name)).join("")}</select></label></header><div>${contactThreads
+          .map((thread) => {
+            const preview = thread.latestMessage?.body || "Канал не использовался — GM может написать первым.";
+            return `<button class="${thread.contactId === state.gmContactId ? "active" : ""}" data-action="gm-select-contact" data-gm-contact="${esc(thread.contactId)}" data-gm-actor-id="${esc(thread.actorId)}"><span class="pcm-gm-contact-avatar">${thread.contactImage ? `<img src="${esc(thread.contactImage)}" alt="">` : sectionIcon("people")}</span><span class="pcm-gm-contact-copy"><b>${esc(thread.contactName)}</b><small>${esc([thread.contactRole, thread.contactAttitude].filter(Boolean).join(" · ") || thread.actorName)}</small><em>${short(preview, 80)}</em></span>${thread.unread ? `<i>${thread.unread}</i>` : ""}</button>`;
+          })
+          .join("")}</div></section>
+        <section class="pcm-gm-thread-pane" data-gm-thread-key="${esc(selected.key)}"><header><div class="pcm-gm-thread-avatar">${selected.contactImage ? `<img src="${esc(selected.contactImage)}" alt="">` : sectionIcon("people")}</div><div><small>03 // НЕЙРО-КАНАЛ</small><h2>${esc(selected.contactName)}</h2><p>${esc(selected.ownerUserName)} → ${esc(selected.actorName)}</p></div><button data-action="gm-open-contact" title="Открыть полное досье контакта">${fa("fa-address-card")} Досье</button></header><div class="pcm-message-thread pcm-gm-message-thread">${messageHtml}</div><div class="pcm-message-composer pcm-gm-message-composer"><textarea data-gm-message-input rows="4" placeholder="Ответить от имени ${esc(selected.contactName)}…">${esc(state.gmMessageText)}</textarea><button class="primary" data-action="send-gm-contact-message">${fa("fa-paper-plane")} ${selected.messageCount ? "Ответить" : "Начать связь"}</button></div><footer><span>${fa("fa-eye-slash")} Сообщения идут приватно игроку и GM через Foundry ChatMessage.</span><span>${selected.messageCount} сообщений</span></footer></section>
+      </div>
+    </section>`;
+  }
+
+  async function activateGmConversation(thread, { openDossier = false } = {}) {
+    if (!game.user?.isGM || !thread) return null;
+    if (
+      thread.ownerUserId === String(state.archiveUserId ?? "") &&
+      thread.ownerUserId !== userId &&
+      !state.pendingServer &&
+      !state.saving
+    ) {
+      const owner = archiveUserById(thread.ownerUserId);
+      const rawServer = serverData(owner);
+      if (rawServer) {
+        state.store = normalize(rawServer);
+        state.actors = actorArray(owner, state.store);
+        state.storageMode = "server";
+        state.revision = 0;
+      }
+    }
+    const switched = await switchArchiveUser(thread.ownerUserId, {
+      section: "gm-network",
+      renderNow: false,
+    });
+    if (!switched) return null;
+    if (!state.store.notebooks?.[thread.actorId]) {
+      notify("В архиве игрока больше нет выбранного оперативника.", "warn");
+      return null;
+    }
+    state.store.activeActorId = thread.actorId;
+    const actor = actorById(thread.actorId);
+    if (actor) ensureNotebook(actor);
+    const book = state.store.notebooks?.[thread.actorId];
+    const person = book?.entries?.people?.find(
+      (entry) => String(entry.id ?? "") === String(thread.contactId ?? ""),
+    );
+    if (!person) {
+      notify("Контакт больше не найден в архиве игрока.", "warn");
+      return null;
+    }
+    state.gmUserId = thread.ownerUserId;
+    state.gmActorId = thread.actorId;
+    state.gmContactId = thread.contactId;
+    markGmThreadRead(thread);
+    if (openDossier) {
+      resetView("people");
+      state.viewMode = "person";
+      state.viewId = person.id;
+    } else {
+      resetView("gm-network");
+    }
+    return person;
+  }
+
   function personOverview(book, person) {
     const locations = personLocationIds(person)
       .map((id) =>
@@ -1631,7 +2012,7 @@ export function createNeuroArchiveController(
       ${quickEdit ? personQuickEditPanel(book, person) : `<div class="pcm-detail-grid">
         ${person.gallery.length ? `<section class="pcm-detail-panel wide"><h3>${fa("fa-images")} Галерея контакта</h3><div class="pcm-gallery-view">${person.gallery.map((item) => `<button data-action="view-gallery-image" data-gallery-id="${item.id}"><img src="${esc(item.image)}" alt="${esc(item.caption)}"><span>${esc(item.caption || "Открыть изображение")}</span></button>`).join("")}</div></section>` : ""}
         <section class="pcm-detail-panel wide"><h3>${sectionIcon("locations")} Где пересекались</h3><div class="pcm-location-chips">${locations.length ? locations.map((location) => `<button data-action="view-location" data-location-id="${location.id}" data-entry-id="${location.id}">${sectionIcon("locations")} ${esc(location.title)}</button>`).join("") : '<span class="muted">Точки пока не связаны.</span>'}</div>${person.firstMet ? `<h4>Первая встреча</h4>${readText(person.firstMet)}` : ""}</section>
-        <section class="pcm-detail-panel wide pcm-contact-comms"><header><div><h3>${fa("fa-satellite-dish")} Нейро-связь</h3><small>${game.user?.isGM && state.archiveUserId !== userId ? `GM отвечает от имени контакта «${esc(person.title)}»; ответ сразу сохраняется в архиве игрока.` : "Сообщения сохраняются в досье контакта и дублируются адресатам через чат Foundry."}</small></div></header>${contactMessageThread(person)}<div class="pcm-message-composer"><textarea data-person-message-input rows="3" placeholder="${game.user?.isGM && state.archiveUserId !== userId ? `Ответить от имени ${esc(person.title)}…` : `Написать ${esc(person.title)}…`}"></textarea><button class="primary" data-action="send-person-message">${fa("fa-paper-plane")} ${game.user?.isGM && state.archiveUserId !== userId ? "Ответить" : "Отправить"}</button></div></section>
+        <section class="pcm-detail-panel wide pcm-contact-comms pcm-neuro-link-surface"><header><div><small>NEURAL CHANNEL // PRIVATE</small><h3>${fa("fa-satellite-dish")} НЕЙРО-СВЯЗЬ</h3><p>${game.user?.isGM && state.archiveUserId !== userId ? `GM отвечает от имени контакта «${esc(person.title)}»; ответ сразу сохраняется в архиве игрока.` : "Сообщения сохраняются в канале контакта и дублируются адресатам через приватный чат Foundry."}</p></div><span class="pcm-neuro-status ${Array.from(game?.users?.contents ?? game?.users ?? []).some((user) => user?.isGM && user?.active !== false) ? "online" : "offline"}">${Array.from(game?.users?.contents ?? game?.users ?? []).some((user) => user?.isGM && user?.active !== false) ? "GM LINK ONLINE" : "GM OFFLINE"}</span></header>${contactMessageThread(person)}<div class="pcm-message-composer pcm-neuro-compose"><textarea data-person-message-input rows="3" placeholder="${game.user?.isGM && state.archiveUserId !== userId ? `Ответить от имени ${esc(person.title)}…` : `Написать ${esc(person.title)}…`}"></textarea><button class="primary pcm-neuro-send" data-action="send-person-message">${fa("fa-paper-plane")} ${game.user?.isGM && state.archiveUserId !== userId ? "Ответить" : "Отправить"}</button></div></section>
         <section class="pcm-detail-panel"><header><h3>${sectionIcon("quests")} Гиги от контакта</h3><button data-action="add-person-gig">${fa("fa-plus")} Гиг</button></header>${related(gigs, "quests", "Связанных гигов нет.")}</section>
         <section class="pcm-detail-panel"><header><h3>${sectionIcon("clues")} Зацепки</h3><button data-action="add-person-clue">${fa("fa-plus")} Зацепка</button></header>${related(clues, "clues", "Связанных зацепок нет.")}</section>
         <section class="pcm-detail-panel"><header><h3>Мои заметки</h3></header>${readText(person.content, "Заметок о контакте пока нет.")}${person.relationship ? `<h4>Наши отношения</h4>${readText(person.relationship)}` : ""}</section>
@@ -1648,6 +2029,7 @@ export function createNeuroArchiveController(
   }
 
   function sectionView(book, key) {
+    if (key === "gm-network") return gmNetworkView();
     if (state.viewMode === "edit") {
       const entry = entryById(state.viewId);
       if (entry) return editorView(entry, book);
@@ -1716,7 +2098,7 @@ export function createNeuroArchiveController(
   function helpPanel() {
     if (!state.helpOpen) return "";
     const gmHelp = game.user?.isGM
-      ? `<section><h3>${fa("fa-user-shield")} Режим ГМа</h3><p>В поле <b>«Архив пользователя»</b> выбери игрока, а рядом — его оперативника. После этого ГМ может просматривать и полностью редактировать его архив. Сохранение уходит именно выбранному игроку. Если у игрока отображается <b>LOCAL</b> или <b>DRAFT</b>, сначала попроси его нажать <b>Ctrl+S</b>: несинхронизированный черновик с другого компьютера ГМ увидеть не может. Одновременное редактирование лучше не вести — победит последнее сохранение.</p></section>`
+      ? `<section><h3>${fa("fa-user-shield")} Режим ГМа</h3><p><b>GM // НЕЙРО-СЕТЬ</b> собирает в одном месте контакты всех синхронизированных архивов игроков. Выбери игрока, оперативника и контакт: можно читать канал, отвечать от имени NPC или начать разговор первым. Непрочитанные сообщения считаются отдельно для ведущего. Кнопка <b>«Досье»</b> открывает полную карточку контакта в архиве игрока. Старое поле <b>«Архив пользователя»</b> сохранено для ручного просмотра и редактирования всего архива. Если у игрока отображается <b>LOCAL</b> или <b>DRAFT</b>, сначала попроси его нажать <b>Ctrl+S</b>: несинхронизированный черновик с другого компьютера GM увидеть не может.</p></section>`
       : "";
     return `<div class="pcm-modal-backdrop" data-modal="help"><section class="pcm-help-panel" role="dialog" aria-label="Справка Нейро-архива">
       <header><div><small>// HELP DATABASE</small><h2>${fa("fa-circle-question")} Как пользоваться Нейро-архивом</h2></div><button data-action="close-help" title="Закрыть">${fa("fa-xmark")}</button></header>
@@ -2026,7 +2408,10 @@ export function createNeuroArchiveController(
       ? `<label class="pcm-owner" title="Открыть архив другого пользователя"><span>${fa("fa-user-shield")} Архив пользователя</span><select data-archive-user>${state.archiveUsers.map((user) => opt(user.id ?? user._id, state.archiveUserId, `${user.name}${user.isGM ? " [GM]" : ""}`)).join("")}</select></label>`
       : "";
     if (!state.actors.length) {
-      win.innerHTML = `<header class="pcm-top">${ownerSelector}<span class="pcm-spacer"></span></header><div class="pcm-no-actors"><h2>${fa("fa-triangle-exclamation")} Нет доступного оперативника</h2><p>Для пользователя «${esc(owner.name)}» не найден Actor типа character с правами владельца и нет сохранённых блокнотов.</p><button data-action="help">${fa("fa-circle-question")} Как пользоваться</button></div>${helpPanel()}`;
+      const gmNetwork = game.user?.isGM && state.section === "gm-network";
+      win.innerHTML = gmNetwork
+        ? `<header class="pcm-top">${ownerSelector}<div class="pcm-brand pcm-gm-brand"><div><small>// MASTER CONTROL</small><strong>GM // НЕЙРО-СЕТЬ</strong></div></div><span class="pcm-spacer"></span><button data-action="help">${fa("fa-circle-question")} <span>Помощь</span></button></header><main class="pcm-gm-standalone">${gmNetworkView()}</main>${helpPanel()}`
+        : `<header class="pcm-top">${ownerSelector}<span class="pcm-spacer"></span></header><div class="pcm-no-actors"><h2>${fa("fa-triangle-exclamation")} Нет доступного оперативника</h2><p>Для пользователя «${esc(owner.name)}» не найден Actor типа character с правами владельца и нет сохранённых блокнотов.</p>${game.user?.isGM ? `<button class="primary" data-action="nav" data-section="gm-network">${fa("fa-tower-broadcast")} GM // НЕЙРО-СЕТЬ</button>` : ""}<button data-action="help">${fa("fa-circle-question")} Как пользоваться</button></div>${helpPanel()}`;
       return;
     }
     const actor = actorById(state.store.activeActorId);
@@ -2039,6 +2424,7 @@ export function createNeuroArchiveController(
     );
     win.innerHTML = `<header class="pcm-top">${ownerSelector}<div class="pcm-brand"><img src="${esc(book.actorImg)}" alt=""><div><small>// НЕЙРО-АРХИВ ${esc(themeLabel)} ${esc(NEURO_ARCHIVE_VERSION)}</small><select data-actor>${state.actors.map((item) => opt(item.id ?? item._id, actor.id ?? actor._id, item.name)).join("")}</select></div></div><span data-save-badge data-mode="${state.storageMode}">${state.storageMode === "server" ? "SYNC ✓" : "LOCAL"}</span><button data-action="appearance" title="Вид и размер текста"><b>${fa("fa-palette")}</b><span>Вид</span></button><button class="pcm-save-now" data-action="save" title="Синхронизировать (Ctrl+S)"><b>${fa("fa-arrows-rotate")}</b><span>SYNC</span></button><button data-action="export" title="Экспорт JSON"><b>${fa("fa-file-export")}</b><span>Бэкап</span></button><button data-action="import" title="Импорт JSON"><b>${fa("fa-file-import")}</b><span>Импорт</span></button><input type="file" accept=".json,application/json" data-import hidden></header>
       <div class="pcm-layout"><aside>${nav("dashboard", "Обзор", "fa-table-columns")}
+        ${game.user?.isGM ? `<small class="pcm-caption pcm-gm-caption">GM CONTROL</small>${nav("gm-network", "GM // НЕЙРО-СЕТЬ", "fa-tower-broadcast", gmUnreadTotal())}` : ""}
         <small class="pcm-caption">КАРТОТЕКА</small>${Object.entries(SECTIONS)
           .map(([key, item]) => nav(key, item.label, item.icon, counts[key]))
           .join("")}
@@ -2741,14 +3127,21 @@ export function createNeuroArchiveController(
     const messages = Array.isArray(person.messages) ? person.messages : [];
     if (!messages.length)
       return '<p class="muted pcm-message-empty">Переписка пока пуста.</p>';
-    return `<div class="pcm-message-thread">${messages
+    return `<div class="pcm-message-thread pcm-neuro-history">${messages
       .slice()
       .sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)))
       .map(
-        (message) =>
-          `<article class="pcm-message ${message.direction === "in" ? "is-incoming" : "is-outgoing"}"><header><b>${message.direction === "in" ? esc(person.title) : esc(message.sourceActorName || notebook().actorName)}</b><time>${esc(String(message.createdAt || "").replace("T", " ").slice(0, 16))}</time></header><p>${esc(message.body).replaceAll("\n", "<br>")}</p></article>`,
+        (message) => {
+          const outgoing = message.direction !== "in";
+          return `<article class="pcm-message pcm-neuro-message ${message.direction === "in" ? "is-incoming incoming" : "is-outgoing mine"}"><header><b>${message.direction === "in" ? esc(person.title) : esc(message.sourceActorName || notebook().actorName)}</b><time>${esc(String(message.createdAt || "").replace("T", " ").slice(0, 16))}</time></header><p>${esc(message.body).replaceAll("\n", "<br>")}</p></article>`;
+        },
       )
       .join("")}</div>`;
+  }
+
+  function neuroLinkChatContent({ contactName, fromName, toName, text }) {
+    const body = esc(text || "").replaceAll("\n", "<br>");
+    return `<div class="night-city-neuro-link-message" style="padding:10px;border:1px solid #00d5d5;background:#0c1115;color:#e8f5f5"><div style="font:700 10px monospace;color:#38e1df;letter-spacing:.08em">НЕЙРО-СВЯЗЬ // ${esc(contactName || "КОНТАКТ")}</div><div style="margin-top:4px;font-size:11px;color:#9db3b5">${esc(fromName || "Источник")} → ${esc(toName || "Получатель")}</div><div style="margin-top:8px;white-space:normal">${body}</div></div>`;
   }
 
   async function sendMessageToContact(person, body) {
@@ -2804,7 +3197,12 @@ export function createNeuroArchiveController(
     const fromName = gmReply ? String(person.title ?? "Контакт") : archiveActorName;
     const toName = gmReply ? archiveActorName : String(person.title ?? "Контакт");
     const data = {
-      content: `<div class="pcm-chat pcm-contact-message"><small>НЕЙРО-СВЯЗЬ // ${esc(fromName)} → ${esc(toName)}</small><p>${esc(text).replaceAll("\n", "<br>")}</p></div>`,
+      content: neuroLinkChatContent({
+        contactName: String(person.title ?? "Контакт"),
+        fromName,
+        toName,
+        text,
+      }),
       whisper: recipients,
       speaker,
       flags: {
@@ -3032,6 +3430,10 @@ export function createNeuroArchiveController(
   root.innerHTML =
     '<div class="pcm-window" role="dialog" aria-label="Нейро-Архив"></div>';
   state.root = root;
+  const stopArchiveTextObserver = observeArchiveTextScale(root, () => ({
+    fontSize: bookAppearance().fontSize,
+    baseFontSize: DEFAULT_APPEARANCE.fontSize,
+  }));
 
   root.addEventListener("contextmenu", (event) => {
     const card = event.target.closest?.(
@@ -3061,6 +3463,10 @@ export function createNeuroArchiveController(
 
   root.addEventListener("input", (event) => {
     const target = event.target;
+    if (target.matches("[data-gm-message-input]")) {
+      state.gmMessageText = target.value;
+      return;
+    }
     if (target.matches("[data-theme-field]")) {
       const theme = bookAppearance();
       const field = target.dataset.themeField;
@@ -3070,6 +3476,7 @@ export function createNeuroArchiveController(
           : safeColor(target.value, theme[field]);
       const output = root.querySelector("[data-font-size-output]");
       if (output) output.textContent = `${theme.fontSize}px`;
+      writeArchiveAppearance(notebook(), "neuro", theme);
       applyAppearance();
       dirty();
       return;
@@ -3153,6 +3560,14 @@ export function createNeuroArchiveController(
 
   root.addEventListener("change", async (event) => {
     const target = event.target;
+    if (target.matches("[data-gm-actor]")) {
+      state.gmActorId = String(target.value || "");
+      state.gmContactId = "";
+      state.gmMessageText = "";
+      state.gmLastOpenedKey = "";
+      render();
+      return;
+    }
     if (target.matches("[data-contact-role-filter]")) {
       state.contactRoleFilter = target.value || "all";
       render();
@@ -3233,6 +3648,69 @@ export function createNeuroArchiveController(
     event.stopPropagation();
     const action = button.dataset.action;
     const entry = findEntry(button);
+    if (action === "gm-select-player" && game.user?.isGM) {
+      state.gmUserId = String(button.dataset.gmPlayer || "");
+      state.gmActorId = "";
+      state.gmContactId = "";
+      state.gmMessageText = "";
+      state.gmLastOpenedKey = "";
+      render();
+      return;
+    }
+    if (action === "gm-select-contact" && game.user?.isGM) {
+      state.gmActorId = String(button.dataset.gmActorId || state.gmActorId || "");
+      state.gmContactId = String(button.dataset.gmContact || "");
+      state.gmMessageText = "";
+      state.gmLastOpenedKey = "";
+      render();
+      return;
+    }
+    if (action === "send-gm-contact-message" && game.user?.isGM) {
+      const thread = gmConversationThreads().find(
+        (item) =>
+          item.ownerUserId === state.gmUserId &&
+          item.actorId === state.gmActorId &&
+          item.contactId === state.gmContactId,
+      );
+      if (!thread) {
+        notify("Выбранный нейро-канал больше недоступен.", "warn");
+        render();
+        return;
+      }
+      const text = String(
+        state.gmMessageText ||
+          root.querySelector("[data-gm-message-input]")?.value ||
+          "",
+      ).trim();
+      if (!text) {
+        notify("Введите ответ игроку.", "warn");
+        return;
+      }
+      const person = await activateGmConversation(thread);
+      if (!person) {
+        render();
+        return;
+      }
+      state.gmMessageText = "";
+      await sendMessageToContact(person, text);
+      return;
+    }
+    if (action === "gm-open-contact" && game.user?.isGM) {
+      const thread = gmConversationThreads().find(
+        (item) =>
+          item.ownerUserId === state.gmUserId &&
+          item.actorId === state.gmActorId &&
+          item.contactId === state.gmContactId,
+      );
+      if (!thread) {
+        notify("Выбранный контакт больше недоступен.", "warn");
+        render();
+        return;
+      }
+      const person = await activateGmConversation(thread, { openDossier: true });
+      if (person) render();
+      return;
+    }
     if (action === "help") {
       state.helpOpen = true;
       state.settingsOpen = false;
@@ -3257,17 +3735,17 @@ export function createNeuroArchiveController(
     }
     if (action === "theme-preset" && THEME_PRESETS[button.dataset.preset]) {
       const fontSize = bookAppearance().fontSize;
-      notebook().appearance = normalizeAppearance({
+      writeArchiveAppearance(notebook(), "neuro", normalizeAppearance({
         ...THEME_PRESETS[button.dataset.preset],
         preset: button.dataset.preset,
         fontSize,
-      });
+      }));
       dirty();
       render();
       return;
     }
     if (action === "theme-reset") {
-      notebook().appearance = normalizeAppearance();
+      writeArchiveAppearance(notebook(), "neuro", normalizeAppearance());
       dirty();
       render();
       return;
@@ -3732,7 +4210,10 @@ export function createNeuroArchiveController(
       chatMessage?.flags?.cyberpunkRemaster?.neuroArchive?.contactMessage ??
       chatMessage?.getFlag?.("cyberpunkRemaster", "neuroArchive")?.contactMessage ??
       null;
-    if (payload) ingestContactMessage(payload);
+    if (!payload) return;
+    rememberGmLiveMessage(payload);
+    const ingested = ingestContactMessage(payload);
+    if (game.user?.isGM && state.section === "gm-network" && !ingested) render();
   };
   globalThis.Hooks?.on?.("createChatMessage", createChatMessageHandler);
 
@@ -3829,6 +4310,7 @@ export function createNeuroArchiveController(
       document
         .querySelector?.("[data-neuro-archive-context-host]")
         ?.remove?.();
+      stopArchiveTextObserver?.();
       state.root = null;
     },
   };

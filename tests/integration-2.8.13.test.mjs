@@ -34,15 +34,14 @@ test('Forge work tabs live outside the scrolling body', () => {
   );
 });
 
-test('2.8.13 metadata and changelog are synchronized', () => {
+test('2.8.13 changelog remains documented while current metadata stays synchronized', () => {
   const manifest = JSON.parse(read('module.json'));
   const pkg = JSON.parse(read('package.json'));
   const readme = read('README.md');
   const changelog = read('CHANGELOG.md');
 
-  assert.equal(manifest.version, '2.8.13');
-  assert.equal(pkg.version, '2.8.13');
-  assert.match(readme, /Версия:\s*\*\*2\.8\.13\*\*/u);
+  assert.equal(manifest.version, pkg.version);
+  assert.ok(readme.includes(`Версия: **${manifest.version}**`));
   assert.match(changelog, /^## 2\.8\.13\b/mu);
   assert.match(changelog, /прокруч|scroll|панел/iu);
 });

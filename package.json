@@ -1,7 +1,7 @@
 {
   "name": "sf2e-cyberpunk-remaster",
   "private": true,
-  "version": "2.8.13",
+  "version": "2.8.19",
   "type": "module",
   "description": "Build and validation tooling for the SF2E Cyberpunk Remaster Foundry module.",
   "scripts": {

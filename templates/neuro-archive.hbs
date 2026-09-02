@@ -1,8 +1,32 @@
-<section id="pcm-root" class="neuro-archive-root" aria-live="polite">
-  <div class="pcm-window" role="dialog" aria-label="Нейро-Архив">
-    <div class="pcm-no-actors">
-      <i class="fa-solid fa-spinner fa-spin"></i>
-      <p>Подключение к архиву…</p>
-    </div>
+<section class="neuro-archive-shell" data-archive-shell data-hub-collapsed="false" aria-live="polite">
+  <nav class="neuro-archive-mode-switch" aria-label="Режим архива">
+    <button type="button" data-archive-mode="neuro" title="Текущий Нейро-Архив Remaster">
+      <i class="fa-solid fa-brain"></i><span>Нейро-Архив</span><small>RED</small>
+    </button>
+    <button type="button" data-archive-mode="cyber" title="Полевой архив 7.1.0">
+      <i class="fa-solid fa-database"></i><span>Кибер-Архив</span><small>RED</small>
+    </button>
+    <button type="button" data-archive-mode="neo" title="Динамический полевой HUD 7.3.4">
+      <i class="fa-solid fa-wave-square"></i><span>Нео-Архив</span><small>RED</small>
+    </button>
+    <span class="archive-shared-storage-badge" title="Все режимы используют одну базу данных">
+      <i class="fa-solid fa-link"></i> ОБЩАЯ БАЗА
+    </span>
+    <button type="button" class="archive-hub-collapse" data-archive-hub-toggle title="Скрыть панель архивов" aria-label="Скрыть панель архивов" aria-expanded="true">
+      <i class="fa-solid fa-chevron-up"></i>
+    </button>
+  </nav>
+  <button type="button" class="archive-hub-reveal" data-archive-hub-toggle data-archive-hub-reveal title="Показать панель архивов" aria-label="Показать панель архивов" aria-expanded="false">
+    <i class="fa-solid fa-layer-group"></i><span>Архивы</span><i class="fa-solid fa-chevron-down"></i>
+  </button>
+  <div class="neuro-archive-mode-host" data-archive-mode-host>
+    <section id="pcm-root" class="neuro-archive-root archive-mode-root archive-mode-neuro">
+      <div class="pcm-window" role="dialog" aria-label="Нейро-Архив">
+        <div class="pcm-no-actors">
+          <i class="fa-solid fa-spinner fa-spin"></i>
+          <p>Подключение к общей базе архивов…</p>
+        </div>
+      </div>
+    </section>
   </div>
 </section>

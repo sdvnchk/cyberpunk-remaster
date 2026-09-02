@@ -2531,3 +2531,861 @@
     width: 100%;
   }
 }
+
+/* 2.8.14 — integrated GM neuro-network */
+#pcm-root .pcm-gm-caption {
+  color: var(--teal);
+}
+#pcm-root .pcm-gm-standalone {
+  height: calc(100% - 54px);
+  min-height: 0;
+  overflow: auto;
+  padding: 14px;
+}
+#pcm-root .pcm-gm-brand strong {
+  display: block;
+  color: var(--heading);
+  font-size: 13px;
+  letter-spacing: 0.05em;
+}
+#pcm-root .pcm-gm-network {
+  display: flex;
+  min-height: 0;
+  height: 100%;
+  flex-direction: column;
+  gap: 12px;
+}
+#pcm-root .pcm-gm-network-head {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(110deg, var(--secondary-soft), transparent 44%),
+    var(--panel);
+}
+#pcm-root .pcm-gm-network-head small {
+  color: var(--teal);
+  font: 10px/1.2 Consolas, "Roboto Mono", monospace;
+  letter-spacing: 0.12em;
+}
+#pcm-root .pcm-gm-network-head h1 {
+  margin: 4px 0 5px;
+  color: var(--heading);
+  font-size: 22px;
+}
+#pcm-root .pcm-gm-network-head p {
+  max-width: 760px;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.4;
+}
+#pcm-root .pcm-gm-network-stats {
+  display: grid;
+  min-width: 210px;
+  grid-template-columns: repeat(3, minmax(64px, 1fr));
+  gap: 6px;
+}
+#pcm-root .pcm-gm-network-stats span {
+  display: grid;
+  place-items: center;
+  min-height: 52px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  background: var(--field);
+  color: var(--muted);
+  font-size: 9px;
+  text-align: center;
+  text-transform: uppercase;
+}
+#pcm-root .pcm-gm-network-stats b {
+  display: block;
+  color: var(--heading);
+  font-size: 17px;
+}
+#pcm-root .pcm-gm-network-stats .hot {
+  border-color: var(--gold);
+  box-shadow: inset 0 -2px 0 var(--gold);
+}
+#pcm-root .pcm-gm-network-grid {
+  display: grid;
+  min-height: 0;
+  flex: 1 1 auto;
+  grid-template-columns: minmax(160px, 0.72fr) minmax(230px, 1fr) minmax(320px, 1.85fr);
+  gap: 10px;
+}
+#pcm-root .pcm-gm-player-list,
+#pcm-root .pcm-gm-contact-list,
+#pcm-root .pcm-gm-thread-pane {
+  min-height: 0;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  overflow: hidden;
+}
+#pcm-root .pcm-gm-player-list,
+#pcm-root .pcm-gm-contact-list {
+  display: flex;
+  flex-direction: column;
+}
+#pcm-root .pcm-gm-player-list > header,
+#pcm-root .pcm-gm-contact-list > header {
+  flex: 0 0 auto;
+  padding: 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel2);
+}
+#pcm-root .pcm-gm-player-list > header small,
+#pcm-root .pcm-gm-contact-list > header small,
+#pcm-root .pcm-gm-thread-pane > header small {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--teal);
+  font: 9px/1.2 Consolas, "Roboto Mono", monospace;
+  letter-spacing: 0.1em;
+}
+#pcm-root .pcm-gm-player-list > button,
+#pcm-root .pcm-gm-contact-list > div > button {
+  display: flex;
+  width: 100%;
+  min-height: 58px;
+  flex: 0 0 auto;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 10px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  text-align: left;
+}
+#pcm-root .pcm-gm-player-list > button.active,
+#pcm-root .pcm-gm-contact-list > div > button.active {
+  background: var(--accent-hover);
+  box-shadow: inset 3px 0 0 var(--gold);
+}
+#pcm-root .pcm-gm-player-list > button span,
+#pcm-root .pcm-gm-contact-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+  flex: 1 1 auto;
+}
+#pcm-root .pcm-gm-player-list > button b,
+#pcm-root .pcm-gm-contact-copy b {
+  color: var(--heading);
+}
+#pcm-root .pcm-gm-player-list > button small,
+#pcm-root .pcm-gm-contact-copy small,
+#pcm-root .pcm-gm-contact-copy em {
+  min-width: 0;
+  color: var(--muted);
+  font-size: 10px;
+  font-style: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#pcm-root .pcm-gm-player-list > button > i,
+#pcm-root .pcm-gm-contact-list > div > button > i {
+  display: grid;
+  min-width: 24px;
+  min-height: 24px;
+  place-items: center;
+  border: 1px solid var(--gold);
+  border-radius: 999px;
+  color: var(--heading);
+  background: var(--accent-soft);
+  font-size: 10px;
+  font-style: normal;
+}
+#pcm-root .pcm-gm-contact-list > header {
+  display: grid;
+  gap: 8px;
+}
+#pcm-root .pcm-gm-contact-list > header label {
+  display: grid;
+  gap: 3px;
+}
+#pcm-root .pcm-gm-contact-list > header label span {
+  color: var(--muted);
+  font-size: 9px;
+  text-transform: uppercase;
+}
+#pcm-root .pcm-gm-contact-list > header select {
+  width: 100%;
+  min-height: 30px;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  background: var(--field);
+}
+#pcm-root .pcm-gm-contact-list > div {
+  min-height: 0;
+  overflow-y: auto;
+}
+#pcm-root .pcm-gm-contact-avatar,
+#pcm-root .pcm-gm-thread-avatar {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--field);
+}
+#pcm-root .pcm-gm-contact-avatar {
+  width: 38px;
+  height: 38px;
+}
+#pcm-root .pcm-gm-thread-avatar {
+  width: 48px;
+  height: 48px;
+}
+#pcm-root .pcm-gm-contact-avatar img,
+#pcm-root .pcm-gm-thread-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+#pcm-root .pcm-gm-thread-pane {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+}
+#pcm-root .pcm-gm-thread-pane > header {
+  display: flex;
+  min-height: 72px;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel2);
+}
+#pcm-root .pcm-gm-thread-pane > header > div:nth-child(2) {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+#pcm-root .pcm-gm-thread-pane > header h2 {
+  margin: 0;
+  color: var(--heading);
+  font-size: 18px;
+}
+#pcm-root .pcm-gm-thread-pane > header p {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 10px;
+}
+#pcm-root .pcm-gm-message-thread {
+  max-height: none;
+  min-height: 0;
+  margin: 0;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--field);
+}
+#pcm-root .pcm-gm-empty-thread {
+  display: grid;
+  min-height: 160px;
+  place-items: center;
+  align-content: center;
+  gap: 4px;
+  color: var(--muted);
+  text-align: center;
+}
+#pcm-root .pcm-gm-empty-thread b {
+  color: var(--teal);
+  font-size: 28px;
+}
+#pcm-root .pcm-gm-empty-thread h3,
+#pcm-root .pcm-gm-empty-thread p {
+  margin: 0;
+}
+#pcm-root .pcm-gm-message-composer {
+  padding: 10px;
+  background: var(--panel2);
+}
+#pcm-root .pcm-gm-thread-pane > footer {
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  padding: 7px 10px;
+  color: var(--muted);
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+  font-size: 9px;
+}
+@media (max-width: 980px) {
+  #pcm-root .pcm-gm-network-grid {
+    grid-template-columns: minmax(145px, 0.68fr) minmax(200px, 0.95fr) minmax(300px, 1.5fr);
+  }
+  #pcm-root .pcm-gm-network-stats {
+    min-width: 180px;
+  }
+}
+@media (max-width: 760px) {
+  #pcm-root .pcm-gm-network-head {
+    flex-direction: column;
+  }
+  #pcm-root .pcm-gm-network-stats {
+    width: 100%;
+  }
+  #pcm-root .pcm-gm-network-grid {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+  #pcm-root .pcm-gm-player-list,
+  #pcm-root .pcm-gm-contact-list,
+  #pcm-root .pcm-gm-thread-pane {
+    min-height: 240px;
+  }
+  #pcm-root .pcm-gm-thread-pane {
+    min-height: 520px;
+  }
+}
+
+/* 2.8.15 — единая оболочка трёх архивов */
+.neuro-archive-shell {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+  background: #050507;
+  container-type: size;
+  font-family: Consolas, "Roboto Mono", "Courier New", monospace;
+}
+
+.neuro-archive-mode-switch {
+  position: relative;
+  z-index: 50;
+  min-width: 0;
+  padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-bottom: 1px solid rgba(227, 27, 35, 0.68);
+  background:
+    linear-gradient(90deg, rgba(227, 27, 35, 0.18), transparent 55%),
+    repeating-linear-gradient(90deg, transparent 0 22px, rgba(120, 200, 192, 0.035) 22px 23px),
+    #08090c;
+  scrollbar-width: thin;
+}
+
+.neuro-archive-mode-switch > button {
+  flex: 0 0 auto;
+  min-height: 34px;
+  padding: 5px 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #c8cbcf;
+  background: #0e1116;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 3px;
+  font: 800 12px/1 Consolas, "Roboto Mono", "Courier New", monospace;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.neuro-archive-mode-switch > button:hover {
+  color: #fff;
+  border-color: rgba(120, 200, 192, 0.72);
+  background: #121a1f;
+}
+
+.neuro-archive-mode-switch > button.active {
+  color: #fff;
+  border-color: #e31b23;
+  background: linear-gradient(135deg, #d62838, #931725);
+  box-shadow: 0 0 14px rgba(227, 27, 35, 0.2);
+}
+
+.neuro-archive-mode-switch > button:disabled {
+  pointer-events: none;
+  opacity: 0.72;
+}
+
+.neuro-archive-mode-switch > button > i {
+  width: 16px;
+  text-align: center;
+}
+
+.neuro-archive-mode-switch > button > small {
+  padding-left: 6px;
+  color: #78c8c0;
+  border-left: 1px solid rgba(120, 200, 192, 0.25);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+}
+
+.neuro-archive-mode-switch > button.active > small {
+  color: #ffd5d7;
+  border-left-color: rgba(255, 255, 255, 0.25);
+}
+
+.archive-shared-storage-badge {
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding: 5px 8px;
+  color: #78c8c0;
+  border: 1px solid rgba(120, 200, 192, 0.28);
+  background: rgba(120, 200, 192, 0.05);
+  font: 800 9px/1 Consolas, "Roboto Mono", "Courier New", monospace;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.neuro-archive-mode-host {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: #07070a;
+}
+
+.neuro-archive-mode-host > .archive-mode-root {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+@container (max-width: 760px) {
+  .neuro-archive-mode-switch {
+    padding: 5px;
+    gap: 4px;
+  }
+
+  .neuro-archive-mode-switch > button {
+    min-height: 32px;
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+
+  .archive-shared-storage-badge {
+    display: none;
+  }
+}
+
+@container (max-width: 520px) {
+  .neuro-archive-mode-switch > button > small {
+    display: none;
+  }
+}
+
+/* 2.8.17 — responsive three-archive host + unified neural channel */
+.neuro-archive-application {
+  max-width: calc(100vw - 12px);
+  max-height: calc(100vh - 12px);
+}
+
+.neuro-archive-mode-host {
+  container-type: size;
+  container-name: night-city-archive-host;
+}
+
+.neuro-archive-mode-host > .archive-mode-root {
+  --archive-responsive-font: clamp(12px, calc(10.5px + 0.28cqw), 17px);
+  font-size: var(--archive-responsive-font) !important;
+}
+
+.neuro-archive-mode-host > .archive-mode-root .pcm-window,
+.neuro-archive-mode-host > .archive-mode-root .pcm-device-screen {
+  max-width: 100% !important;
+  max-height: 100% !important;
+}
+
+/* Neo Archive: keep the glyph in its own cell instead of letting the net-node
+   pseudo element and compact button layout push it below the caption. */
+.neuro-archive-mode-host > .archive-mode-neo .pcm-tools-grid > button {
+  position: relative !important;
+  min-height: 58px !important;
+  padding: 8px 11px !important;
+  display: grid !important;
+  grid-template-columns: 34px minmax(0, 1fr) !important;
+  gap: 8px !important;
+  align-items: center !important;
+  justify-items: stretch !important;
+  text-align: left !important;
+}
+.neuro-archive-mode-host > .archive-mode-neo .pcm-tools-grid > button::before {
+  display: none !important;
+}
+.neuro-archive-mode-host > .archive-mode-neo .pcm-tools-grid > button > b {
+  position: static !important;
+  width: 30px !important;
+  height: 30px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: grid !important;
+  place-items: center;
+  align-self: center !important;
+  color: var(--theme-node, var(--teal)) !important;
+  font-size: 18px !important;
+  font-style: normal !important;
+  line-height: 1;
+  text-align: center !important;
+  transform: none !important;
+}
+.neuro-archive-mode-host > .archive-mode-neo .pcm-tools-grid > button > span {
+  min-width: 0;
+  display: block !important;
+  line-height: 1.2;
+  text-align: left !important;
+}
+.neuro-archive-mode-host > .archive-mode-neo .pcm-tools-grid > button > span > small {
+  margin-top: 3px;
+  line-height: 1.25;
+}
+
+/* Neuro Archive now speaks the same visual language as the Field/Neo neural
+   channels instead of using a generic red detail panel. */
+#pcm-root .pcm-contact-comms.pcm-neuro-link-surface {
+  margin: 12px 0 14px;
+  padding: 14px;
+  overflow: hidden;
+  background: linear-gradient(
+    155deg,
+    color-mix(in srgb, var(--bg) 92%, #001c22),
+    color-mix(in srgb, var(--panel) 92%, #00191f)
+  );
+  border: 1px solid color-mix(in srgb, var(--teal) 70%, var(--line));
+  border-radius: 10px;
+  box-shadow:
+    inset 0 0 0 1px #0007,
+    0 0 18px #00d4d415;
+}
+#pcm-root .pcm-contact-comms.pcm-neuro-link-surface > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 0 0 10px;
+  padding: 0 0 9px;
+  border-bottom: 1px solid color-mix(in srgb, var(--teal) 38%, var(--line));
+  background: transparent;
+}
+#pcm-root .pcm-contact-comms.pcm-neuro-link-surface > header small {
+  display: block;
+  color: var(--teal);
+  font: 900 9px/1.2 Consolas, "Roboto Mono", monospace;
+  letter-spacing: 0.1em;
+}
+#pcm-root .pcm-contact-comms.pcm-neuro-link-surface > header h3 {
+  margin: 3px 0;
+  color: var(--heading);
+  font-size: 16px;
+  letter-spacing: 0.03em;
+}
+#pcm-root .pcm-contact-comms.pcm-neuro-link-surface > header p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+#pcm-root .pcm-neuro-status {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  border: 1px solid color-mix(in srgb, var(--teal) 50%, var(--line));
+  color: var(--teal);
+  background: #001a1d4d;
+  font: 900 8px/1 Consolas, "Roboto Mono", monospace;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+#pcm-root .pcm-neuro-status.offline {
+  color: #e7a16e;
+  border-color: #e7a16e66;
+  background: #2a120c55;
+}
+#pcm-root .pcm-contact-comms .pcm-neuro-history {
+  max-height: min(32cqh, 330px);
+  padding: 8px;
+  gap: 7px;
+  border: 1px solid #ffffff10;
+  background: #02060999;
+  scrollbar-width: thin;
+}
+#pcm-root .pcm-contact-comms .pcm-neuro-message {
+  width: min(86%, 760px);
+  padding: 8px 10px;
+  border: 1px solid #ffffff14;
+  border-radius: 8px;
+  background: #111820e8;
+  box-shadow: 0 3px 9px #0005;
+}
+#pcm-root .pcm-contact-comms .pcm-neuro-message.mine {
+  align-self: flex-end;
+  border-color: color-mix(in srgb, var(--teal) 62%, #ffffff10);
+  background: linear-gradient(145deg, #0b2428db, #111a21e8);
+  box-shadow: inset -2px 0 0 var(--teal);
+}
+#pcm-root .pcm-contact-comms .pcm-neuro-message.incoming {
+  align-self: flex-start;
+  border-color: color-mix(in srgb, var(--gold) 45%, #ffffff10);
+  box-shadow: inset 2px 0 0 var(--gold);
+}
+#pcm-root .pcm-contact-comms .pcm-neuro-compose {
+  margin-top: 9px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+#pcm-root .pcm-contact-comms .pcm-neuro-compose textarea {
+  min-height: 72px;
+  padding: 9px;
+  border: 1px solid color-mix(in srgb, var(--teal) 45%, var(--line));
+  background: #04080ca8;
+  outline: 0;
+}
+#pcm-root .pcm-contact-comms .pcm-neuro-compose textarea:focus {
+  border-color: var(--teal);
+  box-shadow:
+    0 0 0 1px var(--teal),
+    0 0 16px #00d4d41e;
+}
+
+/* These are container queries, not viewport media queries: the layout follows
+   the actual Foundry Application window even on a large monitor. */
+@container (max-width: 1180px) {
+  .neuro-archive-mode-host > .archive-mode-root .pcm-top {
+    min-height: 62px !important;
+    height: auto !important;
+    flex-wrap: wrap !important;
+  }
+  .neuro-archive-mode-host > .archive-mode-root .pcm-layout {
+    height: calc(100% - 62px) !important;
+    grid-template-columns: 190px minmax(0, 1fr) !important;
+  }
+  .neuro-archive-mode-host > .archive-mode-root .pcm-dashboard-grid,
+  .neuro-archive-mode-host > .archive-mode-root .pcm-detail-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+@container (max-width: 980px) {
+  .neuro-archive-mode-switch {
+    flex-wrap: wrap;
+    overflow-x: hidden;
+  }
+  .archive-shared-storage-badge {
+    margin-left: 0;
+  }
+  .neuro-archive-mode-host > .archive-mode-root .pcm-layout {
+    grid-template-columns: 168px minmax(0, 1fr) !important;
+  }
+  .neuro-archive-mode-host > .archive-mode-root .pcm-top-actions {
+    flex-wrap: wrap !important;
+  }
+  .neuro-archive-mode-host > .archive-mode-root .pcm-theme-presets,
+  .neuro-archive-mode-host > .archive-mode-root .pcm-help-grid,
+  .neuro-archive-mode-host > .archive-mode-root .pcm-theme-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  .neuro-archive-mode-host > .archive-mode-neo .pcm-tools-panel,
+  .neuro-archive-mode-host > .archive-mode-cyber .pcm-tools-panel {
+    width: min(100%, 720px) !important;
+    max-height: calc(100cqh - 18px) !important;
+  }
+}
+
+@container (max-width: 720px) {
+  .neuro-archive-mode-switch > button {
+    flex: 1 1 150px;
+    justify-content: center;
+  }
+  .neuro-archive-mode-host > .archive-mode-root .pcm-layout {
+    height: 100% !important;
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto minmax(0, 1fr) !important;
+  }
+  .neuro-archive-mode-host > .archive-mode-root aside {
+    max-height: 92px;
+    padding: 6px !important;
+    flex-direction: row !important;
+    align-items: stretch !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--line) !important;
+  }
+  .neuro-archive-mode-host > .archive-mode-root aside > button {
+    flex: 0 0 auto;
+    min-width: 132px;
+  }
+  .neuro-archive-mode-host > .archive-mode-root aside .pcm-goal,
+  .neuro-archive-mode-host > .archive-mode-root aside .pcm-help,
+  .neuro-archive-mode-host > .archive-mode-root aside .pcm-caption {
+    display: none !important;
+  }
+  .neuro-archive-mode-host > .archive-mode-root main {
+    min-height: 0 !important;
+    overflow-y: auto !important;
+  }
+  .neuro-archive-mode-host > .archive-mode-root .pcm-theme-presets,
+  .neuro-archive-mode-host > .archive-mode-root .pcm-help-grid,
+  .neuro-archive-mode-host > .archive-mode-root .pcm-theme-grid,
+  .neuro-archive-mode-host > .archive-mode-root .pcm-tools-grid,
+  .neuro-archive-mode-host > .archive-mode-root .pcm-contact-list,
+  .neuro-archive-mode-host > .archive-mode-root .pcm-people-grid,
+  .neuro-archive-mode-host > .archive-mode-root .pcm-faction-directory-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .neuro-archive-mode-host > .archive-mode-root .pcm-section-head,
+  .neuro-archive-mode-host > .archive-mode-root .pcm-faction-head,
+  #pcm-root .pcm-contact-comms.pcm-neuro-link-surface > header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  #pcm-root .pcm-neuro-status {
+    align-self: flex-start;
+  }
+  #pcm-root .pcm-contact-comms .pcm-neuro-compose {
+    grid-template-columns: 1fr !important;
+  }
+  #pcm-root .pcm-contact-comms .pcm-neuro-send {
+    width: 100% !important;
+  }
+  .neuro-archive-mode-host > .archive-mode-neo .pcm-tools-grid > button {
+    min-height: 54px !important;
+    grid-template-columns: 30px minmax(0, 1fr) !important;
+  }
+  .neuro-archive-mode-host > .archive-mode-neo .pcm-tools-grid > button > b {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 17px !important;
+  }
+}
+
+@container (max-width: 520px) {
+  .neuro-archive-mode-switch {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  .neuro-archive-mode-switch > button {
+    width: 100%;
+  }
+  .neuro-archive-mode-switch > button > small {
+    display: inline-block;
+  }
+  .neuro-archive-mode-host > .archive-mode-root .pcm-top {
+    padding: 6px !important;
+  }
+  .neuro-archive-mode-host > .archive-mode-root .pcm-brand img {
+    display: none !important;
+  }
+  .neuro-archive-mode-host > .archive-mode-root .pcm-modal-backdrop {
+    padding: 5px !important;
+  }
+  #pcm-root .pcm-contact-comms .pcm-neuro-message {
+    width: 96%;
+  }
+}
+
+/* 2.8.18 — сворачиваемая внутренняя панель Archive Hub */
+.neuro-archive-shell {
+  position: relative;
+}
+
+.neuro-archive-mode-switch > .archive-hub-collapse {
+  flex: 0 0 32px;
+  width: 32px;
+  min-width: 32px;
+  padding: 0;
+  justify-content: center;
+  color: #78c8c0;
+  border-color: rgba(120, 200, 192, 0.34);
+}
+
+.archive-hub-reveal {
+  position: absolute;
+  z-index: 80;
+  top: 7px;
+  right: 9px;
+  min-height: 30px;
+  padding: 5px 9px;
+  display: none;
+  align-items: center;
+  gap: 6px;
+  color: #d9fbff;
+  background: rgba(8, 12, 16, 0.94);
+  border: 1px solid rgba(120, 200, 192, 0.54);
+  border-radius: 3px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+  font: 800 10px/1 Consolas, "Roboto Mono", "Courier New", monospace;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+}
+
+.archive-hub-reveal:hover {
+  color: #fff;
+  border-color: #e31b23;
+  background: rgba(20, 13, 17, 0.97);
+}
+
+.neuro-archive-shell[data-hub-collapsed="true"] {
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.neuro-archive-shell[data-hub-collapsed="true"] > .neuro-archive-mode-switch {
+  display: none;
+}
+
+.neuro-archive-shell[data-hub-collapsed="true"] > .archive-hub-reveal {
+  display: inline-flex;
+}
+
+.neuro-archive-shell[data-hub-collapsed="true"] > .neuro-archive-mode-host {
+  grid-row: 1;
+}
+
+/* 2.8.19 — полное сворачивание Archive Hub до стандартной шапки Foundry. */
+.neuro-archive-application .archive-window-toggle {
+  flex: 0 0 32px;
+  width: 32px;
+  min-width: 32px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  color: #78c8c0;
+  background: rgba(4, 9, 12, 0.72);
+  border: 1px solid rgba(120, 200, 192, 0.34);
+  border-radius: 2px;
+}
+
+.neuro-archive-application .archive-window-toggle:hover {
+  color: #fff;
+  border-color: #e31b23;
+  background: rgba(227, 27, 35, 0.18);
+}
+
+.neuro-archive-application.archive-window-collapsed {
+  width: min(390px, calc(100vw - 18px)) !important;
+  min-width: min(300px, calc(100vw - 18px)) !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  max-height: 38px !important;
+  overflow: hidden !important;
+  resize: none !important;
+}
+
+.neuro-archive-application.archive-window-collapsed .window-header {
+  min-height: 38px !important;
+  height: 38px !important;
+  border-bottom: 0 !important;
+}
+
+.neuro-archive-application.archive-window-collapsed .window-content {
+  display: none !important;
+}
+
+.neuro-archive-application.archive-window-collapsed .window-resize-handle,
+.neuro-archive-application.archive-window-collapsed [data-resize-handle] {
+  display: none !important;
+}
