@@ -18,7 +18,11 @@ import {
   writeArchiveAppearance,
   writeUnifiedServerData,
 } from "./neuro-archive-store.mjs";
-import { applyArchiveTextScale, observeArchiveTextScale } from "./archive-ui-utils.mjs";
+import {
+  applyArchiveTextScale,
+  observeArchiveTextScale,
+  placeArchiveContextMenu,
+} from "./archive-ui-utils.mjs";
 
 const CANONICAL_ARCHIVE_PATH = "flags.cyberpunkRemaster.neuroArchive.data";
 // Legacy source probes are implemented by neuro-archive-store.mjs:
@@ -2198,7 +2202,8 @@ export function createNeuroArchiveController(
     if (!host) {
       host = document.createElement("div");
       host.dataset.neuroArchiveContextHost = "true";
-      host.className = "neuro-archive-context-host";
+      host.className = "neuro-archive-context-host archive-context-overlay-host";
+      host.setAttribute("data-archive-context-overlay", "neuro-archive-view");
       document.body.append(host);
       host.addEventListener("click", contextClickHandler);
       host.addEventListener("keydown", (event) => {
@@ -2215,28 +2220,7 @@ export function createNeuroArchiveController(
   }
 
   function fitContextMenuToViewport(menu, x, y) {
-    if (!menu) return;
-    const margin = 8;
-    const viewportWidth =
-      Number(globalThis.visualViewport?.width) ||
-      Number(globalThis.innerWidth) ||
-      1280;
-    const viewportHeight =
-      Number(globalThis.visualViewport?.height) ||
-      Number(globalThis.innerHeight) ||
-      720;
-    const rect = menu.getBoundingClientRect();
-    const left = Math.max(
-      margin,
-      Math.min(Number(x) || margin, viewportWidth - rect.width - margin),
-    );
-    const top = Math.max(
-      margin,
-      Math.min(Number(y) || margin, viewportHeight - rect.height - margin),
-    );
-    menu.style.left = `${Math.round(left)}px`;
-    menu.style.top = `${Math.round(top)}px`;
-    menu.style.maxHeight = `${Math.max(160, viewportHeight - margin * 2)}px`;
+    return placeArchiveContextMenu(menu, x, y, { margin: 8 });
   }
 
   function closeContextMenu() {

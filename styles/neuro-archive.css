@@ -3389,3 +3389,212 @@
 .neuro-archive-application.archive-window-collapsed [data-resize-handle] {
   display: none !important;
 }
+
+/* 2.8.20 — viewport-level context menus for all Archive views. */
+.archive-context-overlay-host {
+  position: fixed;
+  inset: 0;
+  z-index: 10000070;
+  pointer-events: none;
+  color: var(--ink, #eef9fb);
+  font: var(--font-size, 13px)/1.35 Consolas, "Roboto Mono", "Courier New", monospace;
+}
+
+.archive-context-overlay-host .pcm-context-menu-surface {
+  position: fixed;
+  width: min(360px, calc(100dvw - 16px));
+  max-width: calc(100dvw - 16px);
+  max-height: calc(100dvh - 16px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--teal, #63e8f2) transparent;
+  padding: 9px;
+  pointer-events: auto;
+  color: var(--ink, #eef9fb);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--panel, #09121b) 96%, #000 4%), var(--bg, #05080e));
+  border: 1px solid var(--line, rgba(99, 232, 242, 0.34));
+  border-radius: 7px;
+  box-shadow: 0 18px 55px rgba(0, 0, 0, 0.72), 0 0 18px color-mix(in srgb, var(--teal, #63e8f2) 10%, transparent);
+  box-sizing: border-box;
+}
+
+.archive-context-overlay-host .pcm-context-menu-surface *,
+.archive-context-overlay-host .pcm-context-menu-surface *::before,
+.archive-context-overlay-host .pcm-context-menu-surface *::after {
+  box-sizing: border-box;
+}
+
+.archive-context-overlay-host .pcm-context-menu-surface > header {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 30px;
+  gap: 8px;
+  align-items: center;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line, rgba(99, 232, 242, 0.28));
+}
+
+.archive-context-overlay-host .pcm-context-avatar {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: var(--teal, #63e8f2);
+  background: var(--field, #05080e);
+  border: 1px solid var(--line, rgba(99, 232, 242, 0.34));
+  border-radius: 5px;
+}
+
+.archive-context-overlay-host .pcm-context-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.archive-context-overlay-host .pcm-context-menu-surface header > span:nth-child(2) {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.archive-context-overlay-host .pcm-context-menu-surface header small,
+.archive-context-overlay-host .pcm-context-menu-surface section > small,
+.archive-context-overlay-host .pcm-context-role-hint,
+.archive-context-overlay-host .pcm-context-tag-editor label > span {
+  color: var(--teal, #63e8f2);
+  font-size: 0.68em;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.archive-context-overlay-host .pcm-context-menu-surface header b {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--heading, #fff);
+}
+
+.archive-context-overlay-host .pcm-context-menu-surface button {
+  min-width: 0;
+  min-height: 34px;
+  padding: 5px 8px;
+  color: var(--ink, #eef9fb);
+  background: color-mix(in srgb, var(--panel, #09121b) 86%, #000 14%);
+  border: 1px solid var(--line, rgba(99, 232, 242, 0.26));
+  border-radius: 5px;
+  font: inherit;
+  line-height: 1.2;
+  cursor: pointer;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.archive-context-overlay-host .pcm-context-menu-surface button:hover,
+.archive-context-overlay-host .pcm-context-menu-surface button.active,
+.archive-context-overlay-host .pcm-context-menu-surface button[aria-pressed="true"] {
+  color: var(--heading, #fff);
+  border-color: var(--teal, #63e8f2);
+  background: var(--accent-soft, rgba(99, 232, 242, 0.10));
+  box-shadow: 0 0 10px color-mix(in srgb, var(--teal, #63e8f2) 16%, transparent);
+}
+
+.archive-context-overlay-host .pcm-context-menu-surface > header > button {
+  width: 30px;
+  min-width: 30px;
+  min-height: 30px;
+  padding: 0;
+  font-size: 16px;
+}
+
+.archive-context-overlay-host .pcm-context-actions,
+.archive-context-overlay-host .pcm-context-chip-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.archive-context-overlay-host .pcm-context-chip-grid.roles {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.archive-context-overlay-host .pcm-context-menu-surface section {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid color-mix(in srgb, var(--line, #63e8f2) 58%, transparent);
+}
+
+.archive-context-overlay-host .pcm-context-menu-surface section > small {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.archive-context-overlay-host .pcm-context-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.archive-context-overlay-host .pcm-context-tag-list button {
+  min-height: 28px;
+  padding: 3px 7px;
+}
+
+.archive-context-overlay-host .pcm-context-tag-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.archive-context-overlay-host .pcm-context-tag-editor label {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.archive-context-overlay-host .pcm-context-tag-editor input {
+  width: 100%;
+  min-width: 0;
+  min-height: 34px;
+  padding: 0 8px;
+  color: var(--ink, #eef9fb);
+  background: var(--field, #05080e);
+  border: 1px solid var(--line, rgba(99, 232, 242, 0.28));
+  border-radius: 5px;
+  font: inherit;
+}
+
+.archive-context-overlay-host .pcm-context-delete {
+  width: 100%;
+  margin-top: 8px;
+  color: var(--theme-warning, #ff5b68) !important;
+  border-color: color-mix(in srgb, var(--theme-warning, #ff5b68) 48%, transparent) !important;
+}
+
+.archive-context-overlay-host[data-archive-context-overlay="neo-archive-view"] .pcm-context-menu-surface {
+  border-radius: 0;
+  border-color: var(--theme-node, var(--teal, #63e8f2));
+  box-shadow: 0 0 18px var(--theme-node-glow, rgba(99, 232, 242, 0.18)), 0 18px 55px rgba(0, 0, 0, 0.76);
+}
+
+.archive-context-overlay-host[data-archive-context-overlay="cyber-archive-view"] .pcm-context-menu-surface {
+  border-color: var(--gold, #c9bd97);
+}
+
+@media (max-width: 520px) {
+  .archive-context-overlay-host .pcm-context-menu-surface {
+    width: calc(100dvw - 16px);
+  }
+  .archive-context-overlay-host .pcm-context-actions,
+  .archive-context-overlay-host .pcm-context-chip-grid,
+  .archive-context-overlay-host .pcm-context-chip-grid.roles {
+    grid-template-columns: 1fr;
+  }
+  .archive-context-overlay-host .pcm-context-tag-editor {
+    grid-template-columns: 1fr;
+  }
+}

@@ -164,3 +164,129 @@ export function observeArchiveTextScale(root, getOptions) {
     if (frame && globalThis.cancelAnimationFrame) globalThis.cancelAnimationFrame(frame);
   };
 }
+
+export const ARCHIVE_CONTEXT_THEME_PROPERTIES = Object.freeze([
+  "--bg", "--bg-alpha", "--panel", "--panel-alpha", "--panel2", "--ink", "--heading",
+  "--muted", "--gold", "--teal", "--line", "--accent-soft", "--accent-hover", "--field",
+  "--theme-node", "--theme-trace", "--theme-warning", "--theme-node-glow", "--theme-trace-glow",
+  "--theme-warning-glow", "--font-size", "--archive-text-scale",
+]);
+
+export function contextMenuViewportPlacement({
+  x = 0,
+  y = 0,
+  width = 0,
+  height = 0,
+  viewportWidth = 0,
+  viewportHeight = 0,
+  viewportLeft = 0,
+  viewportTop = 0,
+  margin = 8,
+} = {}) {
+  const safeMargin = Math.max(0, Number(margin) || 0);
+  const leftEdge = Number(viewportLeft) || 0;
+  const topEdge = Number(viewportTop) || 0;
+  const vw = Math.max(1, Number(viewportWidth) || 1);
+  const vh = Math.max(1, Number(viewportHeight) || 1);
+  const maxWidth = Math.max(1, vw - safeMargin * 2);
+  const maxHeight = Math.max(1, vh - safeMargin * 2);
+  const menuWidth = Math.min(Math.max(0, Number(width) || 0), maxWidth);
+  const menuHeight = Math.min(Math.max(0, Number(height) || 0), maxHeight);
+  const minLeft = leftEdge + safeMargin;
+  const minTop = topEdge + safeMargin;
+  const maxLeft = leftEdge + vw - menuWidth - safeMargin;
+  const maxTop = topEdge + vh - menuHeight - safeMargin;
+  const wantedX = Number.isFinite(Number(x)) ? Number(x) : minLeft;
+  const wantedY = Number.isFinite(Number(y)) ? Number(y) : minTop;
+  return {
+    left: Math.round(Math.max(minLeft, Math.min(wantedX, Math.max(minLeft, maxLeft)))),
+    top: Math.round(Math.max(minTop, Math.min(wantedY, Math.max(minTop, maxTop)))),
+    maxWidth: Math.round(maxWidth),
+    maxHeight: Math.round(maxHeight),
+  };
+}
+
+export function placeArchiveContextMenu(menu, x, y, { margin = 8 } = {}) {
+  if (!menu) return null;
+  const viewport = globalThis.visualViewport;
+  const viewportLeft = Number(viewport?.offsetLeft) || 0;
+  const viewportTop = Number(viewport?.offsetTop) || 0;
+  const viewportWidth = Math.max(
+    1,
+    Number(viewport?.width) || Number(globalThis.innerWidth) || Number(globalThis.document?.documentElement?.clientWidth) || 1,
+  );
+  const viewportHeight = Math.max(
+    1,
+    Number(viewport?.height) || Number(globalThis.innerHeight) || Number(globalThis.document?.documentElement?.clientHeight) || 1,
+  );
+  const safeMargin = Math.max(0, Number(margin) || 0);
+  menu.style.maxWidth = `${Math.max(1, viewportWidth - safeMargin * 2)}px`;
+  menu.style.maxHeight = `${Math.max(1, viewportHeight - safeMargin * 2)}px`;
+  const rect = menu.getBoundingClientRect?.() ?? { width: 0, height: 0 };
+  const placement = contextMenuViewportPlacement({
+    x,
+    y,
+    width: rect.width,
+    height: rect.height,
+    viewportWidth,
+    viewportHeight,
+    viewportLeft,
+    viewportTop,
+    margin: safeMargin,
+  });
+  menu.style.left = `${placement.left}px`;
+  menu.style.top = `${placement.top}px`;
+  menu.style.maxWidth = `${placement.maxWidth}px`;
+  menu.style.maxHeight = `${placement.maxHeight}px`;
+  return placement;
+}
+
+export function syncArchiveContextTheme(source, target, properties = ARCHIVE_CONTEXT_THEME_PROPERTIES) {
+  if (!source || !target?.style) return;
+  const computed = globalThis.getComputedStyle?.(source);
+  for (const property of properties) {
+    const value = computed?.getPropertyValue?.(property);
+    if (value) target.style.setProperty(property, value.trim());
+  }
+  for (const key of ["shell", "effects", "density", "themeFx"]) {
+    const value = source.dataset?.[key];
+    if (value) target.dataset[key] = value;
+  }
+}
+
+function copyFormControlState(source, target) {
+  const sourceControls = source?.querySelectorAll?.("input, textarea, select") ?? [];
+  const targetControls = target?.querySelectorAll?.("input, textarea, select") ?? [];
+  for (let index = 0; index < Math.min(sourceControls.length, targetControls.length); index += 1) {
+    const from = sourceControls[index];
+    const to = targetControls[index];
+    if ("value" in from && "value" in to) to.value = from.value;
+    if ("checked" in from && "checked" in to) to.checked = from.checked;
+    if ("selectedIndex" in from && "selectedIndex" in to) to.selectedIndex = from.selectedIndex;
+  }
+}
+
+/**
+ * Route a button pressed in a body-level context-menu portal back through the
+ * archive root's existing click delegation without duplicating business logic.
+ */
+export function proxyArchiveContextAction(root, sourceButton) {
+  const menu = sourceButton?.closest?.(".pcm-context-menu-surface");
+  if (!root?.append || !menu || !sourceButton) return false;
+  const sourceButtons = Array.from(menu.querySelectorAll?.("[data-action]") ?? []);
+  const buttonIndex = sourceButtons.indexOf(sourceButton);
+  if (buttonIndex < 0) return false;
+
+  const clone = menu.cloneNode(true);
+  clone.dataset.archiveContextProxy = "true";
+  clone.style.display = "none";
+  copyFormControlState(menu, clone);
+  root.append(clone);
+  const targetButton = Array.from(clone.querySelectorAll?.("[data-action]") ?? [])[buttonIndex];
+  try {
+    targetButton?.click?.();
+    return Boolean(targetButton);
+  } finally {
+    clone.remove?.();
+  }
+}

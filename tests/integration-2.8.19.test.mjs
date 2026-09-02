@@ -45,11 +45,10 @@ test("2.8.19 font scale ratio is based on each archive native size", async () =>
   assert.equal(archiveFontScale(20, 15), 20 / 15);
 });
 
-test("2.8.19 metadata and changelog are synchronized", () => {
+test("2.8.19 remains documented after later releases", () => {
   const manifest = JSON.parse(read("module.json"));
   const pkg = JSON.parse(read("package.json"));
   const changelog = read("CHANGELOG.md");
-  assert.equal(manifest.version, "2.8.19");
-  assert.equal(pkg.version, "2.8.19");
+  assert.equal(manifest.version, pkg.version);
   assert.match(changelog, /^## 2\.8\.19\b/mu);
 });

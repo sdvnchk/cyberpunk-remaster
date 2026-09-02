@@ -7,7 +7,13 @@ import {
   writeArchiveAppearance,
   writeUnifiedServerData,
 } from "./neuro-archive-store.mjs";
-import { applyArchiveTextScale, observeArchiveTextScale } from "./archive-ui-utils.mjs";
+import {
+  applyArchiveTextScale,
+  observeArchiveTextScale,
+  placeArchiveContextMenu,
+  proxyArchiveContextAction,
+  syncArchiveContextTheme,
+} from "./archive-ui-utils.mjs";
 
 /*
  * NIGHT CITY // ПОЛЕВОЙ АРХИВ — автономный Foundry VTT макрос
@@ -1535,6 +1541,43 @@ export async function createCyberArchiveController(hostRoot, { requestClose = as
     </div>`;
   }
 
+
+  let archiveContextOverlay = null;
+
+  function contextOverlayHost() {
+    if ( archiveContextOverlay?.isConnected ) return archiveContextOverlay;
+    const host = document.createElement("div");
+    host.className = "archive-context-overlay-host";
+    host.setAttribute("data-archive-context-overlay", VARIANT);
+    host.addEventListener("click", event => {
+      const button = event.target.closest?.("[data-action]");
+      if ( !button ) return;
+      event.preventDefault();
+      event.stopPropagation();
+      proxyArchiveContextAction(state.root, button);
+    });
+    host.addEventListener("keydown", event => {
+      if ( event.key !== "Enter" ) return;
+      const input = event.target.closest?.("[data-context-tag-input], [data-entry-context-tag-input]");
+      if ( !input ) return;
+      event.preventDefault();
+      const action = input.matches("[data-context-tag-input]") ? "context-commit-tag" : "context-entry-commit-tag";
+      input.closest(".pcm-context-tag-editor")?.querySelector?.(`[data-action="${action}"]`)?.click?.();
+    });
+    document.body.append(host);
+    archiveContextOverlay = host;
+    return host;
+  }
+
+  function removeContextOverlay() {
+    archiveContextOverlay?.remove?.();
+    archiveContextOverlay = null;
+  }
+
+  function fitContextMenuToViewport(menu, x, y) {
+    return placeArchiveContextMenu(menu, x, y, { margin: 8 });
+  }
+
   function contactContextMenu(book) {
     const ctx = state.contactContext;
     if ( !ctx ) return "";
@@ -1557,49 +1600,25 @@ export async function createCyberArchiveController(hostRoot, { requestClose = as
 
   function closeContactContextMenu() {
     state.contactContext = null;
-    state.root?.querySelector?.(".pcm-contact-context-menu")?.remove();
-  }
-
-  function fitContextMenuToViewport(menu, x, y) {
-    if ( !menu ) return;
-    const margin = 8;
-    const vv = window.visualViewport;
-    const viewportLeft = Number(vv?.offsetLeft) || 0;
-    const viewportTop = Number(vv?.offsetTop) || 0;
-    const viewportWidth = Math.max(1, Number(vv?.width) || window.innerWidth || document.documentElement.clientWidth || 1);
-    const viewportHeight = Math.max(1, Number(vv?.height) || window.innerHeight || document.documentElement.clientHeight || 1);
-    const maxWidth = Math.max(220, viewportWidth - margin * 2);
-    const maxHeight = Math.max(150, viewportHeight - margin * 2);
-
-    menu.style.maxWidth = `${maxWidth}px`;
-    menu.style.maxHeight = `${maxHeight}px`;
-
-    const rect = menu.getBoundingClientRect();
-    const wantedX = Number(x) || viewportLeft + margin;
-    const wantedY = Number(y) || viewportTop + margin;
-    const maxLeft = viewportLeft + viewportWidth - Math.min(rect.width, maxWidth) - margin;
-    const maxTop = viewportTop + viewportHeight - Math.min(rect.height, maxHeight) - margin;
-    const left = Math.max(viewportLeft + margin, Math.min(wantedX, Math.max(viewportLeft + margin, maxLeft)));
-    const top = Math.max(viewportTop + margin, Math.min(wantedY, Math.max(viewportTop + margin, maxTop)));
-
-    menu.style.left = `${Math.round(left)}px`;
-    menu.style.top = `${Math.round(top)}px`;
+    archiveContextOverlay?.querySelector?.(".pcm-contact-context-menu")?.remove();
   }
 
   function mountContactContextMenu() {
-    state.root?.querySelector?.(".pcm-contact-context-menu")?.remove();
+    const host = contextOverlayHost();
+    host.querySelector?.(".pcm-contact-context-menu")?.remove();
     const ctx = state.contactContext;
     const html = contactContextMenu(notebook());
     if ( html && ctx ) {
-      state.root?.insertAdjacentHTML?.("beforeend", html);
-      const menu = state.root?.querySelector?.(".pcm-contact-context-menu");
+      syncArchiveContextTheme(state.root, host);
+      host.insertAdjacentHTML("beforeend", html);
+      const menu = host.querySelector?.(".pcm-contact-context-menu");
       requestAnimationFrame(() => fitContextMenuToViewport(menu, ctx.x, ctx.y));
     }
   }
 
   function focusContextTagInput(selector) {
     requestAnimationFrame(() => {
-      const input = state.root?.querySelector?.(selector);
+      const input = archiveContextOverlay?.querySelector?.(selector);
       input?.focus?.();
       input?.select?.();
     });
@@ -1657,16 +1676,18 @@ export async function createCyberArchiveController(hostRoot, { requestClose = as
 
   function closeEntryContextMenu() {
     state.entryContext = null;
-    state.root?.querySelector?.(".pcm-entry-context-menu")?.remove();
+    archiveContextOverlay?.querySelector?.(".pcm-entry-context-menu")?.remove();
   }
 
   function mountEntryContextMenu() {
-    state.root?.querySelector?.(".pcm-entry-context-menu")?.remove();
+    const host = contextOverlayHost();
+    host.querySelector?.(".pcm-entry-context-menu")?.remove();
     const ctx = state.entryContext;
     const html = entryContextMenu(notebook());
     if ( html && ctx ) {
-      state.root?.insertAdjacentHTML?.("beforeend", html);
-      const menu = state.root?.querySelector?.(".pcm-entry-context-menu");
+      syncArchiveContextTheme(state.root, host);
+      host.insertAdjacentHTML("beforeend", html);
+      const menu = host.querySelector?.(".pcm-entry-context-menu");
       requestAnimationFrame(() => fitContextMenuToViewport(menu, ctx.x, ctx.y));
     }
   }
@@ -4658,6 +4679,7 @@ ${EMBEDDED_HOST_CSS}
       window.removeEventListener("resize", applyWindowGeometry);
       stopArchiveTextObserver?.();
       if ( Hooks?.off ) for ( const [eventName, hookId] of neuroHookIds ) Hooks.off(eventName, hookId);
+      removeContextOverlay();
       root.classList.remove("field-archive-embedded", "cyber-archive-view");
       root.innerHTML = "";
     }
