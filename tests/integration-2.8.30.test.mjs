@@ -51,9 +51,9 @@ test("2.8.30 stacks only meeting facts on narrow archive windows", () => {
   );
 });
 
-test("2.8.30 metadata and changelog are synchronized", () => {
-  assert.equal(moduleJson.version, "2.8.30");
-  assert.equal(packageJson.version, "2.8.30");
+test("2.8.30 metadata and changelog remain preserved after later releases", () => {
+  assert.equal(moduleJson.version, packageJson.version);
+  assert.ok(Number(moduleJson.version.split(".").at(-1)) >= 30);
   assert.match(changelog, /## 2\.8\.30/u);
   assert.match(changelog, /Где встречали|Где пересекались/u);
   assert.match(changelog, /Первая встреча|Последняя встреча/u);

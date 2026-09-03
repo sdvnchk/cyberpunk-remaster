@@ -4360,3 +4360,122 @@
     grid-template-columns: minmax(0, 320px);
   }
 }
+
+/* 2.8.31 — stable Actor-target selector: only the middle list scrolls. */
+.archive-share-target-window {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+}
+
+.archive-share-target-window .archive-share-users {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 10px;
+  scrollbar-gutter: stable;
+}
+
+.archive-share-target-window .archive-share-user {
+  flex: 0 0 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.archive-share-target-window .archive-share-user-row {
+  min-height: unset;
+  height: auto;
+  grid-template-columns: 40px minmax(0, 1fr) 24px;
+  align-items: center;
+  padding: 9px 10px;
+}
+
+.archive-share-target-window .archive-share-user-copy,
+.archive-share-target-window .archive-share-actor-copy {
+  min-width: 0;
+  align-content: center;
+}
+
+.archive-share-target-window .archive-share-user-copy b,
+.archive-share-target-window .archive-share-actor-copy b {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.2;
+}
+
+.archive-share-target-window .archive-share-user-copy small,
+.archive-share-target-window .archive-share-actor-copy small {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.3;
+}
+
+.archive-share-target-window .archive-share-actors {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  padding: 8px;
+}
+
+.archive-share-target-window .archive-share-actors[hidden] {
+  display: none !important;
+}
+
+.archive-share-target-window .archive-share-actor {
+  flex: 0 0 auto;
+  min-height: unset;
+  height: auto;
+  grid-template-columns: 48px minmax(0, 1fr) 24px;
+  align-items: center;
+  padding: 8px 9px;
+}
+
+.archive-share-target-window .archive-share-actor-avatar {
+  align-self: center;
+}
+
+.archive-share-target-window .archive-share-footer {
+  flex: 0 0 auto;
+  min-height: 54px;
+  position: relative;
+  z-index: 2;
+}
+
+.archive-share-target-window .archive-share-footer > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 620px) {
+  .archive-share-target-window .archive-share-user-row {
+    grid-template-columns: 36px minmax(0, 1fr) 20px;
+    gap: 8px;
+  }
+  .archive-share-target-window .archive-share-user-icon {
+    width: 36px;
+    height: 36px;
+  }
+  .archive-share-target-window .archive-share-actor {
+    grid-template-columns: 44px minmax(0, 1fr) 20px;
+    gap: 8px;
+  }
+  .archive-share-target-window .archive-share-actor-avatar {
+    width: 44px;
+    height: 44px;
+  }
+  .archive-share-target-window .archive-share-footer {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+  .archive-share-target-window .archive-share-footer > button {
+    width: 100%;
+  }
+}

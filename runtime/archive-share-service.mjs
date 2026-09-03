@@ -599,8 +599,19 @@ export async function openArchiveShareDialog({
       const group = toggle.closest("[data-archive-share-user]");
       const actors = group?.querySelector?.("[data-archive-share-actors]");
       const expanded = toggle.getAttribute("aria-expanded") === "true";
+
+      // Keep the selector compact: only one player group may be expanded at a time.
+      for (const otherGroup of overlay.querySelectorAll?.("[data-archive-share-user]") ?? []) {
+        if (otherGroup === group) continue;
+        const otherToggle = otherGroup.querySelector?.("[data-archive-share-user-toggle]");
+        const otherActors = otherGroup.querySelector?.("[data-archive-share-actors]");
+        otherToggle?.setAttribute?.("aria-expanded", "false");
+        if (otherActors) otherActors.hidden = true;
+      }
+
       toggle.setAttribute("aria-expanded", expanded ? "false" : "true");
       if (actors) actors.hidden = expanded;
+      if (!expanded) group?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
       return;
     }
     const actorButton = event.target.closest?.("[data-archive-share-actor]");
@@ -612,6 +623,7 @@ export async function openArchiveShareDialog({
       if (targetLabel) targetLabel.textContent = `Получатель: ${actorButton.querySelector("b")?.textContent || "Actor"}`;
       const send = overlay.querySelector?.("[data-archive-share-send]");
       if (send) send.disabled = !(targetUserId && targetActorId);
+      actorButton.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
       return;
     }
     const send = event.target.closest?.("[data-archive-share-send]");
