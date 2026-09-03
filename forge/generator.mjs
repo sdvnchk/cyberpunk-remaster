@@ -1006,6 +1006,14 @@ function implantContainerSource(catalog) {
     source.system.description ??= {};
     source.system.description.value =
       '<p>Служебный контейнер Киберпанк-Кузницы. Все созданные Кузницей импланты NPC складываются сюда, оставаясь установленными для механики вкладки «Хром».</p>';
+    // Служебный контейнер не должен наследовать механику выбранного backpack-шаблона.
+    // Любой унаследованный/битый Rule Element здесь бессмыслен и заставляет SF2e
+    // повторно ругаться при каждом prepareData Actor.
+    source.system.rules = [];
+    source.system.traits ??= {};
+    if (!Array.isArray(source.system.traits.value)) source.system.traits.value = [];
+    if (!Array.isArray(source.system.traits.otherTags)) source.system.traits.otherTags = [];
+    source.system.traits.rarity ??= "common";
     return source;
   }
 
@@ -1032,6 +1040,70 @@ function implantContainerSource(catalog) {
       traits: { rarity: "common", value: [] },
     },
   };
+}
+
+
+export function forgeImplantContainerRepairUpdate(item) {
+  const forge = item?.flags?.[MODULE_ID]?.[FORGE_FLAG];
+  const description = String(item?.system?.description?.value ?? "");
+  const managed =
+    item?.type === "backpack" &&
+    String(item?.name ?? "").trim() === "Импланты" &&
+    (
+      forge?.kind === "implant-container" ||
+      forge?.loadoutKey === "implant-container" ||
+      /Служебный контейнер Киберпанк-Кузницы/iu.test(description)
+    );
+  if (!managed) return null;
+
+  const id = item?.id ?? item?._id;
+  if (!id) return null;
+  const update = { _id: id };
+  let changed = false;
+
+  const rules = item?.system?.rules;
+  if (!Array.isArray(rules) || rules.length > 0) {
+    update["system.rules"] = [];
+    changed = true;
+  }
+  if (!Array.isArray(item?.system?.traits?.value)) {
+    update["system.traits.value"] = [];
+    changed = true;
+  }
+  if (!Array.isArray(item?.system?.traits?.otherTags)) {
+    update["system.traits.otherTags"] = [];
+    changed = true;
+  }
+  return changed ? update : null;
+}
+
+export async function repairForgeImplantContainers(actors = globalThis.game?.actors ?? []) {
+  if (!globalThis.game?.user?.isGM) return { actors: 0, items: 0, failed: 0 };
+  let actorCount = 0;
+  let itemCount = 0;
+  let failed = 0;
+  for (const actor of actors ?? []) {
+    const updates = [...(actor?.items ?? [])]
+      .map((item) => forgeImplantContainerRepairUpdate(item))
+      .filter(Boolean);
+    if (!updates.length) continue;
+    actorCount += 1;
+    itemCount += updates.length;
+    try {
+      await actor.updateEmbeddedDocuments("Item", updates, {
+        render: false,
+        cyberpunkForgeOperation: true,
+        cyberpunkRemasterContainerRepair: true,
+      });
+    } catch (error) {
+      failed += 1;
+      console.warn(`${MODULE_ID} | Не удалось исправить служебный контейнер имплантов у ${actor?.name ?? actor?.id ?? "Actor"}`, error);
+    }
+  }
+  if (itemCount > 0) {
+    console.info(`${MODULE_ID} | Исправлены служебные контейнеры имплантов: ${itemCount} у ${actorCount} Actor`);
+  }
+  return { actors: actorCount, items: itemCount, failed };
 }
 
 async function organizeGeneratedCyberware(actor, items, container) {

@@ -3,3 +3,15 @@ node_modules/
 .author-paths.local.json
 *.log
 !packs/**/*.log
+tests/integration-2.8.32.test.mjs
+tests/integration-2.8.31.test.mjs
+tests/integration-2.8.21.test.mjs
+sheets/CyberwareTab.js
+runtime/implant-creator.mjs
+runtime/cyberware-runtime.mjs
+package.json
+module.json
+forge/generator.mjs
+CHANGELOG.md
+*.js
+*.md

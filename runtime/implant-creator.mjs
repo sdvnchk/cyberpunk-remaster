@@ -4359,20 +4359,33 @@ function isMissingEmbeddedItemError(error) {
   return /Item\s+"[^"]+"\s+does not exist|Item .* does not exist|document .* does not exist|not found/iu.test(message);
 }
 
+const SAFE_DELETE_ITEM_LOCK = new Set();
+
 async function safeDeleteActorEmbeddedItem(item) {
   const actor = item?.parent;
   const id = item?.id;
-  if (!actor?.items || !id || !actor.items.get(id)) return false;
+  if (!actor?.items || !id) return false;
+
+  const lockKey = `${actor.id ?? "actor"}:${id}`;
+  if (SAFE_DELETE_ITEM_LOCK.has(lockKey)) return false;
+  SAFE_DELETE_ITEM_LOCK.add(lockKey);
   try {
-    await item.delete();
+    // Используем актуальный Embedded Item из коллекции Actor, а не потенциально
+    // устаревшую ссылку из предыдущего прохода синхронизации.
+    const liveItem = actor.items.get(id);
+    if (!liveItem) return false;
+    await liveItem.delete();
     return true;
   } catch (error) {
     if (isMissingEmbeddedItemError(error)) return false;
     throw error;
+  } finally {
+    SAFE_DELETE_ITEM_LOCK.delete(lockKey);
   }
 }
 
 const ACTION_SYNC_LOCK = new Set();
+const ACTOR_ACTION_REPAIR_LOCK = new Map();
 
 function cyberwareInstalled(item) {
   for (const id of REMASTER_IDS) {
@@ -4523,8 +4536,7 @@ async function syncActivationActionForImplant(item) {
   }
 }
 
-async function ensureActorActivationActions(actor) {
-  if (!actor?.items || !(actor.isOwner ?? game.user?.isGM)) return false;
+async function ensureActorActivationActionsUnlocked(actor) {
   let changed = false;
 
   for (const item of [...actor.items]) {
@@ -4567,6 +4579,24 @@ async function ensureActorActivationActions(actor) {
   return changed;
 }
 
+async function ensureActorActivationActions(actor) {
+  if (!actor?.items || !(actor.isOwner ?? game.user?.isGM)) return false;
+
+  const lockKey = String(actor.id ?? actor.uuid ?? actor.name ?? "actor");
+  const activeRepair = ACTOR_ACTION_REPAIR_LOCK.get(lockKey);
+  if (activeRepair) return activeRepair;
+
+  const operation = ensureActorActivationActionsUnlocked(actor);
+  ACTOR_ACTION_REPAIR_LOCK.set(lockKey, operation);
+  try {
+    return await operation;
+  } finally {
+    if (ACTOR_ACTION_REPAIR_LOCK.get(lockKey) === operation) {
+      ACTOR_ACTION_REPAIR_LOCK.delete(lockKey);
+    }
+  }
+}
+
 function updateActorActivationControl(control, source, action) {
   const active = activeActivationEffect(source);
   const config = getActivationConfig(source);
@@ -4594,6 +4624,70 @@ function updateActorActivationControl(control, source, action) {
   }
 }
 
+
+function isManagedActivationSchemaItem(item) {
+  const creatorFlags = item?.flags?.[MODULE_ID] ?? {};
+  const remasterManaged = REMASTER_IDS.some((id) => item?.flags?.[id]?.cyberware === true);
+  return remasterManaged ||
+    creatorFlags?.activation?.enabled === true ||
+    creatorFlags?.activationAction === true ||
+    creatorFlags?.activationEffect === true;
+}
+
+function isValidRuleElement(rule) {
+  return Boolean(
+    rule &&
+    typeof rule === "object" &&
+    !Array.isArray(rule) &&
+    String(rule.key ?? "").trim()
+  );
+}
+
+function activationSchemaRepairUpdate(item) {
+  if (!isManagedActivationSchemaItem(item)) return null;
+  const id = item?.id ?? item?._id;
+  if (!id) return null;
+
+  const update = { _id: id };
+  let changed = false;
+  const rules = item?.system?.rules;
+
+  if (Array.isArray(rules)) {
+    const validRules = rules.filter(isValidRuleElement);
+    if (validRules.length !== rules.length) {
+      update["system.rules"] = foundry.utils.deepClone(validRules);
+      changed = true;
+    }
+  } else {
+    update["system.rules"] = [];
+    changed = true;
+  }
+
+  if (!Array.isArray(item?.system?.traits?.value)) {
+    update["system.traits.value"] = [];
+    changed = true;
+  }
+  if (!Array.isArray(item?.system?.traits?.otherTags)) {
+    update["system.traits.otherTags"] = [];
+    changed = true;
+  }
+
+  return changed ? update : null;
+}
+
+async function repairActivationSchemaForActor(actor) {
+  if (!actor?.items || typeof actor.updateEmbeddedDocuments !== "function") return false;
+  const updates = [...actor.items]
+    .map((item) => activationSchemaRepairUpdate(item))
+    .filter(Boolean);
+  if (!updates.length) return false;
+
+  await actor.updateEmbeddedDocuments("Item", updates, {
+    render: false,
+    cyberpunkRemasterActivationRepair: true,
+  });
+  return true;
+}
 
 function hasLegacyActivationSourceReference(value) {
   if (typeof value === "string") {
@@ -4649,9 +4743,10 @@ async function repairActivationArtifacts() {
   for (const actor of game.actors ?? []) {
     actors++;
     try {
+      const schemaChanged = await repairActivationSchemaForActor(actor);
       const legacyChanged = await repairLegacyActivationEffectsForActor(actor);
       const actionChanged = await ensureActorActivationActions(actor);
-      if (legacyChanged || actionChanged) changed++;
+      if (schemaChanged || legacyChanged || actionChanged) changed++;
     } catch (error) {
       failed++;
       console.warn(`${MODULE_ID} | activation artifact repair failed for ${actor.name}`, error);
@@ -5215,4 +5310,4 @@ Hooks.on("deleteItem",(item)=>{
   if(action) void safeDeleteActorEmbeddedItem(action).catch((error)=>console.error(`${MODULE_ID} | delete linked action failed`,error));
 });
 
-export { openCreator, createImplant, applyCyberwareData, activateImplant, deactivateImplant, syncActivationActionForImplant, resolveActivationSourceReferences, repairActivationArtifacts, installCustomPktModel, registerPktModelDefinition, customPktModels, RULE_PRESETS };
+export { openCreator, createImplant, applyCyberwareData, activateImplant, deactivateImplant, syncActivationActionForImplant, resolveActivationSourceReferences, activationSchemaRepairUpdate, repairActivationArtifacts, installCustomPktModel, registerPktModelDefinition, customPktModels, RULE_PRESETS };

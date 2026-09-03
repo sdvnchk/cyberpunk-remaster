@@ -44,11 +44,11 @@ test("2.8.31 footer remains fixed while only the middle list scrolls", () => {
   assert.match(css, /@media\s*\(max-width:\s*620px\)[\s\S]*\.archive-share-footer\s*\{[^}]*grid-template-columns:\s*1fr/isu);
 });
 
-test("2.8.31 metadata and changelog are synchronized", () => {
+test("2.8.31 release remains documented after later versions", () => {
   const manifest = JSON.parse(read("module.json"));
   const pkg = JSON.parse(read("package.json"));
   const changelog = read("CHANGELOG.md");
-  assert.equal(manifest.version, "2.8.31");
-  assert.equal(pkg.version, "2.8.31");
+  assert.equal(manifest.version, pkg.version);
+  assert.ok(Number(manifest.version.split(".").at(-1)) >= 31);
   assert.match(changelog, /^## 2\.8\.31\b/mu);
 });

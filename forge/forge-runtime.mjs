@@ -25,6 +25,7 @@ import {
   normalizeForgeForm,
   previewNpc,
   refreshNpcInterfaceSummary,
+  repairForgeImplantContainers,
   selectedNpcInfo,
   summarizeResult,
 } from "./generator.mjs";
@@ -1122,6 +1123,15 @@ Hooks.once("init", () => {
       createLauncherMacro,
     },
   };
+});
+
+Hooks.once("ready", () => {
+  if (!globalThis.game?.user?.isGM) return;
+  const activeGM = globalThis.game?.users?.activeGM;
+  if (activeGM && activeGM.id !== globalThis.game.user.id) return;
+  void repairForgeImplantContainers().catch((error) => {
+    console.warn(`${MODULE_ID} | Forge implant container repair failed`, error);
+  });
 });
 
 Hooks.on("renderActorDirectory", addDirectoryButton);
