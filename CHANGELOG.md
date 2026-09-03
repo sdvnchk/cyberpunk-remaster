@@ -1,3 +1,13 @@
+## 2.8.21 — 3 сентября 2026
+
+- Встроенный **Cyberpunk Implant Creator** обновлён с 1.13.29 до исправленной логики **1.13.31**.
+- Активируемые Rule Elements теперь до создания Effect рекурсивно разрешают `{sourceItem|id}`, `{sourceItem|uuid}`, `{item|id}`, `{item|_id}`, `{item|parentItem.id}` и `{item|parentItem.uuid}` в ID/UUID конкретного исходного импланта-оружия на Actor.
+- Добавлен целевой ремонт уже существующих activation Effect: legacy-плейсхолдеры исправляются только если реально присутствуют в `system.rules`; активные Effect не пересобираются из `renderActorSheet` и общего `updateItem`, чтобы не возвращать цикл `Effect update → Actor render → Effect update`.
+- На `ready` GM выполняется безопасный `repairActivationArtifacts()`: ремонтируются legacy Effect, удаляются осиротевшие Effect/Action и дубликаты служебных Action.
+- Удаление служебных activation Action переведено на безопасный обработчик, который игнорирует гонку Foundry `Item "..." does not exist!`.
+- В API Remaster добавлен `game.modules.get("cyberpunk-remaster").api.implantCreator.repairActivationArtifacts()`; существующие API Кузницы и Архивов не перезаписываются.
+- Исправлена внутренняя версия интегрированного CIC на **1.13.31**; Remaster-настройки, legacy flag-scope `cyberpunk-implant-creator`, стили и ПКТ-интеграция сохранены.
+
 # История версий
 
 ## 2.8.20 — 2 сентября 2026

@@ -1,6 +1,6 @@
 const PACKAGE_ID = "cyberpunk-remaster";
 const MODULE_ID = "cyberpunk-implant-creator";
-const MODULE_VERSION = "1.13.29";
+const MODULE_VERSION = "1.13.31";
 const REMASTER_IDS = [PACKAGE_ID, "sf2e-cyberware-pkt"];
 
 const IMPLANT_LABELS = {
@@ -4247,10 +4247,31 @@ async function consumeActivationUse(item, config, preferredAction = null) {
   return true;
 }
 
+function resolveActivationSourceReferences(value, item) {
+  const itemId = String(item?.id ?? "");
+  const itemUuid = String(item?.uuid ?? "");
+  if (typeof value === "string") {
+    return value
+      .replaceAll("{sourceItem|id}", itemId)
+      .replaceAll("{sourceItem|uuid}", itemUuid)
+      .replaceAll("{item|parentItem.id}", itemId)
+      .replaceAll("{item|parentItem.uuid}", itemUuid)
+      .replaceAll("{item|_id}", itemId)
+      .replaceAll("{item|id}", itemId);
+  }
+  if (Array.isArray(value)) return value.map((entry) => resolveActivationSourceReferences(entry, item));
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, entry]) => [key, resolveActivationSourceReferences(entry, item)])
+    );
+  }
+  return value;
+}
+
 function buildActivatedEffectSource(item, config) {
   const durationUnit = EFFECT_DURATION_UNITS.has(config.duration?.unit) ? config.duration.unit : "rounds";
   const durationValue = durationUnit === "encounter" || durationUnit === "unlimited" ? -1 : Math.max(1, Number(config.duration?.value ?? 1) || 1);
-  const rules = foundry.utils.deepClone(Array.isArray(config.effectRules) ? config.effectRules : []);
+  const rules = resolveActivationSourceReferences(foundry.utils.deepClone(Array.isArray(config.effectRules) ? config.effectRules : []), item);
   for (const uuid of Array.isArray(config.grantItemUuids) ? config.grantItemUuids : []) {
     if (!String(uuid).trim()) continue;
     rules.push({ key: "GrantItem", uuid: String(uuid).trim(), allowDuplicate: false });
@@ -4330,6 +4351,25 @@ async function deactivateImplant(item, explicitEffect = null) {
 
   ui.notifications.info(`${item.name}: активируемый эффект отключён.`);
   return true;
+}
+
+
+function isMissingEmbeddedItemError(error) {
+  const message = String(error?.message ?? error ?? "");
+  return /Item\s+"[^"]+"\s+does not exist|Item .* does not exist|document .* does not exist|not found/iu.test(message);
+}
+
+async function safeDeleteActorEmbeddedItem(item) {
+  const actor = item?.parent;
+  const id = item?.id;
+  if (!actor?.items || !id || !actor.items.get(id)) return false;
+  try {
+    await item.delete();
+    return true;
+  } catch (error) {
+    if (isMissingEmbeddedItemError(error)) return false;
+    throw error;
+  }
 }
 
 const ACTION_SYNC_LOCK = new Set();
@@ -4449,7 +4489,7 @@ async function syncActivationActionForImplant(item) {
     const existing = linkedActivationAction(item);
     const shouldExist = Boolean(config && config.showOnActionsSheet !== false && cyberwareInstalled(item));
     if (!shouldExist) {
-      if (existing) await existing.delete();
+      if (existing) await safeDeleteActorEmbeddedItem(existing);
       return Boolean(existing);
     }
     const source = buildActivationActionSource(item, config);
@@ -4486,23 +4526,43 @@ async function syncActivationActionForImplant(item) {
 async function ensureActorActivationActions(actor) {
   if (!actor?.items || !(actor.isOwner ?? game.user?.isGM)) return false;
   let changed = false;
-  for (const item of actor.items) {
-    if (getActivationConfig(item)) changed = (await syncActivationActionForImplant(item)) || changed;
+
+  for (const item of [...actor.items]) {
+    if (item.type === "action" || item.type === "effect") continue;
+    changed = (await syncActivationActionForImplant(item)) || changed;
   }
+
+  // Repair/delete orphaned activation Effects. This does not rebuild live Effects:
+  // only Effects whose source item vanished or no longer has an activation are removed.
+  for (const effect of [...actor.items].filter((candidate) => candidate.type === "effect" && candidate.flags?.[MODULE_ID]?.activationEffect === true)) {
+    const sourceId = effect.flags?.[MODULE_ID]?.activationSourceItemId;
+    const sourceItem = sourceId ? actor.items.get(sourceId) : null;
+    if (!sourceItem || !getActivationConfig(sourceItem)) {
+      changed = (await safeDeleteActorEmbeddedItem(effect)) || changed;
+    }
+  }
+
+  // Keep one linked Action per source item and delete stale/orphaned duplicates safely.
   const seenActions = new Map();
-  for (const action of actor.items.filter((candidate) => candidate.type === "action" && candidate.flags?.[MODULE_ID]?.activationAction === true)) {
+  for (const action of [...actor.items].filter((candidate) => candidate.type === "action" && candidate.flags?.[MODULE_ID]?.activationAction === true)) {
+    if (!actor.items.get(action.id)) continue;
     const sourceId = action.flags?.[MODULE_ID]?.activationSourceItemId;
-    if (!sourceId || !actor.items.get(sourceId)) { await action.delete(); changed = true; continue; }
+    if (!sourceId || !actor.items.get(sourceId)) {
+      changed = (await safeDeleteActorEmbeddedItem(action)) || changed;
+      continue;
+    }
     const previous = seenActions.get(sourceId);
-    if (!previous) { seenActions.set(sourceId, action); continue; }
+    if (!previous || !actor.items.get(previous.id)) {
+      seenActions.set(sourceId, action);
+      continue;
+    }
     const config = getActivationConfig(actor.items.get(sourceId));
     const prevValue = nativeActivationFrequencyState(previous, config)?.value ?? 0;
     const nextValue = nativeActivationFrequencyState(action, config)?.value ?? 0;
     const keep = nextValue > prevValue ? action : previous;
     const remove = keep === action ? previous : action;
     seenActions.set(sourceId, keep);
-    await remove.delete();
-    changed = true;
+    changed = (await safeDeleteActorEmbeddedItem(remove)) || changed;
   }
   return changed;
 }
@@ -4532,6 +4592,74 @@ function updateActorActivationControl(control, source, action) {
     control.title = currentAction?.name ?? action?.name ?? source.name;
     control.innerHTML = `<i class="fa-solid fa-bolt"></i>`;
   }
+}
+
+
+function hasLegacyActivationSourceReference(value) {
+  if (typeof value === "string") {
+    return value.includes("{sourceItem|id}") ||
+      value.includes("{sourceItem|uuid}") ||
+      value.includes("{item|parentItem.id}") ||
+      value.includes("{item|parentItem.uuid}") ||
+      value.includes("{item|_id}") ||
+      value.includes("{item|id}");
+  }
+  if (Array.isArray(value)) return value.some((entry) => hasLegacyActivationSourceReference(entry));
+  if (value && typeof value === "object") {
+    return Object.values(value).some((entry) => hasLegacyActivationSourceReference(entry));
+  }
+  return false;
+}
+
+async function repairLegacyActivationEffectsForActor(actor) {
+  if (!actor?.items) return false;
+  let changed = false;
+
+  for (const effect of [...actor.items].filter(
+    (candidate) => candidate.type === "effect" &&
+      candidate.flags?.[MODULE_ID]?.activationEffect === true
+  )) {
+    if (!actor.items.get(effect.id)) continue;
+
+    const sourceId = effect.flags?.[MODULE_ID]?.activationSourceItemId;
+    const sourceItem = sourceId ? actor.items.get(sourceId) : null;
+    if (!sourceItem) continue;
+
+    const currentRules = Array.isArray(effect.system?.rules) ? effect.system.rules : [];
+    if (!hasLegacyActivationSourceReference(currentRules)) continue;
+
+    const resolvedRules = resolveActivationSourceReferences(
+      foundry.utils.deepClone(currentRules),
+      sourceItem
+    );
+
+    await effect.update({ "system.rules": resolvedRules });
+    changed = true;
+  }
+
+  return changed;
+}
+
+async function repairActivationArtifacts() {
+  if (!game.user?.isGM) return { actors: 0, changed: 0, failed: 0 };
+  let actors = 0;
+  let changed = 0;
+  let failed = 0;
+
+  for (const actor of game.actors ?? []) {
+    actors++;
+    try {
+      const legacyChanged = await repairLegacyActivationEffectsForActor(actor);
+      const actionChanged = await ensureActorActivationActions(actor);
+      if (legacyChanged || actionChanged) changed++;
+    } catch (error) {
+      failed++;
+      console.warn(`${MODULE_ID} | activation artifact repair failed for ${actor.name}`, error);
+    }
+  }
+
+  if (changed > 0) console.info(`${MODULE_ID} | activation artifacts repaired on ${changed}/${actors} actors`);
+  return { actors, changed, failed };
 }
 
 function injectActorActivationControls(app, html) {
@@ -4963,6 +5091,7 @@ Hooks.once("init",()=>{
       open:openCreator,
       manual:openManualJournal,
       rulePresets:RULE_PRESETS,
+      repairActivationArtifacts,
       pktModels:customPktModels,
       registerPktModelFromData:registerPktModelDefinition,
       installPktModel:installCustomPktModel,
@@ -4999,6 +5128,7 @@ Hooks.once("ready",()=>{
   void migrateInstalledCustomPktComponentPolicies().catch((error)=>console.error(`${MODULE_ID} | custom PKT component policy migration failed`,error));
   void migrateCreatorWorldReplacementBases().catch((error)=>console.error(`${MODULE_ID} | creator replacement base migration failed`,error));
   void migrateHiddenCapacityLabels().catch((error)=>console.error(`${MODULE_ID} | hidden capacity label migration failed`,error));
+  void repairActivationArtifacts().catch((error)=>console.error(`${MODULE_ID} | activation artifact repair failed`,error));
 });
 Hooks.on(`${MODULE_ID}:pktModelsChanged`,()=>{ refreshNativePktCatalogs(); const form=document.querySelector(".cic-root form"); if(form) renderPktModelManager(form); });
 Hooks.on("renderItemDirectory",(app,html)=>{if(game.settings.get(PACKAGE_ID,"implantCreatorShowDirectoryButton"))injectItemDirectoryButton(app,html);});
@@ -5082,7 +5212,7 @@ Hooks.on("deleteItem",(item)=>{
   }
   if(item.type==="action") return;
   const action=actor.items.find((candidate)=>candidate.type==="action" && candidate.flags?.[MODULE_ID]?.activationSourceItemId===item.id);
-  if(action) void action.delete().catch((error)=>console.error(`${MODULE_ID} | delete linked action failed`,error));
+  if(action) void safeDeleteActorEmbeddedItem(action).catch((error)=>console.error(`${MODULE_ID} | delete linked action failed`,error));
 });
 
-export { openCreator, createImplant, applyCyberwareData, activateImplant, deactivateImplant, syncActivationActionForImplant, installCustomPktModel, registerPktModelDefinition, customPktModels, RULE_PRESETS };
+export { openCreator, createImplant, applyCyberwareData, activateImplant, deactivateImplant, syncActivationActionForImplant, resolveActivationSourceReferences, repairActivationArtifacts, installCustomPktModel, registerPktModelDefinition, customPktModels, RULE_PRESETS };

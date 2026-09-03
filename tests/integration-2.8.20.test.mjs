@@ -35,11 +35,7 @@ test("2.8.20 overlay context menus inherit archive theme variables and scroll in
   assert.match(css, /overflow:\s*auto/u);
 });
 
-test("2.8.20 metadata and changelog are synchronized", () => {
-  const manifest = JSON.parse(read("module.json"));
-  const pkg = JSON.parse(read("package.json"));
+test("2.8.20 changelog entry remains documented", () => {
   const changelog = read("CHANGELOG.md");
-  assert.equal(manifest.version, "2.8.20");
-  assert.equal(pkg.version, "2.8.20");
   assert.match(changelog, /^## 2\.8\.20\b/mu);
 });

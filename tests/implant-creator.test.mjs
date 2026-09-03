@@ -20,7 +20,7 @@ test("integrated creator is Remaster-owned but preserves the legacy creator flag
   const source = existsSync(runtimePath) ? readFileSync(runtimePath, "utf8") : "";
   assert.match(source, /const PACKAGE_ID = "cyberpunk-remaster"/u);
   assert.match(source, /const MODULE_ID = "cyberpunk-implant-creator"/u);
-  assert.match(source, /const MODULE_VERSION = "1\.13\.29"/u);
+  assert.match(source, /const MODULE_VERSION = "1\.13\.31"/u);
   assert.match(source, /game\.settings\.register\(PACKAGE_ID,"implantCreatorShowDirectoryButton"/u);
   assert.match(source, /game\.modules\.get\(PACKAGE_ID\)/u);
   assert.match(source, /implantCreator:/u);
