@@ -72,11 +72,7 @@ test("2.8.21 keeps Remaster-owned settings and merged API", () => {
 });
 
 
-test("2.8.21 metadata and changelog are synchronized", () => {
-  const manifest = JSON.parse(readFileSync(path.join(root, "module.json"), "utf8"));
-  const pkg = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8"));
+test("2.8.21 changelog entry remains present after later releases", () => {
   const changelog = readFileSync(path.join(root, "CHANGELOG.md"), "utf8");
-  assert.equal(manifest.version, "2.8.21");
-  assert.equal(pkg.version, "2.8.21");
   assert.match(changelog, /^## 2\.8\.21\b/mu);
 });

@@ -14,6 +14,7 @@ import {
   proxyArchiveContextAction,
   syncArchiveContextTheme,
 } from "./archive-ui-utils.mjs";
+import { openArchiveShareDialog } from "./archive-share-service.mjs";
 
 /*
  * NIGHT CITY // ДИНАМИЧЕСКИЙ ПОЛЕВОЙ HUD — автономный Foundry VTT макрос
@@ -1728,7 +1729,7 @@ export async function createNeoArchiveController(hostRoot, { requestClose = asyn
     const y = Math.max(8, Number(ctx.y) || 8);
     return `<div class="pcm-contact-context-menu pcm-context-menu-surface" data-entry-id="${person.id}" style="left:${x}px;top:${y}px">
       <header><span class="pcm-context-avatar">${person.image ? `<img src="${esc(person.image)}" alt="">` : "◉"}</span><span><small>КОНТЕКСТ // КОНТАКТ</small><b>${esc(person.title)}</b></span><button data-action="context-close" aria-label="Закрыть">×</button></header>
-      <div class="pcm-context-actions"><button data-action="context-open-person">◉ Открыть досье</button><button data-action="context-quick-edit">✎ Быстро редактировать</button><button data-action="context-toggle-pin">${person.pinned ? "★ Открепить" : "☆ Закрепить"}</button><button data-action="context-message">✉ Сообщение</button></div>
+      <div class="pcm-context-actions"><button data-action="context-open-person">◉ Открыть досье</button><button data-action="context-quick-edit">✎ Быстро редактировать</button><button data-action="context-toggle-pin">${person.pinned ? "★ Открепить" : "☆ Закрепить"}</button><button data-action="context-message">✉ Сообщение</button><button data-action="context-share-person"><i class="fa-solid fa-share-nodes"></i> Поделиться</button></div>
       <section><small>УРОВЕНЬ ОТНОШЕНИЯ</small><div class="pcm-context-chip-grid">${ATTITUDE_GROUPS.map(group => `<button class="${person.attitude === group.value ? "active" : ""}" data-action="context-set-attitude" data-attitude="${esc(group.value)}">${group.icon} ${esc(group.label)}</button>`).join("")}</div></section>
       <section><small>РОЛЬ / ПРИНАДЛЕЖНОСТЬ</small><div class="pcm-context-chip-grid roles">${Object.entries(CONTACT_TYPE_META).map(([type,meta]) => `<button class="${types.has(type) ? "active" : ""}" data-action="context-add-role" data-contact-type="${esc(type)}" aria-pressed="${types.has(type) ? "true" : "false"}" title="${types.has(type) ? "Повторный клик снимет роль и её принадлежности" : "Добавить роль"}">${types.has(type) ? "✓" : "+"} ${meta.icon} ${esc(meta.label)}</button>`).join("")}</div><small class="pcm-context-role-hint">Выбранная роль подсвечена. Повторный клик снимет роль.</small></section>
       <section><small>РУЧНЫЕ ТЕГИ</small><div class="pcm-context-tag-list">${contactTagValues(person).length ? contactTagValues(person).map(tag => `<button data-action="context-remove-tag" data-tag="${esc(tag)}" title="Удалить тег"># ${esc(tag)} <b>×</b></button>`).join("") : `<span class="muted">Тегов пока нет.</span>`}</div></section>
@@ -1804,7 +1805,7 @@ export async function createNeoArchiveController(hostRoot, { requestClose = asyn
     const directoryAction = DIRECTORY_TYPES.has(entry.type) ? `<button data-action="context-entry-add-contact">◉ Добавить контакт</button>` : "";
     return `<div class="pcm-entry-context-menu pcm-context-menu-surface" data-entry-id="${entry.id}" style="left:${x}px;top:${y}px">
       <header><span class="pcm-context-avatar">${entry.image ? `<img src="${esc(entry.image)}" alt="">` : (SECTIONS[entry.type]?.icon || "▧")}</span><span><small>КОНТЕКСТ // ${esc(SECTIONS[entry.type]?.label || "ЗАПИСЬ")}</small><b>${esc(recordTitle(entry))}</b></span><button data-action="context-entry-close" aria-label="Закрыть">×</button></header>
-      <div class="pcm-context-actions"><button data-action="context-entry-open">◉ Открыть</button><button data-action="context-entry-edit">✎ Редактировать</button><button data-action="context-entry-toggle-pin">${entry.pinned ? "★ Открепить" : "☆ Закрепить"}</button>${directoryAction || (ctx.tagEditor ? "" : `<button data-action="context-entry-add-tag"># Добавить тег</button>`)}</div>
+      <div class="pcm-context-actions"><button data-action="context-entry-open">◉ Открыть</button><button data-action="context-entry-edit">✎ Редактировать</button><button data-action="context-entry-toggle-pin">${entry.pinned ? "★ Открепить" : "☆ Закрепить"}</button><button data-action="context-entry-share"><i class="fa-solid fa-share-nodes"></i> Поделиться</button>${directoryAction || (ctx.tagEditor ? "" : `<button data-action="context-entry-add-tag"># Добавить тег</button>`)}</div>
       ${ctx.tagEditor ? `<div class="pcm-context-actions minor pcm-context-tag-action"><div class="pcm-context-tag-editor"><label><span>НОВЫЙ ТЕГ</span><input data-entry-context-tag-input autocomplete="off" placeholder="Например: срочно, опасно…"></label><button data-action="context-entry-commit-tag">+ Добавить</button><button data-action="context-entry-cancel-tag" aria-label="Отмена добавления тега">×</button></div></div>` : (directoryAction ? `<div class="pcm-context-actions minor"><button data-action="context-entry-add-tag"># Добавить тег</button></div>` : "")}
       ${statuses.length ? `<section><small>БЫСТРЫЙ СТАТУС</small><div class="pcm-context-chip-grid">${statuses.map(status => `<button class="${entry.status === status ? "active" : ""}" data-action="context-entry-set-status" data-status="${esc(status)}">${entry.status === status ? "✓ " : ""}${esc(status)}</button>`).join("")}</div></section>` : ""}
       ${special}
@@ -1917,8 +1918,7 @@ export async function createNeoArchiveController(hostRoot, { requestClose = asyn
     return `<div class="pcm-detail ${quickEdit ? "is-quick-edit" : ""}" data-entry-id="${person.id}"><div class="pcm-detail-nav">${back}<div><button data-action="open-chat-contact" data-person-id="${person.id}">✉ Сообщение</button><button data-action="pin">${person.pinned ? "★ Закреплено" : "☆ Закрепить"}</button><button class="primary" data-action="edit-entry">${quickEdit ? "✓ Готово" : "✎ Редактировать"}</button></div></div>
       <section class="pcm-person-hero"><div class="pcm-person-portrait">${person.image ? `<img src="${esc(person.image)}" alt="">` : "◉"}</div>${heroBody}</section>
       ${quickEdit ? "" : neuroContactPanel(person, book)}
-      ${quickEdit ? "" : `<div class="pcm-detail-grid">${person.gallery.length ? `<section class="pcm-detail-panel wide"><h3>▧ Галерея</h3><div class="pcm-gallery-view">${person.gallery.map(item => `<button data-action="view-gallery-image" data-gallery-id="${item.id}"><img src="${esc(item.image)}" alt="${esc(item.caption)}"><span>${esc(item.caption || "Открыть изображение")}</span></button>`).join("")}</div></section>` : ""}
-        <section class="pcm-detail-panel wide"><h3>⌖ Где встречали</h3><div class="pcm-location-chips">${locations.length ? locations.map(location => `<button data-action="view-location" data-location-id="${location.id}" data-entry-id="${location.id}">⌖ ${esc(location.title)}</button>`).join("") : '<span class="muted">Точки пока не связаны.</span>'}</div>${person.firstMet ? `<h4>Первая встреча</h4>${readText(person.firstMet)}` : ""}${person.lastSeen ? `<h4>Последняя встреча</h4>${readText(person.lastSeen)}` : ""}</section>
+      ${quickEdit ? "" : `<div class="pcm-detail-grid"><section class="pcm-detail-panel wide pcm-person-meetings"><h3>⌖ Где встречали</h3><div class="pcm-location-chips">${locations.length ? locations.map(location => `<button data-action="view-location" data-location-id="${location.id}" data-entry-id="${location.id}">⌖ ${esc(location.title)}</button>`).join("") : '<span class="muted">Точки пока не связаны.</span>'}</div>${person.firstMet || person.lastSeen ? `<div class="pcm-person-meeting-meta">${person.firstMet ? `<div class="pcm-meeting-fact"><h4>Первая встреча</h4>${readText(person.firstMet)}</div>` : ""}${person.lastSeen ? `<div class="pcm-meeting-fact"><h4>Последняя встреча</h4>${readText(person.lastSeen)}</div>` : ""}</div>` : ""}</section>
         ${personConnectionsPanel(person)}
         ${person.encounters?.length ? `<section class="pcm-detail-panel wide"><h3>◷ История встреч</h3><div class="pcm-encounters">${[...person.encounters].reverse().slice(0, 20).map(encounter => { const place = book.entries.locations.find(location => location.id === encounter.locationId); const date = String(encounter.at || "").slice(0, 10); return `<div><span><b>${esc(encounter.sceneName || place?.title || "Неизвестное место")}</b><small>${esc(date || "Без даты")}</small></span>${place ? `<button data-action="view-location" data-location-id="${place.id}" data-entry-id="${place.id}">Открыть</button>` : ""}</div>`; }).join("")}</div></section>` : ""}
         ${inlinePersonNote(person, "content", "Мои заметки", "Что важно помнить об этом человеке?", "▧")}
@@ -1926,6 +1926,7 @@ export async function createNeoArchiveController(hostRoot, { requestClose = asyn
         ${inlinePersonNote(person, "promises", "Долги и договорённости", "Кто кому должен, что обещано и к какому сроку…", "◇")}
         ${inlinePersonNote(person, "secrets", "Подозрения", "Сомнения, несостыковки, скрытые мотивы и непроверенные версии…", "△")}
         ${person.relationship ? `<section class="pcm-detail-panel wide"><h3>Наша связь</h3>${readText(person.relationship)}</section>` : ""}${readFragments(person)}
+        ${person.gallery.length ? `<section class="pcm-detail-panel wide pcm-person-gallery"><h3>▧ Галерея</h3><div class="pcm-gallery-view">${person.gallery.map(item => `<button data-action="view-gallery-image" data-gallery-id="${item.id}"><img src="${esc(item.image)}" alt="${esc(item.caption)}"><span>${esc(item.caption || "Открыть изображение")}</span></button>`).join("")}</div></section>` : ""}
       </div>`}</div>`;
   }
 
@@ -6552,6 +6553,18 @@ ${EMBEDDED_HOST_CSS}
     const contextPerson = contactContextPerson();
     if ( action === "context-close" ) { closeContactContextMenu(); return; }
     if ( action === "context-entry-close" ) { closeEntryContextMenu(); return; }
+    if ( action === "context-entry-share" && entry && entry.type !== "people" ) {
+      const snapshot = getShareSnapshot();
+      closeEntryContextMenu();
+      await openArchiveShareDialog({ senderUser: game.user, sourceOwnerUserId: snapshot.sourceOwnerUserId, sourceActor: snapshot.sourceActor, scope: "entry", label: recordTitle(entry), records: [{ section: entry.type, entry: clone(entry) }], themeSource: state.root, archiveMode: "neo" });
+      return;
+    }
+    if ( action === "context-share-person" && contextPerson ) {
+      const snapshot = getShareSnapshot();
+      closeContactContextMenu();
+      await openArchiveShareDialog({ senderUser: game.user, sourceOwnerUserId: snapshot.sourceOwnerUserId, sourceActor: snapshot.sourceActor, scope: "entry", label: contextPerson.title || "Контакт", records: [{ section: "people", entry: clone(contextPerson) }], themeSource: state.root, archiveMode: "neo" });
+      return;
+    }
 
     if ( action === "context-entry-open" && entry && entry.type !== "people" ) { openExistingEntry(entry); refreshEntryContextMenu(); return; }
     if ( action === "context-entry-edit" && entry && entry.type !== "people" ) { openEntryEditor(entry); refreshEntryContextMenu(); return; }
@@ -7190,6 +7203,17 @@ ${EMBEDDED_HOST_CSS}
     neuroHookIds.push(["deleteChatMessage", Hooks.on("deleteChatMessage", onNeuroMessageChanged)]);
   }
 
+  function getShareSnapshot() {
+    const actor = actorById(state.store.activeActorId);
+    const book = notebook();
+    return {
+      sourceOwnerUserId: String(userId),
+      sourceActor: { id: String(actor?.id ?? actor?._id ?? book?.actorId ?? ""), name: String(actor?.name ?? book?.actorName ?? "Персонаж"), img: String(actor?.img ?? book?.actorImg ?? "") },
+      section: String(state.section || "dashboard"),
+      notebook: clone(book),
+    };
+  }
+
   const api = {
     version: VERSION,
     macroVersion: MACRO_VERSION,
@@ -7198,6 +7222,7 @@ ${EMBEDDED_HOST_CSS}
     open() { render(); startScanHud(); },
     async flush() { await saveServer(true); },
     async close() { await saveServer(true); await requestClose(); },
+    getShareSnapshot,
     destroy() {
       stopScanHud(); clearInterval(state.scanTimer);
       closeContactContextMenu();

@@ -3286,7 +3286,7 @@
   }
 }
 
-/* 2.8.18 — сворачиваемая внутренняя панель Archive Hub */
+/* 2.8.18 / 2.8.25 — внутренняя панель Archive Hub сворачивается отдельно. */
 .neuro-archive-shell {
   position: relative;
 }
@@ -3301,32 +3301,6 @@
   border-color: rgba(120, 200, 192, 0.34);
 }
 
-.archive-hub-reveal {
-  position: absolute;
-  z-index: 80;
-  top: 7px;
-  right: 9px;
-  min-height: 30px;
-  padding: 5px 9px;
-  display: none;
-  align-items: center;
-  gap: 6px;
-  color: #d9fbff;
-  background: rgba(8, 12, 16, 0.94);
-  border: 1px solid rgba(120, 200, 192, 0.54);
-  border-radius: 3px;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
-  font: 800 10px/1 Consolas, "Roboto Mono", "Courier New", monospace;
-  letter-spacing: 0.05em;
-  cursor: pointer;
-}
-
-.archive-hub-reveal:hover {
-  color: #fff;
-  border-color: #e31b23;
-  background: rgba(20, 13, 17, 0.97);
-}
-
 .neuro-archive-shell[data-hub-collapsed="true"] {
   grid-template-rows: minmax(0, 1fr);
 }
@@ -3335,60 +3309,101 @@
   display: none;
 }
 
-.neuro-archive-shell[data-hub-collapsed="true"] > .archive-hub-reveal {
-  display: inline-flex;
-}
-
 .neuro-archive-shell[data-hub-collapsed="true"] > .neuro-archive-mode-host {
   grid-row: 1;
 }
 
-/* 2.8.19 — полное сворачивание Archive Hub до стандартной шапки Foundry. */
-.neuro-archive-application .archive-window-toggle {
-  flex: 0 0 32px;
-  width: 32px;
-  min-width: 32px;
-  height: 30px;
-  min-height: 30px;
-  padding: 0;
+/* 2.8.25 — Share / Inbox / Archives live inside the active archive toolbar. */
+.neuro-archive-mode-host > .archive-mode-root .archive-mode-toolbar-button {
+  position: relative !important;
+  flex: 0 0 auto !important;
+  min-width: 0 !important;
+  min-height: 34px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 5px !important;
+  white-space: nowrap !important;
+}
+
+.neuro-archive-mode-host > .archive-mode-root .archive-mode-toolbar-button > b {
+  flex: 0 0 auto !important;
+  width: auto !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: inline-grid !important;
+  place-items: center !important;
+  line-height: 1 !important;
+}
+
+
+.neuro-archive-mode-host > .archive-mode-root .archive-hub-toolbar[hidden] {
+  display: none !important;
+}
+
+.neuro-archive-mode-host > .archive-mode-root .archive-hub-toolbar {
+  border-color: color-mix(in srgb, var(--teal, #78c8c0) 58%, transparent) !important;
+}
+
+.neuro-archive-mode-host > .archive-mode-root .archive-share-inbox-count {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
   display: inline-grid;
   place-items: center;
-  color: #78c8c0;
-  background: rgba(4, 9, 12, 0.72);
-  border: 1px solid rgba(120, 200, 192, 0.34);
-  border-radius: 2px;
+  border: 0 !important;
+  border-radius: 999px;
+  color: var(--primary-ink, #071114) !important;
+  background: var(--teal, #38e1df) !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  letter-spacing: 0 !important;
 }
 
-.neuro-archive-application .archive-window-toggle:hover {
-  color: #fff;
-  border-color: #e31b23;
-  background: rgba(227, 27, 35, 0.18);
-}
-
-.neuro-archive-application.archive-window-collapsed {
-  width: min(390px, calc(100vw - 18px)) !important;
-  min-width: min(300px, calc(100vw - 18px)) !important;
-  height: 38px !important;
-  min-height: 38px !important;
-  max-height: 38px !important;
-  overflow: hidden !important;
-  resize: none !important;
-}
-
-.neuro-archive-application.archive-window-collapsed .window-header {
-  min-height: 38px !important;
-  height: 38px !important;
-  border-bottom: 0 !important;
-}
-
-.neuro-archive-application.archive-window-collapsed .window-content {
+.neuro-archive-mode-host > .archive-mode-root .archive-share-inbox-count[hidden] {
   display: none !important;
 }
 
-.neuro-archive-application.archive-window-collapsed .window-resize-handle,
-.neuro-archive-application.archive-window-collapsed [data-resize-handle] {
-  display: none !important;
+@container (max-width: 980px) {
+  .neuro-archive-mode-host > .archive-mode-root .archive-mode-toolbar-button > span {
+    display: none !important;
+  }
+  .neuro-archive-mode-host > .archive-mode-root .archive-mode-toolbar-button {
+    width: 36px !important;
+    padding-inline: 0 !important;
+  }
+  .neuro-archive-mode-host > .archive-mode-root .archive-share-inbox-button {
+    width: auto !important;
+    min-width: 36px !important;
+    padding-inline: 7px !important;
+  }
 }
+
+@container (max-width: 620px) {
+  .neuro-archive-mode-host > .archive-mode-root .archive-mode-toolbar-button {
+    width: 33px !important;
+    min-width: 33px !important;
+  }
+  .neuro-archive-mode-host > .archive-mode-root .archive-share-inbox-button {
+    width: auto !important;
+  }
+}
+
+
+/* 2.8.27 — stable mode-toolbar glyphs + real title-bar-only window compact state. */
+.neuro-archive-mode-host > .archive-mode-root .archive-mode-toolbar-button > b {
+  min-width: 1.05em !important;
+  color: inherit !important;
+  font-family: Consolas, "Roboto Mono", "Courier New", monospace !important;
+  font-style: normal !important;
+  font-weight: 800 !important;
+  text-align: center !important;
+}
+
+/* 2.8.28 — Native ApplicationV2 minimization.
+   No custom compact geometry: Foundry owns title-bar minimize/maximize and double-click behavior. */
 
 /* 2.8.20 — viewport-level context menus for all Archive views. */
 .archive-context-overlay-host {
@@ -3543,17 +3558,40 @@
   padding: 3px 7px;
 }
 
+.archive-context-overlay-host .pcm-context-tag-action {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-width: 0;
+}
+
 .archive-context-overlay-host .pcm-context-tag-editor {
+  width: 100%;
+  min-width: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) 38px;
   gap: 6px;
   margin-top: 8px;
+  align-items: end;
+}
+
+.archive-context-overlay-host .pcm-context-tag-editor > label,
+.archive-context-overlay-host .pcm-context-tag-editor > input {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-width: 0;
 }
 
 .archive-context-overlay-host .pcm-context-tag-editor label {
-  min-width: 0;
   display: grid;
-  gap: 3px;
+  gap: 4px;
+}
+
+.archive-context-overlay-host .pcm-context-tag-editor label > span {
+  display: block;
+  min-width: 0;
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
 .archive-context-overlay-host .pcm-context-tag-editor input {
@@ -3566,6 +3604,20 @@
   border: 1px solid var(--line, rgba(99, 232, 242, 0.28));
   border-radius: 5px;
   font: inherit;
+}
+
+.archive-context-overlay-host .pcm-context-tag-editor > button {
+  min-width: 0;
+  width: 100%;
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+
+.archive-context-overlay-host .pcm-context-tag-editor > button:last-child {
+  width: 38px;
+  min-width: 38px;
+  padding-inline: 0;
+  justify-self: end;
 }
 
 .archive-context-overlay-host .pcm-context-delete {
@@ -3595,6 +3647,716 @@
     grid-template-columns: 1fr;
   }
   .archive-context-overlay-host .pcm-context-tag-editor {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr) 38px;
+  }
+}
+
+/* 2.8.22 — Actor-targeted sharing shared by Neuro / Cyber / Neo Archive */
+.archive-share-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100500;
+  display: grid;
+  place-items: center;
+  padding: clamp(8px, 2vw, 24px);
+  background: rgba(2, 7, 11, 0.72);
+  backdrop-filter: blur(3px);
+  font-family: var(--font-primary, "Roboto", sans-serif);
+  font-size: 13px;
+}
+
+.archive-share-window {
+  width: min(720px, calc(100vw - 20px));
+  max-height: min(780px, calc(100vh - 20px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: #e8f5f5;
+  background: #091117;
+  border: 1px solid #00d5d5;
+  border-radius: 8px;
+  box-shadow: 0 18px 70px #000c, 0 0 28px #00d5d522;
+}
+
+.archive-share-head {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 36px;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 14px;
+  border-bottom: 1px solid #1b5159;
+  background: linear-gradient(180deg, #10232b, #0b171d);
+}
+
+.archive-share-head > span {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #00d5d566;
+  border-radius: 6px;
+  color: #38e1df;
+  font-size: 18px;
+}
+
+.archive-share-head > div,
+.archive-share-user-copy,
+.archive-share-actor-copy,
+.archive-share-packet-copy,
+.archive-share-scope-options span,
+.archive-share-conflict-actions span {
+  min-width: 0;
+}
+
+.archive-share-head small,
+.archive-share-user-copy small,
+.archive-share-actor-copy small,
+.archive-share-packet-copy small {
+  display: block;
+  color: #75c8ca;
+  font: 700 10px/1.25 ui-monospace, "Cascadia Mono", Consolas, monospace;
+  letter-spacing: .08em;
+}
+
+.archive-share-head h2 {
+  margin: 2px 0 3px;
+  color: #f3ffff;
+  font-size: 18px;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.archive-share-head p,
+.archive-share-packet-copy p {
+  margin: 0;
+  color: #9db3b5;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.archive-share-head > button,
+.archive-share-user-row,
+.archive-share-actor,
+.archive-share-scope-options > button,
+.archive-share-conflict-actions > button,
+.archive-share-packet-actions > button,
+.archive-share-footer > button {
+  border: 1px solid #25545d;
+  color: #e8f5f5;
+  background: #0c1b22;
+  border-radius: 6px;
+}
+
+.archive-share-head > button {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+}
+
+.archive-share-users,
+.archive-share-inbox-list {
+  min-height: 0;
+  overflow: auto;
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.archive-share-user {
+  border: 1px solid #183e46;
+  border-radius: 7px;
+  overflow: hidden;
+  background: #08151b;
+}
+
+.archive-share-user-row {
+  width: 100%;
+  min-height: 54px;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 24px;
+  gap: 10px;
+  align-items: center;
+  padding: 7px 10px;
+  text-align: left;
+  border: 0;
+  border-radius: 0;
+}
+
+.archive-share-user-icon,
+.archive-share-actor-avatar,
+.archive-share-packet-icon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid #25545d;
+  border-radius: 6px;
+  color: #38e1df;
+  background: #061015;
+}
+
+.archive-share-user-copy,
+.archive-share-actor-copy,
+.archive-share-packet-copy {
+  display: grid;
+  gap: 3px;
+  text-align: left;
+}
+
+.archive-share-user-copy b,
+.archive-share-actor-copy b,
+.archive-share-packet-copy b {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #f1ffff;
+}
+
+.archive-share-chevron {
+  transition: transform .16s ease;
+}
+
+.archive-share-user-row[aria-expanded="true"] .archive-share-chevron {
+  transform: rotate(180deg);
+}
+
+.archive-share-actors[hidden] {
+  display: none !important;
+}
+
+.archive-share-actors {
+  display: grid;
+  gap: 5px;
+  padding: 7px;
+  border-top: 1px solid #183e46;
+  background: #061015;
+}
+
+.archive-share-actor {
+  width: 100%;
+  min-height: 56px;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 24px;
+  gap: 10px;
+  align-items: center;
+  padding: 6px 9px;
+  text-align: left;
+}
+
+.archive-share-actor-avatar {
+  width: 48px;
+  height: 48px;
+}
+
+.archive-share-actor-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.archive-share-selected-mark {
+  opacity: 0;
+  color: #38e1df;
+}
+
+.archive-share-actor.selected {
+  border-color: #38e1df;
+  background: #0d2a31;
+  box-shadow: inset 0 0 0 1px #38e1df33;
+}
+
+.archive-share-actor.selected .archive-share-selected-mark {
+  opacity: 1;
+}
+
+.archive-share-actor:disabled,
+.archive-share-footer button:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.archive-share-footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border-top: 1px solid #1b5159;
+  color: #9db3b5;
+  background: #081318;
+}
+
+.archive-share-footer > button,
+.archive-share-packet-actions > button {
+  min-height: 34px;
+  padding: 6px 12px;
+}
+
+.archive-share-footer > button.primary,
+.archive-share-conflict-actions > button.primary {
+  border-color: #00d5d5;
+  color: #031013;
+  background: #38e1df;
+}
+
+.archive-share-scope-options,
+.archive-share-conflict-actions {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  overflow: auto;
+}
+
+.archive-share-scope-options > button,
+.archive-share-conflict-actions > button {
+  min-height: 62px;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 9px 11px;
+  text-align: left;
+}
+
+.archive-share-scope-options > button > i,
+.archive-share-conflict-actions > button > i {
+  width: 40px;
+  text-align: center;
+  color: #38e1df;
+  font-size: 18px;
+}
+
+.archive-share-scope-options span,
+.archive-share-conflict-actions span {
+  display: grid;
+  gap: 3px;
+}
+
+.archive-share-scope-options small,
+.archive-share-conflict-actions small {
+  color: #9db3b5;
+  white-space: normal;
+}
+
+.archive-share-packet {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 9px;
+  border: 1px solid #183e46;
+  border-radius: 7px;
+  background: #08151b;
+}
+
+.archive-share-packet-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.archive-share-packet-actions .danger {
+  border-color: #8a3947;
+  color: #ff91a1;
+}
+
+.archive-share-empty {
+  min-height: 130px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  color: #9db3b5;
+  text-align: center;
+}
+
+.archive-share-empty > i {
+  color: #38e1df;
+  font-size: 24px;
+}
+
+@media (max-width: 640px) {
+  .archive-share-overlay { padding: 6px; }
+  .archive-share-window { width: calc(100vw - 12px); max-height: calc(100vh - 12px); }
+  .archive-share-head { grid-template-columns: 34px minmax(0, 1fr) 32px; padding: 9px; }
+  .archive-share-head > span { width: 34px; height: 34px; }
+  .archive-share-packet { grid-template-columns: 40px minmax(0, 1fr); }
+  .archive-share-packet-actions { grid-column: 1 / -1; justify-content: stretch; }
+  .archive-share-packet-actions > button { flex: 1 1 140px; }
+  .archive-share-footer { grid-template-columns: 1fr; }
+  .archive-share-footer > button { width: 100%; }
+}
+/* 2.8.23 — share/inbox dialogs inherit the active Neuro / Cyber / Neo theme */
+.archive-share-overlay {
+  --archive-share-bg: var(--bg, #091117);
+  --archive-share-panel: var(--panel, #10232b);
+  --archive-share-panel-2: var(--panel2, #0b171d);
+  --archive-share-ink: var(--ink, #e8f5f5);
+  --archive-share-heading: var(--heading, var(--archive-share-ink));
+  --archive-share-muted: var(--muted, #9db3b5);
+  --archive-share-accent: var(--gold, #00d5d5);
+  --archive-share-secondary: var(--teal, #38e1df);
+  --archive-share-line: var(--line, color-mix(in srgb, var(--archive-share-accent) 30%, transparent));
+  --archive-share-soft: var(--accent-soft, color-mix(in srgb, var(--archive-share-accent) 12%, transparent));
+  --archive-share-hover: var(--accent-hover, color-mix(in srgb, var(--archive-share-accent) 20%, transparent));
+  --archive-share-field: var(--field, color-mix(in srgb, var(--archive-share-bg) 82%, transparent));
+  --archive-share-primary-ink: var(--primary-ink, #071114);
+  --archive-share-warning: #ff7183;
+  background: color-mix(in srgb, var(--archive-share-bg) 74%, transparent);
+  color: var(--archive-share-ink);
+  font-size: var(--archive-user-font-size, 13px);
+}
+
+.archive-share-overlay[data-archive-share-mode="neo"] {
+  --archive-share-accent: var(--theme-node, var(--teal, #63e8f2));
+  --archive-share-secondary: var(--theme-trace, var(--gold, #fe5a70));
+  --archive-share-warning: var(--theme-warning, #ff5b68);
+}
+
+.archive-share-overlay[data-archive-share-mode="cyber"] {
+  --archive-share-accent: var(--gold, #c9bd97);
+  --archive-share-secondary: var(--teal, #78c8c0);
+}
+
+.archive-share-window {
+  color: var(--archive-share-ink);
+  background: var(--archive-share-bg);
+  border-color: var(--archive-share-accent);
+  box-shadow: 0 18px 70px rgba(0,0,0,.72), 0 0 28px color-mix(in srgb, var(--archive-share-accent) 18%, transparent);
+}
+.archive-share-head {
+  border-bottom-color: var(--archive-share-line);
+  background: linear-gradient(180deg, var(--archive-share-panel), var(--archive-share-panel-2));
+}
+.archive-share-head > span {
+  border-color: var(--archive-share-line);
+  color: var(--archive-share-accent);
+  background: var(--archive-share-soft);
+}
+.archive-share-head small,
+.archive-share-user-copy small,
+.archive-share-actor-copy small,
+.archive-share-packet-copy small { color: var(--archive-share-secondary); }
+.archive-share-head h2,
+.archive-share-user-copy b,
+.archive-share-actor-copy b,
+.archive-share-packet-copy b { color: var(--archive-share-heading); }
+.archive-share-head p,
+.archive-share-packet-copy p,
+.archive-share-footer,
+.archive-share-scope-options small,
+.archive-share-conflict-actions small,
+.archive-share-empty { color: var(--archive-share-muted); }
+.archive-share-head > button,
+.archive-share-user-row,
+.archive-share-actor,
+.archive-share-scope-options > button,
+.archive-share-conflict-actions > button,
+.archive-share-packet-actions > button,
+.archive-share-footer > button {
+  border-color: var(--archive-share-line);
+  color: var(--archive-share-ink);
+  background: color-mix(in srgb, var(--archive-share-panel) 84%, var(--archive-share-bg));
+}
+.archive-share-head > button:hover,
+.archive-share-user-row:hover,
+.archive-share-actor:hover,
+.archive-share-scope-options > button:hover,
+.archive-share-conflict-actions > button:hover,
+.archive-share-packet-actions > button:hover,
+.archive-share-footer > button:hover {
+  border-color: var(--archive-share-accent);
+  background: var(--archive-share-hover);
+}
+.archive-share-user,
+.archive-share-packet {
+  border-color: var(--archive-share-line);
+  background: color-mix(in srgb, var(--archive-share-panel) 72%, var(--archive-share-bg));
+}
+.archive-share-actors {
+  border-top-color: var(--archive-share-line);
+  background: var(--archive-share-field);
+}
+.archive-share-user-icon,
+.archive-share-actor-avatar,
+.archive-share-packet-icon {
+  border-color: var(--archive-share-line);
+  color: var(--archive-share-accent);
+  background: var(--archive-share-field);
+}
+.archive-share-selected-mark { color: var(--archive-share-accent); }
+.archive-share-actor.selected {
+  border-color: var(--archive-share-accent);
+  background: var(--archive-share-soft);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--archive-share-accent) 28%, transparent);
+}
+.archive-share-footer {
+  border-top-color: var(--archive-share-line);
+  background: color-mix(in srgb, var(--archive-share-panel) 68%, var(--archive-share-bg));
+}
+.archive-share-footer > button.primary,
+.archive-share-conflict-actions > button.primary {
+  border-color: var(--archive-share-accent);
+  color: var(--archive-share-primary-ink);
+  background: var(--archive-share-accent);
+}
+.archive-share-scope-options > button > i,
+.archive-share-conflict-actions > button > i,
+.archive-share-empty > i { color: var(--archive-share-accent); }
+.archive-share-packet-actions .danger {
+  border-color: color-mix(in srgb, var(--archive-share-warning) 55%, transparent);
+  color: var(--archive-share-warning);
+  background: color-mix(in srgb, var(--archive-share-warning) 8%, var(--archive-share-panel));
+}
+
+/* 2.8.24 — Neo Archive media geometry lock
+   The v7.3.3 global control scaler gives every button a scaled min-height.
+   Neo uses several buttons as image/card canvases, so their own media geometry
+   must win or thumbnails collapse and appear to slide out of their cells. */
+.neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-location-open {
+  min-height: 145px !important;
+  grid-template-columns: 142px minmax(0, 1fr) 22px !important;
+  align-items: stretch !important;
+  overflow: hidden !important;
+}
+.neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-record-open {
+  min-height: 104px !important;
+}
+.neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-contact-open {
+  min-height: 90px !important;
+}
+.neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-person-open {
+  min-height: 86px !important;
+}
+.neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-gallery-preview {
+  width: 92px !important;
+  height: 110px !important;
+  min-height: 110px !important;
+  padding: 0 !important;
+}
+.neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-gallery-view > button {
+  height: 150px !important;
+  min-height: 150px !important;
+  padding: 0 !important;
+}
+
+/* Framed art never participates in grid sizing through its intrinsic bitmap
+   dimensions. The frame owns geometry; the image only paints inside it. */
+.neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-thumb,
+.neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-cover,
+.neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-location-image,
+.neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-location-hero-image,
+.neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-person-portrait,
+.neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-person-image,
+.neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-contact-photo,
+.neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-gallery-preview,
+.neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-faction-symbol,
+.neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-picker-avatar,
+.neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-record-avatar {
+  position: relative !important;
+  min-width: 0 !important;
+  min-height: 0;
+  overflow: hidden !important;
+  contain: paint !important;
+  isolation: isolate;
+}
+
+.neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-thumb > img,
+.neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-cover > img,
+.neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-location-image > img,
+.neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-location-hero-image > img,
+.neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-person-portrait > img,
+.neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-person-image > img,
+.neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-contact-photo > img,
+.neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-gallery-preview > img,
+.neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-faction-symbol > img,
+.neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-picker-avatar > img,
+.neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-record-avatar > img {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  max-height: none !important;
+  display: block !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  object-fit: cover !important;
+  object-position: center !important;
+  transform: none !important;
+}
+
+/* Images that intentionally remain in normal document flow are normalized
+   separately so they stay centered without being converted to absolute art. */
+.neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-gallery-view img {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  margin: 0 !important;
+  align-self: stretch !important;
+  justify-self: stretch !important;
+  object-fit: cover !important;
+  object-position: center !important;
+  transform: none !important;
+}
+.neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-fragment-img,
+.neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-read-fragment img,
+.neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-lightbox img,
+.neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-city-map-canvas img {
+  display: block !important;
+  width: auto;
+  height: auto;
+  max-width: 100% !important;
+  margin-inline: auto !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  transform: none !important;
+}
+.neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-lightbox img {
+  max-height: calc(100dvh - 150px) !important;
+  object-fit: contain !important;
+}
+
+/* Fixed-size inline portraits should not inherit Foundry image margins or
+   transformations either. */
+.neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-brand img,
+.neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-welcome img,
+.neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-scene-token img,
+.neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-chat-recipient img {
+  display: block !important;
+  flex: 0 0 auto;
+  margin: 0 !important;
+  object-fit: cover !important;
+  object-position: center !important;
+  transform: none !important;
+}
+
+.archive-context-overlay-host[data-archive-context-overlay="neo-archive-view"] .pcm-context-avatar {
+  position: relative !important;
+  overflow: hidden !important;
+  contain: paint !important;
+}
+.archive-context-overlay-host[data-archive-context-overlay="neo-archive-view"] .pcm-context-avatar > img {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  display: block !important;
+  margin: 0 !important;
+  border: 0 !important;
+  object-fit: cover !important;
+  object-position: center !important;
+  transform: none !important;
+}
+
+@container (max-width: 720px) {
+  .neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-location-open {
+    min-height: 132px !important;
+    grid-template-columns: 100px minmax(0, 1fr) 18px !important;
+  }
+  .neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-record-open {
+    min-height: 88px !important;
+    grid-template-columns: 48px minmax(0, 1fr) 18px !important;
+  }
+  .neuro-archive-mode-host > #pcm-root.archive-mode-neo .pcm-gallery-preview {
+    width: 80px !important;
+    height: 100px !important;
+    min-height: 100px !important;
+  }
+}
+
+/* 2.8.29 — let Foundry VTT 14 native minimization collapse to the title bar. */
+.neuro-archive-application.minimized {
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: hidden !important;
+}
+
+.neuro-archive-application.minimized .window-content {
+  display: none !important;
+}
+
+/* Contact dossier: keep meeting history compact and sequential instead of full-width. */
+#pcm-root .pcm-person-meetings {
+  align-self: start;
+}
+
+#pcm-root .pcm-person-meetings .pcm-location-chips {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  flex-wrap: nowrap;
+  gap: 6px;
+}
+
+#pcm-root .pcm-person-meetings .pcm-location-chips button {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+#pcm-root .pcm-person-gallery {
+  grid-column: 1 / -1;
+}
+
+
+/* 2.8.30 — restore the meeting section width; compact only first/last meeting facts. */
+#pcm-root .pcm-person-meetings {
+  grid-column: 1 / -1;
+  align-self: stretch;
+}
+
+#pcm-root .pcm-person-meetings .pcm-location-chips {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+#pcm-root .pcm-person-meetings .pcm-location-chips button {
+  width: auto;
+  max-width: 100%;
+  flex: 0 1 auto;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+#pcm-root .pcm-person-meeting-meta {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(180px, 320px));
+  justify-content: start;
+  align-items: start;
+  gap: 10px;
+}
+
+#pcm-root .pcm-meeting-fact {
+  min-width: 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+#pcm-root .pcm-meeting-fact h4 {
+  margin: 0 0 6px;
+}
+
+@container (max-width: 720px) {
+  #pcm-root .pcm-person-meeting-meta {
+    grid-template-columns: minmax(0, 320px);
   }
 }

@@ -7,14 +7,12 @@ import path from "node:path";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const read = (file) => readFileSync(path.join(root, file), "utf8");
 
-test("2.8.19 adds a full Archive Hub collapse control in the Foundry window header", () => {
+test("2.8.19 full-window collapse remains documented after the 2.8.25 native-minimize replacement", () => {
   const runtime = read("runtime/neuro-archive-runtime.mjs");
-  const css = read("styles/neuro-archive.css");
-  assert.match(runtime, /neuro-archive-window-collapsed\.v1/u);
-  assert.match(runtime, /data-archive-window-toggle/u);
-  assert.match(runtime, /archive-window-collapsed/u);
-  assert.match(css, /\.neuro-archive-application\.archive-window-collapsed/u);
-  assert.match(css, /archive-window-collapsed[^}]*\.window-content/ums);
+  const changelog = read("CHANGELOG.md");
+  assert.match(changelog, /^## 2\.8\.19\b/mu);
+  assert.match(runtime, /minimizable:\s*true/u);
+  assert.doesNotMatch(runtime, /archive-window-collapsed/u);
 });
 
 test("2.8.19 scales text from the user font setting in all three archive controllers", () => {

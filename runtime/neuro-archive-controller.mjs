@@ -23,6 +23,7 @@ import {
   observeArchiveTextScale,
   placeArchiveContextMenu,
 } from "./archive-ui-utils.mjs";
+import { openArchiveShareDialog } from "./archive-share-service.mjs";
 
 const CANONICAL_ARCHIVE_PATH = "flags.cyberpunkRemaster.neuroArchive.data";
 // Legacy source probes are implemented by neuro-archive-store.mjs:
@@ -2014,8 +2015,7 @@ export function createNeuroArchiveController(
       <div class="pcm-detail-nav">${back}<div><button data-action="compose-person-message">${fa("fa-message")} Сообщение</button><button data-action="to-chat">${fa("fa-paper-plane")} В чат</button><button data-action="pin">${fa(person.pinned ? "fa-star" : "fa-thumbtack")} ${person.pinned ? "Закреплено" : "Закрепить"}</button><button class="primary" data-action="edit-entry">${fa(quickEdit ? "fa-check" : "fa-pen")} ${quickEdit ? "Готово" : "Быстро редактировать"}</button></div></div>
       <section class="pcm-person-hero"><div class="pcm-person-portrait">${person.image ? `<img src="${esc(person.image)}" alt="">` : sectionIcon("people")}</div>${heroInfo}</section>
       ${quickEdit ? personQuickEditPanel(book, person) : `<div class="pcm-detail-grid">
-        ${person.gallery.length ? `<section class="pcm-detail-panel wide"><h3>${fa("fa-images")} Галерея контакта</h3><div class="pcm-gallery-view">${person.gallery.map((item) => `<button data-action="view-gallery-image" data-gallery-id="${item.id}"><img src="${esc(item.image)}" alt="${esc(item.caption)}"><span>${esc(item.caption || "Открыть изображение")}</span></button>`).join("")}</div></section>` : ""}
-        <section class="pcm-detail-panel wide"><h3>${sectionIcon("locations")} Где пересекались</h3><div class="pcm-location-chips">${locations.length ? locations.map((location) => `<button data-action="view-location" data-location-id="${location.id}" data-entry-id="${location.id}">${sectionIcon("locations")} ${esc(location.title)}</button>`).join("") : '<span class="muted">Точки пока не связаны.</span>'}</div>${person.firstMet ? `<h4>Первая встреча</h4>${readText(person.firstMet)}` : ""}</section>
+        <section class="pcm-detail-panel wide pcm-person-meetings"><h3>${sectionIcon("locations")} Где пересекались</h3><div class="pcm-location-chips">${locations.length ? locations.map((location) => `<button data-action="view-location" data-location-id="${location.id}" data-entry-id="${location.id}">${sectionIcon("locations")} ${esc(location.title)}</button>`).join("") : '<span class="muted">Точки пока не связаны.</span>'}</div>${person.firstMet ? `<div class="pcm-person-meeting-meta"><div class="pcm-meeting-fact"><h4>Первая встреча</h4>${readText(person.firstMet)}</div></div>` : ""}</section>
         <section class="pcm-detail-panel wide pcm-contact-comms pcm-neuro-link-surface"><header><div><small>NEURAL CHANNEL // PRIVATE</small><h3>${fa("fa-satellite-dish")} НЕЙРО-СВЯЗЬ</h3><p>${game.user?.isGM && state.archiveUserId !== userId ? `GM отвечает от имени контакта «${esc(person.title)}»; ответ сразу сохраняется в архиве игрока.` : "Сообщения сохраняются в канале контакта и дублируются адресатам через приватный чат Foundry."}</p></div><span class="pcm-neuro-status ${Array.from(game?.users?.contents ?? game?.users ?? []).some((user) => user?.isGM && user?.active !== false) ? "online" : "offline"}">${Array.from(game?.users?.contents ?? game?.users ?? []).some((user) => user?.isGM && user?.active !== false) ? "GM LINK ONLINE" : "GM OFFLINE"}</span></header>${contactMessageThread(person)}<div class="pcm-message-composer pcm-neuro-compose"><textarea data-person-message-input rows="3" placeholder="${game.user?.isGM && state.archiveUserId !== userId ? `Ответить от имени ${esc(person.title)}…` : `Написать ${esc(person.title)}…`}"></textarea><button class="primary pcm-neuro-send" data-action="send-person-message">${fa("fa-paper-plane")} ${game.user?.isGM && state.archiveUserId !== userId ? "Ответить" : "Отправить"}</button></div></section>
         <section class="pcm-detail-panel"><header><h3>${sectionIcon("quests")} Гиги от контакта</h3><button data-action="add-person-gig">${fa("fa-plus")} Гиг</button></header>${related(gigs, "quests", "Связанных гигов нет.")}</section>
         <section class="pcm-detail-panel"><header><h3>${sectionIcon("clues")} Зацепки</h3><button data-action="add-person-clue">${fa("fa-plus")} Зацепка</button></header>${related(clues, "clues", "Связанных зацепок нет.")}</section>
@@ -2024,6 +2024,7 @@ export function createNeuroArchiveController(
         <section class="pcm-detail-panel"><h3>Обещания и долги</h3>${readText(person.promises, "Ничего не отмечено.")}</section>
         <section class="pcm-detail-panel"><h3>Подозрения и секреты</h3>${readText(person.secrets, "Ничего не отмечено.")}</section>
         ${readFragments(person)}
+        ${person.gallery.length ? `<section class="pcm-detail-panel wide pcm-person-gallery"><h3>${fa("fa-images")} Галерея контакта</h3><div class="pcm-gallery-view">${person.gallery.map((item) => `<button data-action="view-gallery-image" data-gallery-id="${item.id}"><img src="${esc(item.image)}" alt="${esc(item.caption)}"><span>${esc(item.caption || "Открыть изображение")}</span></button>`).join("")}</div></section>` : ""}
       </div>`}
     </div>`;
   }
@@ -2188,6 +2189,7 @@ export function createNeuroArchiveController(
         <button data-context-action="context-edit">${fa("fa-pen")} ${isPerson ? "Быстро редактировать" : "Редактировать"}</button>
         <button data-context-action="context-pin">${fa(entry.pinned ? "fa-star" : "fa-thumbtack")} ${entry.pinned ? "Открепить" : "Закрепить"}</button>
         <button data-context-action="context-chat">${fa("fa-paper-plane")} В чат</button>
+        <button data-context-action="context-share">${fa("fa-share-nodes")} Поделиться</button>
       </div>
       ${isPerson ? `<section><small>ОТНОШЕНИЕ</small><div class="pcm-context-chip-grid">${attitudes.map((value) => `<button class="${entry.attitude === value ? "active" : ""}" data-context-action="context-person-attitude" data-value="${esc(value)}">${esc(value)}</button>`).join("")}</div></section>` : ""}
       ${statuses.length ? `<section><small>СТАТУС</small><div class="pcm-context-chip-grid">${statuses.map((value) => `<button class="${entry.status === value ? "active" : ""}" data-context-action="${isPerson ? "context-person-status" : "context-set-status"}" data-value="${esc(value)}">${esc(value)}</button>`).join("")}</div></section>` : ""}
@@ -2304,6 +2306,21 @@ export function createNeuroArchiveController(
     if (action === "context-chat") {
       await sendToChat(entry, false);
       mountContextMenu();
+      return;
+    }
+    if (action === "context-share") {
+      const snapshot = getShareSnapshot();
+      closeContextMenu();
+      await openArchiveShareDialog({
+        senderUser: game.user,
+        sourceOwnerUserId: snapshot.sourceOwnerUserId,
+        sourceActor: snapshot.sourceActor,
+        scope: "entry",
+        label: entry.title || SECTIONS[entry.type]?.label || "Запись Архива",
+        records: [{ section: entry.type, entry: clone(entry) }],
+        themeSource: state.root,
+        archiveMode: "neuro",
+      });
       return;
     }
     if (action === "context-person-attitude" && entry.type === "people") {
@@ -4264,6 +4281,21 @@ export function createNeuroArchiveController(
     await requestClose();
   }
 
+  function getShareSnapshot() {
+    const actor = actorById(state.store.activeActorId);
+    const book = notebook();
+    return {
+      sourceOwnerUserId: String(state.archiveUserId || userId),
+      sourceActor: {
+        id: String(actor?.id ?? actor?._id ?? book?.actorId ?? ""),
+        name: String(actor?.name ?? book?.actorName ?? "Персонаж"),
+        img: String(actor?.img ?? book?.actorImg ?? ""),
+      },
+      section: String(state.section || "dashboard"),
+      notebook: clone(book),
+    };
+  }
+
   const api = {
     version: VERSION,
     moduleVersion: NEURO_ARCHIVE_VERSION,
@@ -4280,6 +4312,7 @@ export function createNeuroArchiveController(
       return closeArchive();
     },
     ingestContactMessage,
+    getShareSnapshot,
     destroy() {
       clearTimeout(state.saveTimer);
       document.removeEventListener("keydown", keyboardHandler);

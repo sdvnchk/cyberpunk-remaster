@@ -1,6 +1,13 @@
 import { NEURO_ARCHIVE_VERSION } from "./neuro-archive-constants.mjs";
 import { migrateLegacyArchivesOnReady } from "./neuro-archive-store.mjs";
 import {
+  archiveShareHookName,
+  countArchiveShareInbox,
+  initializeArchiveSharing,
+  openArchiveShareInbox,
+  openArchiveShareScopePicker,
+} from "./archive-share-service.mjs";
+import {
   directoryRoot,
   ensureDirectoryLauncherGroup,
 } from "./directory-launchers.mjs";
@@ -10,7 +17,6 @@ const TEMPLATE = `modules/${MODULE_ID}/templates/neuro-archive.hbs`;
 const WINDOW_SIZE_KEY = `${MODULE_ID}.neuro-archive-window-size.v1`;
 const ARCHIVE_MODE_KEY = `${MODULE_ID}.neuro-archive-mode.v1`;
 const HUB_COLLAPSED_KEY = `${MODULE_ID}.neuro-archive-hub-collapsed.v1`;
-const WINDOW_COLLAPSED_KEY = `${MODULE_ID}.neuro-archive-window-collapsed.v1`;
 
 const ARCHIVE_MODES = Object.freeze({
   neuro: {
@@ -72,22 +78,6 @@ function saveHubCollapsed(collapsed) {
     globalThis.localStorage?.setItem?.(HUB_COLLAPSED_KEY, collapsed ? "1" : "0");
   } catch {
     // Состояние панели — только локальная настройка интерфейса.
-  }
-}
-
-function storedWindowCollapsed() {
-  try {
-    return globalThis.localStorage?.getItem?.(WINDOW_COLLAPSED_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-
-function saveWindowCollapsed(collapsed) {
-  try {
-    globalThis.localStorage?.setItem?.(WINDOW_COLLAPSED_KEY, collapsed ? "1" : "0");
-  } catch {
-    // Полное сворачивание окна — локальная настройка интерфейса.
   }
 }
 
@@ -178,7 +168,7 @@ function getNeuroArchiveApplicationClass() {
       this.archiveMode = normalizeArchiveMode(options.archiveMode ?? storedArchiveMode());
       this.archiveModeSwitching = false;
       this.hubCollapsed = storedHubCollapsed();
-      this.windowCollapsed = storedWindowCollapsed();
+      this.archiveShareHookId = null;
     }
 
     _modeHost() {
@@ -202,52 +192,170 @@ function getNeuroArchiveApplicationClass() {
       for (const button of this.element?.querySelectorAll?.("[data-archive-hub-toggle]") ?? []) {
         button.setAttribute("aria-expanded", this.hubCollapsed ? "false" : "true");
       }
+      const toolbarButton = this.element?.querySelector?.("[data-archive-hub-toolbar]");
+      if (toolbarButton) toolbarButton.hidden = !this.hubCollapsed;
     }
 
-    _bindHubButtons() {
-      for (const button of this.element?.querySelectorAll?.("[data-archive-hub-toggle]") ?? []) {
-        button.addEventListener("click", () => {
-          this.hubCollapsed = !this.hubCollapsed;
-          saveHubCollapsed(this.hubCollapsed);
-          this._updateHubState();
-        });
-      }
+    _modeToolbar() {
+      const root = this._modeHost()?.querySelector?.("[data-archive-mode-root]");
+      const top = root?.querySelector?.("header.pcm-top") ?? null;
+      if (!top) return null;
+      return top.querySelector?.(".pcm-top-actions") ?? top;
     }
 
-    _ensureWindowCollapseControl() {
-      const header = this.element?.querySelector?.(".window-header");
-      if (!header) return null;
-      let button = header.querySelector?.("[data-archive-window-toggle]");
-      if (!button) {
-        button = globalThis.document.createElement("button");
-        button.type = "button";
-        button.className = "header-control archive-window-toggle";
-        button.dataset.archiveWindowToggle = "true";
-        const close = header.querySelector?.('[data-action="close"], .close');
-        header.insertBefore(button, close ?? null);
-        button.addEventListener("click", (event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          this.windowCollapsed = !this.windowCollapsed;
-          if (this.windowCollapsed) saveWindowSize(this.position);
-          saveWindowCollapsed(this.windowCollapsed);
-          this._updateWindowCollapsedState();
-        });
-      }
+    _modeToolbarButton({ className = "", data = {}, title = "", symbol = "", label = "", badge = false } = {}) {
+      const button = globalThis.document.createElement("button");
+      button.type = "button";
+      button.className = `archive-mode-toolbar-button ${className}`.trim();
+      if (title) button.title = title;
+      for (const [key, value] of Object.entries(data)) button.dataset[key] = value;
+      button.innerHTML = `<b aria-hidden="true">${symbol}</b><span>${label}</span>${badge ? '<small class="archive-share-inbox-count" data-archive-share-inbox-count hidden>0</small>' : ""}`;
       return button;
     }
 
-    _updateWindowCollapsedState() {
-      this.element?.classList?.toggle("archive-window-collapsed", this.windowCollapsed);
-      const button = this._ensureWindowCollapseControl();
-      if (!button) return;
-      const title = this.windowCollapsed ? "Развернуть Архив" : "Свернуть Архив полностью";
-      button.title = title;
-      button.setAttribute("aria-label", title);
-      button.setAttribute("aria-expanded", this.windowCollapsed ? "false" : "true");
-      button.innerHTML = this.windowCollapsed
-        ? '<i class="fa-solid fa-window-maximize" aria-hidden="true"></i>'
-        : '<i class="fa-solid fa-window-minimize" aria-hidden="true"></i>';
+    _installModeToolbarControls() {
+      const toolbar = this._modeToolbar();
+      if (!toolbar || toolbar.querySelector?.("[data-archive-mode-toolbar-control]")) return;
+
+      const share = this._modeToolbarButton({
+        className: "archive-share-mode-button",
+        data: { archiveModeToolbarControl: "share", archiveShareOpen: "true" },
+        title: "Поделиться текущим разделом или всем архивом выбранного персонажа",
+        symbol: "⇄",
+        label: "Поделиться",
+      });
+      const inbox = this._modeToolbarButton({
+        className: "archive-share-mode-button archive-share-inbox-button",
+        data: { archiveModeToolbarControl: "inbox", archiveShareInbox: "true" },
+        title: "Входящие пакеты выбранного Actor",
+        symbol: "⇩",
+        label: "Входящие",
+        badge: true,
+      });
+      const archives = this._modeToolbarButton({
+        className: "archive-hub-toolbar",
+        data: { archiveModeToolbarControl: "hub", archiveHubToolbar: "true", archiveHubToggle: "true" },
+        title: "Показать панель архивов",
+        symbol: "≡",
+        label: "Архивы",
+      });
+      archives.hidden = !this.hubCollapsed;
+
+      const anchor = this.archiveMode === "neuro"
+        ? toolbar.querySelector?.("[data-import]")
+        : toolbar.querySelector?.(".pcm-window-toggle, .pcm-close");
+      const fragment = globalThis.document.createDocumentFragment();
+      fragment.append(share, inbox, archives);
+      toolbar.insertBefore(fragment, anchor ?? null);
+      this._updateHubState();
+      this._updateShareInboxBadge();
+    }
+
+    _shareSnapshot() {
+      return this.archiveController?.getShareSnapshot?.() ?? null;
+    }
+
+    _shareActor(snapshot = this._shareSnapshot()) {
+      const id = String(snapshot?.sourceActor?.id ?? "");
+      const actors = globalThis.game?.actors?.contents ?? (globalThis.game?.actors ? Array.from(globalThis.game.actors) : []);
+      return actors.find((actor) => String(actor?.id ?? actor?._id ?? "") === id) ?? snapshot?.sourceActor ?? null;
+    }
+
+    _updateShareInboxBadge() {
+      const snapshot = this._shareSnapshot();
+      const ownArchive = String(snapshot?.sourceOwnerUserId ?? "") === String(globalThis.game?.user?.id ?? globalThis.game?.user?._id ?? "");
+      const actorId = ownArchive ? String(snapshot?.sourceActor?.id ?? "") : "";
+      const count = actorId ? countArchiveShareInbox(globalThis.game?.user, actorId) : 0;
+      const button = this.element?.querySelector?.("[data-archive-share-inbox]");
+      if (button) {
+        button.disabled = !actorId;
+        button.title = actorId ? `Входящие для ${snapshot?.sourceActor?.name ?? "Actor"}: ${count}` : "Входящие доступны в собственном архиве персонажа";
+      }
+      const badge = this.element?.querySelector?.("[data-archive-share-inbox-count]");
+      if (badge) {
+        badge.textContent = String(count);
+        badge.hidden = count < 1;
+      }
+    }
+
+    _observeModeToolbar(root) {
+      this.archiveToolbarObserver?.disconnect?.();
+      this.archiveToolbarObserver = null;
+      const Observer = globalThis.MutationObserver;
+      if (typeof Observer !== "function" || !root) return;
+      this.archiveToolbarObserver = new Observer(() => {
+        this._installModeToolbarControls();
+      });
+      this.archiveToolbarObserver.observe(root, { childList: true, subtree: true });
+    }
+
+    async _handleArchiveShellClick(event) {
+      const target = event.target?.closest?.("[data-archive-hub-toggle], [data-archive-share-open], [data-archive-share-inbox]");
+      if (!target || !this.element?.contains?.(target)) return;
+
+      if (target.matches?.("[data-archive-hub-toggle]")) {
+        event.preventDefault();
+        event.stopPropagation();
+        this.hubCollapsed = !this.hubCollapsed;
+        saveHubCollapsed(this.hubCollapsed);
+        this._updateHubState();
+        return;
+      }
+
+      if (target.matches?.("[data-archive-share-open]")) {
+        event.preventDefault();
+        event.stopPropagation();
+        await this.archiveController?.flush?.();
+        const snapshot = this._shareSnapshot();
+        if (!snapshot?.sourceActor?.id) {
+          globalThis.ui?.notifications?.warn?.("Не выбран Actor для передачи Архива.");
+          return;
+        }
+        openArchiveShareScopePicker(snapshot, {
+          themeSource: this._modeHost()?.querySelector?.("[data-archive-mode-root]"),
+          archiveMode: this.archiveMode,
+        });
+        return;
+      }
+
+      if (target.matches?.("[data-archive-share-inbox]")) {
+        event.preventDefault();
+        event.stopPropagation();
+        const snapshot = this._shareSnapshot();
+        const ownArchive = String(snapshot?.sourceOwnerUserId ?? "") === String(globalThis.game?.user?.id ?? globalThis.game?.user?._id ?? "");
+        if (!ownArchive || !snapshot?.sourceActor?.id) {
+          globalThis.ui?.notifications?.warn?.("Входящие открываются для собственного Actor.");
+          return;
+        }
+        await openArchiveShareInbox({
+          user: globalThis.game?.user,
+          actorId: snapshot.sourceActor.id,
+          actor: this._shareActor(snapshot),
+          themeSource: this._modeHost()?.querySelector?.("[data-archive-mode-root]"),
+          archiveMode: this.archiveMode,
+          beforeApply: async () => { await this.archiveController?.flush?.(); },
+          afterApply: async ({ type }) => {
+            if (type === "accepted") await this._mountArchiveMode(this.archiveMode, { flushCurrent: false });
+            this._updateShareInboxBadge();
+          },
+        });
+      }
+    }
+
+    _bindArchiveShellActions() {
+      const shell = this.element?.querySelector?.("[data-archive-shell]");
+      if (!shell || shell === this.archiveShellActionRoot) return;
+      if (this.archiveShellActionRoot && this.archiveShellActionHandler) {
+        this.archiveShellActionRoot.removeEventListener?.("click", this.archiveShellActionHandler);
+      }
+      this.archiveShellActionRoot = shell;
+      this.archiveShellActionHandler = (event) => { void this._handleArchiveShellClick(event); };
+      shell.addEventListener("click", this.archiveShellActionHandler);
+    }
+
+    _bindShareHook() {
+      if (this.archiveShareHookId != null || !globalThis.Hooks?.on) return;
+      this.archiveShareHookId = globalThis.Hooks.on(archiveShareHookName, () => this._updateShareInboxBadge());
     }
 
     _bindModeButtons() {
@@ -292,7 +400,11 @@ function getNeuroArchiveApplicationClass() {
       this.archiveController = await factory(root, {
         requestClose: () => this.close(),
       });
+      this._observeModeToolbar(root);
+      this._installModeToolbarControls();
       this._updateModeButtons();
+      this._updateHubState();
+      this._updateShareInboxBadge();
       return this.archiveController;
     }
 
@@ -319,11 +431,10 @@ function getNeuroArchiveApplicationClass() {
       this.archiveController?.destroy?.();
       this.archiveController = null;
       this._bindModeButtons();
-      this._bindHubButtons();
+      this._bindArchiveShellActions();
+      this._bindShareHook();
       this._updateModeButtons();
       this._updateHubState();
-      this._ensureWindowCollapseControl();
-      this._updateWindowCollapsedState();
       await this._mountArchiveMode(this.archiveMode, { flushCurrent: false });
     }
 
@@ -336,6 +447,15 @@ function getNeuroArchiveApplicationClass() {
       saveWindowSize(this.position);
       this.archiveController?.destroy?.();
       this.archiveController = null;
+      this.archiveToolbarObserver?.disconnect?.();
+      this.archiveToolbarObserver = null;
+      if (this.archiveShellActionRoot && this.archiveShellActionHandler) {
+        this.archiveShellActionRoot.removeEventListener?.("click", this.archiveShellActionHandler);
+      }
+      this.archiveShellActionRoot = null;
+      this.archiveShellActionHandler = null;
+      if (this.archiveShareHookId != null) globalThis.Hooks?.off?.(archiveShareHookName, this.archiveShareHookId);
+      this.archiveShareHookId = null;
       neuroArchiveInstance = null;
       return super._onClose(options);
     }
@@ -395,6 +515,7 @@ Hooks.once("init", () => {
     neuroArchive: {
       open: openNeuroArchive,
       version: NEURO_ARCHIVE_VERSION,
+      shareInboxCount: (actorId) => countArchiveShareInbox(game.user, actorId),
       modes: Object.fromEntries(
         Object.entries(ARCHIVE_MODES).map(([id, mode]) => [id, mode.label]),
       ),
@@ -412,6 +533,7 @@ Hooks.on("renderActorDirectory", addDirectoryButton);
 
 
 Hooks.once("ready", () => {
+  initializeArchiveSharing();
   void migrateLegacyArchivesOnReady()
     .then((result) => {
       if (result?.errors?.length) {

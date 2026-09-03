@@ -13,11 +13,11 @@ test("2.8.18 can collapse only the internal archive switcher and restore it", ()
   const css = read("styles/neuro-archive.css");
 
   assert.match(template, /data-archive-hub-toggle/u);
-  assert.match(template, /data-archive-hub-reveal/u);
   assert.match(runtime, /neuro-archive-hub-collapsed\.v1/u);
   assert.match(runtime, /dataset\.hubCollapsed/u);
+  assert.match(runtime, /data-archive-hub-toolbar/u);
   assert.match(css, /data-hub-collapsed=["']true["']/u);
-  assert.match(css, /archive-hub-reveal/u);
+  assert.match(css, /archive-hub-toolbar/u);
 });
 
 test("2.8.18 stores archive appearance independently for neuro, cyber and neo", async () => {
