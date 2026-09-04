@@ -1718,8 +1718,8 @@ test("native carry transition away from implanted clears stale state", () => {
   CyberwareTab.synchronizeCarryChange(item, changes);
   assert.equal(changes["system.equipped.carryType"], "worn");
   assert.equal(changes["flags.cyberpunk-remaster.installed"], false);
-  assert.equal(changes["flags.cyberpunk-remaster.-=parentId"], null);
-  assert.equal(changes["flags.cyberpunk-remaster.-=previousCarryState"], null);
+  assert.equal(changes["flags.cyberpunk-remaster.parentId"], null);
+  assert.equal(changes["flags.cyberpunk-remaster.previousCarryState"], null);
   assert.equal(changes["system.equipped.invested"], false);
 });
 

@@ -27,10 +27,10 @@ function installImportGlobals() {
   return hooks;
 }
 
-test("2.8.21 embeds CIC 1.13.31 and resolves activation source placeholders recursively", async () => {
+test("embedded CIC 1.13.33 preserves the 2.8.21 activation source resolver", async () => {
   installImportGlobals();
-  const module = await import(`${pathToFileURL(runtimePath).href}?cic-11331-resolver`);
-  assert.match(runtime, /const MODULE_VERSION = "1\.13\.31"/u);
+  const module = await import(`${pathToFileURL(runtimePath).href}?cic-11333-resolver`);
+  assert.match(runtime, /const MODULE_VERSION = "1\.13\.33"/u);
   assert.equal(typeof module.resolveActivationSourceReferences, "function");
 
   const item = { id: "WEAPON_ID", uuid: "Actor.A.Item.WEAPON_ID" };
@@ -48,7 +48,7 @@ test("2.8.21 embeds CIC 1.13.31 and resolves activation source placeholders recu
 test("2.8.21 exposes targeted activation artifact repair without render/update effect rebuild loops", async () => {
   const hooks = installImportGlobals();
   const remaster = game.modules.get("cyberpunk-remaster");
-  await import(`${pathToFileURL(runtimePath).href}?cic-11331-api`);
+  await import(`${pathToFileURL(runtimePath).href}?cic-11333-api`);
   hooks.get("init")?.at(-1)?.();
 
   assert.equal(typeof remaster.api.implantCreator.repairActivationArtifacts, "function");

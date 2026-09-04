@@ -43,6 +43,7 @@ const renderTemplate =
 
 const PKT_ITEM_PACK = `${MODULE_ID}.cyberpunk-items`;
 const PKT_JOURNAL_PACK = `${MODULE_ID}.cyberpunk-journals`;
+const BIOWARE_MODULE_ID = "cyberpunk-bio-sf2e";
 
 const PHYSICAL_TYPES = new Set([
   "ammo",
@@ -110,6 +111,72 @@ function escapeHtml(value) {
 }
 
 export class CyberwareTab {
+  static isExternalBioware(item) {
+    const isDirectBioware = (candidate) => {
+      if (!candidate) return false;
+
+      const bioFlags = candidate.flags?.[BIOWARE_MODULE_ID] ?? {};
+      if (
+        bioFlags.bioware === true ||
+        bioFlags.bioActivationAction === true ||
+        bioFlags.bioActivationEffect === true
+      ) {
+        return true;
+      }
+
+      const sourceId = String(
+        candidate.sourceId ??
+          candidate._stats?.compendiumSource ??
+          candidate.flags?.core?.sourceId ??
+          "",
+      );
+      if (sourceId.startsWith(`Compendium.${BIOWARE_MODULE_ID}.`)) return true;
+
+      const publicationTitle = String(
+        candidate.system?.publication?.title ?? "",
+      );
+      if (/Киберпанк\s*[—-]\s*Биоимпланты/iu.test(publicationTitle)) return true;
+
+      const imagePath = String(candidate.img ?? "");
+      return imagePath.startsWith(`modules/${BIOWARE_MODULE_ID}/`);
+    };
+
+    if (isDirectBioware(item)) return true;
+
+    // Older integration builds could leave an Implant Creator Action in the
+    // actor after the source implant was migrated to Cyberpunk-Bioware. Such
+    // an Action can still carry stale cyberpunk-remaster metadata and would
+    // otherwise be mistaken for an uninstalled Chrome module. Resolve its
+    // source item and inherit Bioware provenance instead of relying on name.
+    const bioFlags = item?.flags?.[BIOWARE_MODULE_ID] ?? {};
+    const creatorFlags = item?.flags?.["cyberpunk-implant-creator"] ?? {};
+    const linkedSourceIds = [
+      bioFlags.sourceItemId,
+      creatorFlags.activationSourceItemId,
+      creatorFlags.grantedByImplantId,
+    ].filter((value) => typeof value === "string" && value);
+
+    for (const sourceItemId of linkedSourceIds) {
+      const sourceItem = item?.parent?.items?.get?.(sourceItemId);
+      if (sourceItem && sourceItem !== item && isDirectBioware(sourceItem)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  static forcedDeletionValue() {
+    const ForcedDeletion =
+      globalThis.foundry?.data?.operators?.ForcedDeletion;
+    return typeof ForcedDeletion === "function" ? new ForcedDeletion() : null;
+  }
+
+  static deleteFlagUpdate(update, scope, key) {
+    update[`flags.${scope}.${key}`] = this.forcedDeletionValue();
+    return update;
+  }
+
   static getRuleSetting(key) {
     const fallback = RULE_SETTING_DEFAULTS[key];
     try {
@@ -796,6 +863,8 @@ export class CyberwareTab {
   }
 
   static getImplantType(item) {
+    if (item?.type && !PHYSICAL_TYPES.has(item.type)) return null;
+    if (this.isExternalBioware(item)) return null;
     const described = this.readCyberwareDescription(item).implantType;
     if (described) return described;
     if (this.isPktBiosystem(item)) return "internal";
@@ -927,6 +996,8 @@ export class CyberwareTab {
   }
 
   static isCyberware(item) {
+    if (item?.type && !PHYSICAL_TYPES.has(item.type)) return false;
+    if (this.isExternalBioware(item)) return false;
     const described = this.readCyberwareDescription(item);
     if (
       described.implantType ||
@@ -1259,7 +1330,7 @@ export class CyberwareTab {
         }
       }
     } else {
-      update[`flags.${MODULE_ID}.-=parentId`] = null;
+      this.deleteFlagUpdate(update, MODULE_ID, "parentId");
       const previous = this.getFlag(item, "previousCarryState") ?? {
         carryType: item.type === "equipment" ? "worn" : undefined,
         handsHeld: 0,
@@ -1287,7 +1358,7 @@ export class CyberwareTab {
           update["system.equipped.invested"] = previous.invested === true;
         }
       }
-      update[`flags.${MODULE_ID}.-=previousCarryState`] = null;
+      this.deleteFlagUpdate(update, MODULE_ID, "previousCarryState");
     }
     return update;
   }
@@ -1356,10 +1427,11 @@ export class CyberwareTab {
   static moduleDetachUpdates(actor, baseId) {
     return actor.items
       .filter((item) => this.getFlag(item, "parentId") === baseId)
-      .map((item) => ({
-        _id: item.id,
-        [`flags.${MODULE_ID}.-=parentId`]: null,
-      }));
+      .map((item) => {
+        const update = { _id: item.id };
+        this.deleteFlagUpdate(update, MODULE_ID, "parentId");
+        return update;
+      });
   }
 
   static async detachModules(actor, baseId) {
@@ -2258,6 +2330,7 @@ export class CyberwareTab {
 
   static synchronizeCarryChange(item, changes) {
     if (!item.actor || item.type !== "equipment") return;
+    if (this.isExternalBioware(item)) return;
     const path = "system.equipped.carryType";
     if (!hasChange(changes, path)) return;
     const carryType = getChange(changes, path);
@@ -2274,12 +2347,12 @@ export class CyberwareTab {
     }
 
     changes[`flags.${MODULE_ID}.installed`] = false;
-    changes[`flags.${MODULE_ID}.-=parentId`] = null;
+    this.deleteFlagUpdate(changes, MODULE_ID, "parentId");
     const previous = this.getFlag(item, "previousCarryState");
     if (isInvestedItem(item)) {
       changes["system.equipped.invested"] = previous?.invested === true;
     }
-    changes[`flags.${MODULE_ID}.-=previousCarryState`] = null;
+    this.deleteFlagUpdate(changes, MODULE_ID, "previousCarryState");
   }
 }
 

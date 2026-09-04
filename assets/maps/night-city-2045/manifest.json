@@ -1,0 +1,65 @@
+{
+  "id": "night-city-2045",
+  "title": "Night City 2045 Atlas",
+  "width": 10600,
+  "height": 16384,
+  "tileSize": 256,
+  "minNativeZoom": 0,
+  "maxNativeZoom": 5,
+  "maxZoom": 7,
+  "urlTemplate": "modules/cyberpunk-remaster/assets/maps/night-city-2045/tiles/z{z}/{x}-{y}.webp",
+  "levels": [
+    {
+      "z": 0,
+      "width": 332,
+      "height": 512,
+      "columns": 2,
+      "rows": 2
+    },
+    {
+      "z": 1,
+      "width": 663,
+      "height": 1024,
+      "columns": 3,
+      "rows": 4
+    },
+    {
+      "z": 2,
+      "width": 1325,
+      "height": 2048,
+      "columns": 6,
+      "rows": 8
+    },
+    {
+      "z": 3,
+      "width": 2650,
+      "height": 4096,
+      "columns": 11,
+      "rows": 16
+    },
+    {
+      "z": 4,
+      "width": 5300,
+      "height": 8192,
+      "columns": 21,
+      "rows": 32
+    },
+    {
+      "z": 5,
+      "width": 10600,
+      "height": 16384,
+      "columns": 42,
+      "rows": 64
+    }
+  ],
+  "coordinateSystem": "normalized-top-left",
+  "sourceKind": "pdf-render",
+  "sourceWidth": 6600,
+  "sourceHeight": 10200,
+  "sourcePdfPagePoints": [
+    792,
+    1224
+  ],
+  "sourceNote": "Fresh pyramid rendered directly from the supplied Night City 2045 PDF; old tile directories were deleted before generation.",
+  "compression": "webp-lossless"
+}

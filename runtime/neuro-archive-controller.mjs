@@ -24,6 +24,26 @@ import {
   placeArchiveContextMenu,
 } from "./archive-ui-utils.mjs";
 import { openArchiveShareDialog } from "./archive-share-service.mjs";
+import { chooseArchiveImage as chooseImage } from "./archive-file-picker.mjs";
+import {
+  createClueConnection,
+  normalizeClueConnections,
+  removeClueConnection,
+  updateClueConnection,
+} from "./archive-clue-connections.mjs";
+import { renderWorldCityMap, WORLD_MAP_ARCHIVE_FOCUS_ZOOM } from "./world-city-map-view.mjs";
+import {
+  getWorldCityMap,
+  markersForArchiveEntry,
+  linkMarkerToArchiveEntry,
+  unlinkMarkerFromArchiveEntry,
+  worldMapMarkerDisplayLabel,
+} from "./world-city-map.mjs";
+import {
+  addPersonalWorldMapLink,
+  personalLinksForArchiveEntry,
+  removePersonalWorldMapLink,
+} from "./world-city-map-user-links.mjs";
 
 const CANONICAL_ARCHIVE_PATH = "flags.cyberpunkRemaster.neuroArchive.data";
 // Legacy source probes are implemented by neuro-archive-store.mjs:
@@ -606,6 +626,7 @@ export function createNeuroArchiveController(
         personId: "",
         locationId: "",
         locationIds: [],
+        connections: [],
       },
       sessions: {
         realDate: new Date().toISOString().slice(0, 10),
@@ -690,6 +711,8 @@ export function createNeuroArchiveController(
             if (LEGACY_LOCATION_TYPES.has(entry.type))
               entry.locationId = entry.locationIds[0] ?? "";
           }
+          if (entry.type === "clues")
+            entry.connections = normalizeClueConnections(entry.connections, uid);
           if (entry.type === "quests") entry.tasks ??= [];
         }
     }
@@ -793,8 +816,11 @@ export function createNeuroArchiveController(
     helpOpen: false,
     lightbox: null,
     openFragmentId: null,
+    worldMapFocusMarkerId: "",
     root: null,
   };
+
+  let worldMapController = null;
 
   function actorById(id) {
     return state.actors.find((actor) => (actor.id ?? actor._id) === id) ?? null;
@@ -885,6 +911,95 @@ export function createNeuroArchiveController(
         .flat()
         .find((entry) => entry.id === id) ?? null
     );
+  }
+
+  function worldMapRecordCatalog() {
+    const records = [];
+    for (const [actorId, book] of Object.entries(state.store?.notebooks ?? {})) {
+      for (const [section, entries] of Object.entries(book?.entries ?? {})) {
+        if (!Array.isArray(entries)) continue;
+        for (const entry of entries) {
+          if (!entry?.id) continue;
+          records.push({
+            actorId: String(actorId),
+            actorName: String(book?.actorName || "Персонаж"),
+            section: String(section),
+            sectionLabel: String(SECTIONS?.[section]?.label || section),
+            entryId: String(entry.id),
+            title: String(entry.title || "Без названия"),
+          });
+        }
+      }
+    }
+    return records;
+  }
+
+  function archiveMapLink(entry) {
+    return {
+      actorId: String(state.store?.activeActorId || ""),
+      section: String(entry?.type || ""),
+      entryId: String(entry?.id || ""),
+    };
+  }
+
+  function worldMapLinksPanel(entry) {
+    if (!entry?.id || !entry?.type || !state.store?.activeActorId) return "";
+    const link = archiveMapLink(entry);
+    const map = getWorldCityMap();
+    const shared = markersForArchiveEntry(link, map);
+    const sharedIds = new Set(shared.map((marker) => marker.id));
+    const personalRefs = game.user?.isGM ? [] : personalLinksForArchiveEntry(link);
+    const personal = personalRefs
+      .map((personalLink) => map.markers.find((marker) => marker.id === personalLink.markerId))
+      .filter(Boolean)
+      .filter((marker) => !sharedIds.has(marker.id));
+    const personalIds = new Set(personal.map((marker) => marker.id));
+    const linkedIds = new Set([...sharedIds, ...personalIds]);
+    const available = map.markers.filter((marker) => !linkedIds.has(marker.id));
+    const sharedRows = shared.map((marker) => `<div class="pcm-world-map-link-row shared"><button data-action="open-map-marker" data-marker-id="${esc(marker.id)}"><b>⌖</b><span>${esc(worldMapMarkerDisplayLabel(map, marker))}</span><i>→</i></button>${game.user?.isGM ? `<button class="danger" data-action="unlink-map-marker" data-marker-id="${esc(marker.id)}" title="Убрать общую связь">×</button>` : ""}</div>`).join("");
+    const personalRows = personal.map((marker) => `<div class="pcm-world-map-link-row personal"><button data-action="open-map-marker" data-marker-id="${esc(marker.id)}"><b>⌖</b><span>${esc(worldMapMarkerDisplayLabel(map, marker))}</span><i>→</i></button><button class="danger" data-action="unlink-personal-map-marker" data-marker-id="${esc(marker.id)}" title="Убрать мою связь">×</button></div>`).join("");
+    const rows = sharedRows || personalRows ? `${sharedRows}${personalRows}` : '<p class="muted">Точки на карте пока не связаны.</p>';
+    const controls = game.user?.isGM
+      ? `<div class="pcm-world-map-link-add"><select data-map-marker-link-select><option value="">Выберите точку карты…</option>${available.map((marker) => `<option value="${esc(marker.id)}">${esc(worldMapMarkerDisplayLabel(map, marker))}</option>`).join("")}</select><button data-action="link-map-marker" ${available.length ? "" : "disabled"}>+ Привязать точку</button></div>`
+      : `<div class="pcm-world-map-link-add personal"><select data-map-marker-link-select><option value="">Выберите известную точку карты…</option>${available.map((marker) => `<option value="${esc(marker.id)}">${esc(worldMapMarkerDisplayLabel(map, marker))}</option>`).join("")}</select><button data-action="link-personal-map-marker" ${available.length ? "" : "disabled"}>+ Запомнить здесь</button></div>`;
+    const firstMarker = shared[0] || personal[0] || null;
+    return `<section class="pcm-detail-panel wide pcm-world-map-links" data-world-map-entry-links><header><h3>⌖ Точки на карте</h3><button data-action="open-map-marker" data-marker-id="${esc(firstMarker?.id || "")}">${firstMarker ? "Открыть на карте" : "Открыть карту"}</button></header><div class="pcm-world-map-link-list">${rows}</div>${controls}</section>`;
+  }
+
+  async function openWorldMapArchiveLink(link) {
+    const actorId = String(link?.actorId || "");
+    const section = String(link?.section || "");
+    const entryId = String(link?.entryId || "");
+    const book = state.store?.notebooks?.[actorId];
+    const entry = book?.entries?.[section]?.find?.((item) => String(item.id) === entryId);
+    if (!book || !entry) {
+      notify("Связанная запись больше не найдена в этом архиве.", "warn");
+      return;
+    }
+    state.store.activeActorId = actorId;
+    state.section = section;
+    state.viewMode = section === "people" ? "person" : section === "locations" ? "location" : "entry";
+    state.viewId = entryId;
+    state.openId = entryId;
+    state.returnLocationId = null;
+    render();
+  }
+
+  function mountWorldMap(book) {
+    const host = state.root?.querySelector?.("[data-world-city-map-host]");
+    if (!host) return;
+    worldMapController?.destroy?.();
+    const focusMarkerId = String(state.worldMapFocusMarkerId || "");
+    worldMapController = renderWorldCityMap(host, {
+      legacyImage: String(book?.cityMap?.image || ""),
+      activeActorId: String(state.store?.activeActorId || ""),
+      listArchiveRecords: worldMapRecordCatalog,
+      openArchiveLink: openWorldMapArchiveLink,
+      pickImage: chooseImage,
+      focusMarkerId,
+      focusZoom: focusMarkerId ? WORLD_MAP_ARCHIVE_FOCUS_ZOOM : null,
+    });
+    state.worldMapFocusMarkerId = "";
   }
 
   function entryLocationIds(entry) {
@@ -1164,6 +1279,42 @@ export function createNeuroArchiveController(
       <div class="pcm-field wide"><span>Связанные точки</span>${locationChecks(entry, locations)}</div>`;
   }
 
+
+  function clueConnectionsEditor(entry, book) {
+    if (entry.type !== "clues") return "";
+    const people = book.entries.people ?? [];
+    const locations = book.entries.locations ?? [];
+    const rows = (entry.connections ?? []).map((connection, index) => `
+      <article class="pcm-clue-connection" data-clue-connection-id="${esc(connection.id)}">
+        <header>
+          <label><span>Связь ${index + 1}</span><input data-clue-connection-field="title" value="${esc(connection.title)}" placeholder="Название связи"></label>
+          <button class="danger" data-action="delete-clue-connection" title="Удалить связь">×</button>
+        </header>
+        <div class="pcm-clue-connection-grid">
+          <label class="pcm-field"><span>Контакт</span><select data-clue-connection-field="personId">${opt("", connection.personId, "Не выбран")}${people.map((person) => opt(person.id, connection.personId, person.title)).join("")}</select></label>
+          <label class="pcm-field"><span>Точка</span><select data-clue-connection-field="locationId">${opt("", connection.locationId, "Не выбрана")}${locations.map((location) => opt(location.id, connection.locationId, location.title)).join("")}</select></label>
+          <label class="pcm-field area wide"><span>Описание связи</span><textarea data-clue-connection-field="text" placeholder="Что именно связывает эту зацепку с контактом или точкой">${esc(connection.text)}</textarea></label>
+        </div>
+      </article>`).join("");
+    return `<section class="pcm-sub pcm-clue-connections"><header><div><h3>Дополнительные связи</h3><p>Каждая связь — отдельный пункт. Можно добавить сколько угодно.</p></div><button data-action="add-clue-connection">+ Добавить связь</button></header><div class="pcm-clue-connection-list">${rows || '<p class="muted">Дополнительных связей пока нет.</p>'}</div></section>`;
+  }
+
+  function clueConnectionsRead(book, entry) {
+    if (entry.type !== "clues" || !(entry.connections?.length)) return "";
+    const people = book.entries.people ?? [];
+    const locations = book.entries.locations ?? [];
+    const cards = entry.connections.map((connection, index) => {
+      const person = people.find((item) => item.id === connection.personId);
+      const location = locations.find((item) => item.id === connection.locationId);
+      const chips = [
+        person ? `<button data-action="view-person" data-person-id="${esc(person.id)}">◉ ${esc(person.title)}</button>` : "",
+        location ? `<button data-action="view-location" data-location-id="${esc(location.id)}">⌖ ${esc(location.title)}</button>` : "",
+      ].filter(Boolean).join("");
+      return `<article class="pcm-clue-connection-read"><header><small>СВЯЗЬ ${index + 1}</small><h4>${esc(connection.title || `Связь ${index + 1}`)}</h4></header>${chips ? `<div class="pcm-clue-connection-chips">${chips}</div>` : ""}${connection.text ? `<div class="pcm-clue-connection-text">${readText(connection.text)}</div>` : ""}</article>`;
+    }).join("");
+    return `<section class="pcm-detail-panel wide pcm-clue-connections-read"><h3>Дополнительные связи</h3><div class="pcm-clue-connection-read-list">${cards}</div></section>`;
+  }
+
   function tasks(entry) {
     if (entry.type !== "quests") return "";
     return `<section class="pcm-sub"><header><h3>${fa("fa-list-check")} Этапы гига</h3><button data-action="add-task">${fa("fa-plus")} Этап</button></header>
@@ -1228,7 +1379,7 @@ export function createNeuroArchiveController(
       );
       if (gigs.length)
         rows.push(
-          `<div><span>Гиги от контакта:</span>${gigs.map(link).join("")}</div>`,
+          `<div><span>Заказы:</span>${gigs.map(link).join("")}</div>`,
         );
       if (clues.length)
         rows.push(
@@ -1273,7 +1424,7 @@ export function createNeuroArchiveController(
       <div class="pcm-image-row"><div class="pcm-cover">${entry.image ? `<img src="${esc(entry.image)}" alt="">` : `${fa("fa-image")}<small>Обложка</small>`}</div><label class="pcm-field"><span>Картинка: нажмите «Выбрать» или вставьте <b>Ctrl+V</b></span><div class="pcm-path"><input data-field="image" value="${esc(entry.image)}" placeholder="Путь Foundry или URL"><button data-action="pick-image">${fa("fa-folder-open")} Выбрать</button></div></label></div>
       <div class="pcm-grid">${input("Название", "title", entry.title, "", "text", true)}${area("Быстрая заметка", "summary", entry.summary, "Главное — коротко, прямо во время игры")}${input("Теги через запятую", "tags", entry.tags, "важное, союзник, вернуться", "text", true)}</div>
       ${area("Текст", "content", entry.content, "Продолжайте писать — автосохранение не прервёт ввод…")}
-      <details class="pcm-extra"><summary>${fa("fa-sliders")} Дополнительно: связи, статусы и подробности</summary><div class="pcm-grid">${typeFields(entry, book)}</div>${tasks(entry)}</details>${links(entry, book)}${galleryEditor(entry)}${fragments(entry)}
+      <details class="pcm-extra"><summary>${fa("fa-sliders")} Дополнительно: связи, статусы и подробности</summary><div class="pcm-grid">${typeFields(entry, book)}</div>${clueConnectionsEditor(entry, book)}${tasks(entry)}</details>${links(entry, book)}${galleryEditor(entry)}${fragments(entry)}
       <div class="pcm-add-fragment"><button data-action="add-fragment">${fa("fa-plus")} Сворачиваемый фрагмент</button><span>Переписка, разговор, этаж, слух, тайник или отдельная картинка</span></div>
     </div>`;
   }
@@ -1467,7 +1618,7 @@ export function createNeuroArchiveController(
     }
     if (entry.type === "clues") {
       const person = book.entries.people.find((item) => item.id === entry.personId);
-      return `${detailValue("Статус", entry.status)}${detailValue("Источник", entry.source)}${detailValue("Контакт", person?.title)}${detailValue("Теория", entry.theory, { wide: true })}${detailValue("Вывод", entry.conclusion, { wide: true })}${locationPanel}`;
+      return `${detailValue("Статус", entry.status)}${detailValue("Источник", entry.source)}${detailValue("Контакт", person?.title)}${detailValue("Теория", entry.theory, { wide: true })}${detailValue("Вывод", entry.conclusion, { wide: true })}${clueConnectionsRead(book, entry)}${locationPanel}`;
     }
     if (entry.type === "sessions")
       return `${detailValue("Дата игры", entry.realDate)}${detailValue("Дата в мире", entry.gameDate)}${detailValue("Участники", entry.participants, { wide: true })}${detailValue("События", entry.events, { wide: true })}${detailValue("Решения", entry.decisions, { wide: true })}${detailValue("Добыча", entry.loot, { wide: true })}${detailValue("К следующей игре", entry.nextTime, { wide: true })}${locationPanel}`;
@@ -1482,7 +1633,7 @@ export function createNeuroArchiveController(
     return `<div class="pcm-detail" data-entry-id="${entry.id}">
       <div class="pcm-detail-nav"><button data-action="back-list" data-section="${entry.type}">${fa("fa-arrow-left")} ${esc(section.label)}</button><div><button data-action="to-chat">${fa("fa-paper-plane")} В чат</button><button data-action="pin">${fa(entry.pinned ? "fa-star" : "fa-thumbtack")} ${entry.pinned ? "Закреплено" : "Закрепить"}</button><button class="primary" data-action="edit-entry">${fa("fa-pen")} Редактировать</button></div></div>
       <section class="pcm-location-hero"><div class="pcm-location-hero-image">${entry.image ? `<img src="${esc(entry.image)}" alt="">` : sectionIcon(entry.type)}</div><div><small>${esc(section.label)}</small><h1>${esc(entry.title)}</h1>${readText(entry.summary, "Краткая сводка пока не добавлена.")}</div></section>
-      <div class="pcm-detail-grid">${entry.content ? `<section class="pcm-detail-panel wide"><h3>Основная запись</h3>${readText(entry.content)}</section>` : ""}${entryReadPanels(book, entry)}${tags.length ? `<section class="pcm-detail-panel wide"><h3>Теги</h3><div>${tags.map((tag) => `<span class="pcm-tag-static">#${esc(tag)}</span>`).join(" ")}</div></section>` : ""}${readFragments(entry)}</div>
+      <div class="pcm-detail-grid">${entry.content ? `<section class="pcm-detail-panel wide"><h3>Основная запись</h3>${readText(entry.content)}</section>` : ""}${entryReadPanels(book, entry)}${worldMapLinksPanel(entry)}${tags.length ? `<section class="pcm-detail-panel wide"><h3>Теги</h3><div>${tags.map((tag) => `<span class="pcm-tag-static">#${esc(tag)}</span>`).join(" ")}</div></section>` : ""}${readFragments(entry)}</div>
     </div>`;
   }
 
@@ -1704,7 +1855,7 @@ export function createNeuroArchiveController(
         ? entries
             .map(
               (item) =>
-                `<button class="pcm-related-row" data-action="open-related" data-entry-id="${item.id}"><b>${sectionIcon(type)}</b><span>${esc(item.title)}<small>${short(item.summary || item.objective || item.theory || item.content, 90)}</small></span><i>${fa("fa-arrow-right")}</i></button>`,
+                `<button class="pcm-related-row pcm-person-related-row" data-action="open-related" data-entry-id="${item.id}"><b class="pcm-person-related-icon">${sectionIcon(type)}</b><span class="pcm-person-related-copy"><strong>${esc(item.title)}</strong><small>${short(item.summary || item.objective || item.theory || item.content, 90)}</small></span><i class="pcm-person-related-arrow">${fa("fa-arrow-right")}</i></button>`,
             )
             .join("")
         : `<p class="muted">${empty}</p>`;
@@ -1718,11 +1869,11 @@ export function createNeuroArchiveController(
         </section>
         <section class="pcm-detail-panel"><h3>${fa("fa-circle-info")} О точке</h3>${readText(location.content)}${location.atmosphere ? `<h4>Атмосфера и приметы</h4>${readText(location.atmosphere)}` : ""}${location.dangers ? `<h4>Угрозы и охрана</h4>${readText(location.dangers)}` : ""}</section>
         <section class="pcm-detail-panel"><h3>${fa("fa-toolbox")} Полезное</h3>${location.services ? `<h4>Услуги и ресурсы</h4>${readText(location.services)}` : '<p class="muted">Услуги и ресурсы не отмечены.</p>'}${location.travel ? `<h4>Маршрут / доступ</h4>${readText(location.travel)}` : ""}</section>
-        <section class="pcm-detail-panel"><header><h3>${sectionIcon("quests")} Гиги здесь</h3><button data-action="add-related-here" data-type="quests">${fa("fa-plus")} Гиг</button></header>${related(quests, "quests", "Связанных гигов нет.")}</section>
+        <section class="pcm-detail-panel"><header><h3>${sectionIcon("quests")} Заказы здесь</h3><button data-action="add-related-here" data-type="quests">${fa("fa-plus")} Заказ</button></header>${related(quests, "quests", "Связанных заказов нет.")}</section>
         <section class="pcm-detail-panel"><header><h3>${sectionIcon("clues")} Зацепки</h3><button data-action="add-related-here" data-type="clues">${fa("fa-plus")} Зацепка</button></header>${related(clues, "clues", "Связанных зацепок нет.")}</section>
         <section class="pcm-detail-panel"><header><h3>${sectionIcon("sessions")} История точки</h3><button data-action="add-related-here" data-type="sessions">${fa("fa-plus")} Лог</button></header>${related(sessions, "sessions", "Записей лога здесь нет.")}</section>
         <section class="pcm-detail-panel"><header><h3>${sectionIcon("notes")} Дампы</h3><button data-action="add-related-here" data-type="notes">${fa("fa-plus")} Дамп</button></header>${related(notes, "notes", "Связанных дампов нет.")}</section>
-        ${readFragments(location)}
+        ${worldMapLinksPanel(location)}${readFragments(location)}
       </div>
     </div>`;
   }
@@ -1995,7 +2146,7 @@ export function createNeuroArchiveController(
         ? items
             .map(
               (item) =>
-                `<button class="pcm-related-row" data-action="open-related" data-entry-id="${item.id}"><b>${sectionIcon(type)}</b><span>${esc(item.title)}<small>${short(item.summary || item.objective || item.theory || item.content, 90)}</small></span><i>${fa("fa-arrow-right")}</i></button>`,
+                `<button class="pcm-related-row pcm-person-related-row" data-action="open-related" data-entry-id="${item.id}"><b class="pcm-person-related-icon">${sectionIcon(type)}</b><span class="pcm-person-related-copy"><strong>${esc(item.title)}</strong><small>${short(item.summary || item.objective || item.theory || item.content, 90)}</small></span><i class="pcm-person-related-arrow">${fa("fa-arrow-right")}</i></button>`,
             )
             .join("")
         : `<p class="muted">${empty}</p>`;
@@ -2017,16 +2168,20 @@ export function createNeuroArchiveController(
       ${quickEdit ? personQuickEditPanel(book, person) : `<div class="pcm-detail-grid">
         <section class="pcm-detail-panel wide pcm-person-meetings"><h3>${sectionIcon("locations")} Где пересекались</h3><div class="pcm-location-chips">${locations.length ? locations.map((location) => `<button data-action="view-location" data-location-id="${location.id}" data-entry-id="${location.id}">${sectionIcon("locations")} ${esc(location.title)}</button>`).join("") : '<span class="muted">Точки пока не связаны.</span>'}</div>${person.firstMet ? `<div class="pcm-person-meeting-meta"><div class="pcm-meeting-fact"><h4>Первая встреча</h4>${readText(person.firstMet)}</div></div>` : ""}</section>
         <section class="pcm-detail-panel wide pcm-contact-comms pcm-neuro-link-surface"><header><div><small>NEURAL CHANNEL // PRIVATE</small><h3>${fa("fa-satellite-dish")} НЕЙРО-СВЯЗЬ</h3><p>${game.user?.isGM && state.archiveUserId !== userId ? `GM отвечает от имени контакта «${esc(person.title)}»; ответ сразу сохраняется в архиве игрока.` : "Сообщения сохраняются в канале контакта и дублируются адресатам через приватный чат Foundry."}</p></div><span class="pcm-neuro-status ${Array.from(game?.users?.contents ?? game?.users ?? []).some((user) => user?.isGM && user?.active !== false) ? "online" : "offline"}">${Array.from(game?.users?.contents ?? game?.users ?? []).some((user) => user?.isGM && user?.active !== false) ? "GM LINK ONLINE" : "GM OFFLINE"}</span></header>${contactMessageThread(person)}<div class="pcm-message-composer pcm-neuro-compose"><textarea data-person-message-input rows="3" placeholder="${game.user?.isGM && state.archiveUserId !== userId ? `Ответить от имени ${esc(person.title)}…` : `Написать ${esc(person.title)}…`}"></textarea><button class="primary pcm-neuro-send" data-action="send-person-message">${fa("fa-paper-plane")} ${game.user?.isGM && state.archiveUserId !== userId ? "Ответить" : "Отправить"}</button></div></section>
-        <section class="pcm-detail-panel"><header><h3>${sectionIcon("quests")} Гиги от контакта</h3><button data-action="add-person-gig">${fa("fa-plus")} Гиг</button></header>${related(gigs, "quests", "Связанных гигов нет.")}</section>
+        <section class="pcm-detail-panel"><header><h3>${sectionIcon("quests")} Заказы</h3><button data-action="add-person-gig">${fa("fa-plus")} Заказ</button></header>${related(gigs, "quests", "Связанных заказов нет.")}</section>
         <section class="pcm-detail-panel"><header><h3>${sectionIcon("clues")} Зацепки</h3><button data-action="add-person-clue">${fa("fa-plus")} Зацепка</button></header>${related(clues, "clues", "Связанных зацепок нет.")}</section>
         <section class="pcm-detail-panel"><header><h3>Мои заметки</h3></header>${readText(person.content, "Заметок о контакте пока нет.")}${person.relationship ? `<h4>Наши отношения</h4>${readText(person.relationship)}` : ""}</section>
         <section class="pcm-detail-panel"><h3>Что говорил</h3>${readText(person.quotes, "Цитат и важных фактов пока нет.")}</section>
         <section class="pcm-detail-panel"><h3>Обещания и долги</h3>${readText(person.promises, "Ничего не отмечено.")}</section>
         <section class="pcm-detail-panel"><h3>Подозрения и секреты</h3>${readText(person.secrets, "Ничего не отмечено.")}</section>
-        ${readFragments(person)}
+        ${worldMapLinksPanel(person)}${readFragments(person)}
         ${person.gallery.length ? `<section class="pcm-detail-panel wide pcm-person-gallery"><h3>${fa("fa-images")} Галерея контакта</h3><div class="pcm-gallery-view">${person.gallery.map((item) => `<button data-action="view-gallery-image" data-gallery-id="${item.id}"><img src="${esc(item.image)}" alt="${esc(item.caption)}"><span>${esc(item.caption || "Открыть изображение")}</span></button>`).join("")}</div></section>` : ""}
       </div>`}
     </div>`;
+  }
+
+  function cityMapView(book) {
+    return `<div class="pcm-city-map-view pcm-world-map-view"><div data-world-city-map-host></div></div>`;
   }
 
   function editorView(entry, book) {
@@ -2035,6 +2190,7 @@ export function createNeuroArchiveController(
 
   function sectionView(book, key) {
     if (key === "gm-network") return gmNetworkView();
+    if (key === "citymap") return cityMapView(book);
     if (state.viewMode === "edit") {
       const entry = entryById(state.viewId);
       if (entry) return editorView(entry, book);
@@ -2403,6 +2559,8 @@ export function createNeuroArchiveController(
   }
 
   function render() {
+    worldMapController?.destroy?.();
+    worldMapController = null;
     const win = state.root.querySelector(".pcm-window");
     const owner = archiveUserById(state.archiveUserId);
     const ownerSelector = game.user?.isGM
@@ -2426,50 +2584,16 @@ export function createNeuroArchiveController(
     win.innerHTML = `<header class="pcm-top">${ownerSelector}<div class="pcm-brand"><img src="${esc(book.actorImg)}" alt=""><div><small>// НЕЙРО-АРХИВ ${esc(themeLabel)} ${esc(NEURO_ARCHIVE_VERSION)}</small><select data-actor>${state.actors.map((item) => opt(item.id ?? item._id, actor.id ?? actor._id, item.name)).join("")}</select></div></div><span data-save-badge data-mode="${state.storageMode}">${state.storageMode === "server" ? "SYNC ✓" : "LOCAL"}</span><button data-action="appearance" title="Вид и размер текста"><b>${fa("fa-palette")}</b><span>Вид</span></button><button class="pcm-save-now" data-action="save" title="Синхронизировать (Ctrl+S)"><b>${fa("fa-arrows-rotate")}</b><span>SYNC</span></button><button data-action="export" title="Экспорт JSON"><b>${fa("fa-file-export")}</b><span>Бэкап</span></button><button data-action="import" title="Импорт JSON"><b>${fa("fa-file-import")}</b><span>Импорт</span></button><input type="file" accept=".json,application/json" data-import hidden></header>
       <div class="pcm-layout"><aside>${nav("dashboard", "Обзор", "fa-table-columns")}
         ${game.user?.isGM ? `<small class="pcm-caption pcm-gm-caption">GM CONTROL</small>${nav("gm-network", "GM // НЕЙРО-СЕТЬ", "fa-tower-broadcast", gmUnreadTotal())}` : ""}
-        <small class="pcm-caption">КАРТОТЕКА</small>${Object.entries(SECTIONS)
+        <small class="pcm-caption">КАРТОТЕКА</small>${nav("citymap", "Карта Найт-Сити", "fa-map-location-dot")}${Object.entries(SECTIONS)
           .map(([key, item]) => nav(key, item.label, item.icon, counts[key]))
           .join("")}
         <label class="pcm-goal"><span>ПРИОРИТЕТ</span><textarea data-goal placeholder="Что сейчас важнее всего?">${esc(book.goal)}</textarea></label>
         <button class="pcm-help-button" data-action="help">${fa("fa-circle-question")} <span>Как пользоваться</span></button><p class="pcm-help">Повторное нажатие кнопки вернёт окно на передний план.</p></aside>
         <main>${state.section === "dashboard" ? dashboard(book) : sectionView(book, state.section)}</main></div>${themePanel(book)}${helpPanel()}${lightboxView()}`;
     applyAppearance(book);
+    if (state.section === "citymap") mountWorldMap(book);
   }
 
-  async function chooseImage(current, callback) {
-    const Picker =
-      globalThis.foundry?.applications?.apps?.FilePicker ??
-      globalThis.FilePicker ??
-      globalThis.CONFIG?.ux?.FilePicker;
-    if (!Picker) {
-      notify(
-        "File Picker этой версии не найден. Вставьте путь к картинке или URL вручную.",
-        "warn",
-      );
-      return;
-    }
-    try {
-      const accept = (selection) => {
-        const path =
-          typeof selection === "string"
-            ? selection
-            : (selection?.path ?? selection?.target ?? "");
-        if (path) callback(path);
-        else notify("File Picker не вернул путь к изображению.", "warn");
-      };
-      const picker = new Picker({
-        type: "image",
-        current: current ?? "",
-        callback: accept,
-      });
-      await Promise.resolve(picker.render(true));
-    } catch (error) {
-      console.warn(error);
-      notify(
-        "Не удалось открыть File Picker. Путь к изображению можно вставить вручную.",
-        "warn",
-      );
-    }
-  }
 
   function dataUrlFromImage(file) {
     return new Promise((resolve, reject) => {
@@ -2577,6 +2701,8 @@ export function createNeuroArchiveController(
       setEntryLocations(entry, [options.locationId]);
     if (type === "quests" && options.giverId)
       entry.giverId = options.giverId;
+    if (type === "clues" && options.personId)
+      entry.personId = options.personId;
     notebook().entries[type].push(entry);
     state.section = type;
     state.openId = entry.id;
@@ -3515,6 +3641,14 @@ export function createNeuroArchiveController(
     }
     const entry = findEntry(target);
     if (!entry) return;
+    const clueConnectionBox = target.closest("[data-clue-connection-id]");
+    if (clueConnectionBox && target.matches("[data-clue-connection-field]") && entry.type === "clues") {
+      if (updateClueConnection(entry.connections, clueConnectionBox.dataset.clueConnectionId, target.dataset.clueConnectionField, target.value)) {
+        entry.updatedAt = now();
+        dirty();
+      }
+      return;
+    }
     if (target.matches("[data-field]")) {
       entry[target.dataset.field] = target.value;
       entry.updatedAt = now();
@@ -3649,6 +3783,42 @@ export function createNeuroArchiveController(
     event.stopPropagation();
     const action = button.dataset.action;
     const entry = findEntry(button);
+
+    if (action === "open-map-marker") {
+      resetView("citymap");
+      state.section = "citymap";
+      state.worldMapFocusMarkerId = String(button.dataset.markerId || "");
+      render();
+      return;
+    }
+    if (action === "link-personal-map-marker" && entry && !game.user?.isGM) {
+      const select = button.closest?.("[data-world-map-entry-links]")?.querySelector?.("[data-map-marker-link-select]");
+      const markerId = String(select?.value || "");
+      if (!markerId) { notify("Выберите точку карты.", "warn"); return; }
+      await addPersonalWorldMapLink({ ...archiveMapLink(entry), markerId });
+      render();
+      return;
+    }
+    if (action === "unlink-personal-map-marker" && entry && !game.user?.isGM) {
+      const markerId = String(button.dataset.markerId || "");
+      if (markerId) await removePersonalWorldMapLink({ ...archiveMapLink(entry), markerId });
+      render();
+      return;
+    }
+    if (action === "link-map-marker" && entry && game.user?.isGM) {
+      const select = button.closest?.("[data-world-map-entry-links]")?.querySelector?.("[data-map-marker-link-select]");
+      const markerId = String(select?.value || "");
+      if (!markerId) { notify("Выберите точку карты.", "warn"); return; }
+      await linkMarkerToArchiveEntry(markerId, archiveMapLink(entry));
+      render();
+      return;
+    }
+    if (action === "unlink-map-marker" && entry && game.user?.isGM) {
+      const markerId = String(button.dataset.markerId || "");
+      if (markerId) await unlinkMarkerFromArchiveEntry(markerId, archiveMapLink(entry));
+      render();
+      return;
+    }
     if (action === "gm-select-player" && game.user?.isGM) {
       state.gmUserId = String(button.dataset.gmPlayer || "");
       state.gmActorId = "";
@@ -4109,6 +4279,27 @@ export function createNeuroArchiveController(
       });
       return;
     }
+    if (action === "add-clue-connection" && entry?.type === "clues") {
+      const connection = createClueConnection(uid);
+      entry.connections ??= [];
+      entry.connections.push(connection);
+      entry.updatedAt = now();
+      state.openId = entry.id;
+      dirty();
+      render();
+      root.querySelector(`[data-clue-connection-id="${connection.id}"] [data-clue-connection-field="title"]`)?.focus();
+      return;
+    }
+    if (action === "delete-clue-connection" && entry?.type === "clues") {
+      const id = button.closest("[data-clue-connection-id]")?.dataset.clueConnectionId;
+      if (removeClueConnection(entry.connections, id)) {
+        entry.updatedAt = now();
+        state.openId = entry.id;
+        dirty();
+        render();
+      }
+      return;
+    }
     if (action === "add-task") {
       const task = { id: uid(), text: "", done: false };
       entry.tasks.push(task);
@@ -4314,6 +4505,8 @@ export function createNeuroArchiveController(
     ingestContactMessage,
     getShareSnapshot,
     destroy() {
+      worldMapController?.destroy?.();
+      worldMapController = null;
       clearTimeout(state.saveTimer);
       document.removeEventListener("keydown", keyboardHandler);
       document.removeEventListener(

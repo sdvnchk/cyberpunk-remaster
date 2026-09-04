@@ -15,6 +15,26 @@ import {
   syncArchiveContextTheme,
 } from "./archive-ui-utils.mjs";
 import { openArchiveShareDialog } from "./archive-share-service.mjs";
+import { chooseArchiveImage as chooseImage } from "./archive-file-picker.mjs";
+import {
+  createClueConnection,
+  normalizeClueConnections,
+  removeClueConnection,
+  updateClueConnection,
+} from "./archive-clue-connections.mjs";
+import { renderWorldCityMap, WORLD_MAP_ARCHIVE_FOCUS_ZOOM } from "./world-city-map-view.mjs";
+import {
+  getWorldCityMap,
+  markersForArchiveEntry,
+  linkMarkerToArchiveEntry,
+  unlinkMarkerFromArchiveEntry,
+  worldMapMarkerDisplayLabel,
+} from "./world-city-map.mjs";
+import {
+  addPersonalWorldMapLink,
+  personalLinksForArchiveEntry,
+  removePersonalWorldMapLink,
+} from "./world-city-map-user-links.mjs";
 
 /*
  * NIGHT CITY // ПОЛЕВОЙ АРХИВ — автономный Foundry VTT макрос
@@ -295,7 +315,7 @@ export async function createCyberArchiveController(hostRoot, { requestClose = as
       subscriptions: { provider: "", plan: "", price: "", currency: "€$", termDays: 30, remainingDays: 30, status: "Активна", renewalNote: "" },
       locations: { kind: "", region: "", status: "Активна", firstVisited: "", atmosphere: "", dangers: "", services: "", travel: "" },
       quests: { status: "Активно", giverId: "", locationId: "", locationIds: [], objective: "", reward: "", deadline: "", nextStep: "", tasks: [] },
-      clues: { status: "Новая", source: "", theory: "", conclusion: "", personId: "", locationId: "", locationIds: [] },
+      clues: { status: "Новая", source: "", theory: "", conclusion: "", personId: "", locationId: "", locationIds: [], connections: [] },
       books: { status: "Не изучен", author: "", language: "", script: "", cipher: "", helperId: "", decodingProgress: 0, decodingKey: "", method: "", discoveries: "", nextStep: "", decodeStages: [], locationIds: [] },
       sessions: { realDate: new Date().toISOString().slice(0, 10), gameDate: "", participants: "", events: "", decisions: "", loot: "", nextTime: "", locationIds: [] },
       notes: { category: "Общее", locationIds: [] }
@@ -341,6 +361,8 @@ export async function createCyberArchiveController(hostRoot, { requestClose = as
           if ( entry.locationId && !entry.locationIds.includes(entry.locationId) ) entry.locationIds.unshift(entry.locationId);
           if ( LEGACY_LOCATION_TYPES.has(entry.type) ) entry.locationId = entry.locationIds[0] ?? "";
         }
+        if (entry.type === "clues")
+          entry.connections = normalizeClueConnections(entry.connections, uid);
         if ( entry.type === "people" ) {
           if ( ["Полезен", "Доброжелательно"].includes(entry.attitude) ) entry.attitude = "Союзник";
           if ( !entry.attitude ) entry.attitude = "Неизвестно";
@@ -529,6 +551,7 @@ export async function createCyberArchiveController(hostRoot, { requestClose = as
     inlineLocks: {},
     mapZoom: 1,
     windowPrefs: null,
+    worldMapFocusMarkerId: "",
     saveTimer: null,
     saving: false,
     saveAgain: false,
@@ -540,6 +563,8 @@ export async function createCyberArchiveController(hostRoot, { requestClose = as
     openFragmentId: null,
     root: null
   };
+
+  let worldMapController = null;
 
   function actorById(id) {
     return state.actors.find(actor => (actor.id ?? actor._id) === id) ?? null;
@@ -626,6 +651,95 @@ export async function createCyberArchiveController(hostRoot, { requestClose = as
   function entryById(id) {
     if ( !id || !notebook() ) return null;
     return Object.values(notebook().entries).flat().find(entry => entry.id === id) ?? null;
+  }
+
+  function worldMapRecordCatalog() {
+    const records = [];
+    for (const [actorId, book] of Object.entries(state.store?.notebooks ?? {})) {
+      for (const [section, entries] of Object.entries(book?.entries ?? {})) {
+        if (!Array.isArray(entries)) continue;
+        for (const entry of entries) {
+          if (!entry?.id) continue;
+          records.push({
+            actorId: String(actorId),
+            actorName: String(book?.actorName || "Персонаж"),
+            section: String(section),
+            sectionLabel: String(SECTIONS?.[section]?.label || section),
+            entryId: String(entry.id),
+            title: String(entry.title || "Без названия"),
+          });
+        }
+      }
+    }
+    return records;
+  }
+
+  function archiveMapLink(entry) {
+    return {
+      actorId: String(state.store?.activeActorId || ""),
+      section: String(entry?.type || ""),
+      entryId: String(entry?.id || ""),
+    };
+  }
+
+  function worldMapLinksPanel(entry) {
+    if (!entry?.id || !entry?.type || !state.store?.activeActorId) return "";
+    const link = archiveMapLink(entry);
+    const map = getWorldCityMap();
+    const shared = markersForArchiveEntry(link, map);
+    const sharedIds = new Set(shared.map((marker) => marker.id));
+    const personalRefs = game.user?.isGM ? [] : personalLinksForArchiveEntry(link);
+    const personal = personalRefs
+      .map((personalLink) => map.markers.find((marker) => marker.id === personalLink.markerId))
+      .filter(Boolean)
+      .filter((marker) => !sharedIds.has(marker.id));
+    const personalIds = new Set(personal.map((marker) => marker.id));
+    const linkedIds = new Set([...sharedIds, ...personalIds]);
+    const available = map.markers.filter((marker) => !linkedIds.has(marker.id));
+    const sharedRows = shared.map((marker) => `<div class="pcm-world-map-link-row shared"><button data-action="open-map-marker" data-marker-id="${esc(marker.id)}"><b>⌖</b><span>${esc(worldMapMarkerDisplayLabel(map, marker))}</span><i>→</i></button>${game.user?.isGM ? `<button class="danger" data-action="unlink-map-marker" data-marker-id="${esc(marker.id)}" title="Убрать общую связь">×</button>` : ""}</div>`).join("");
+    const personalRows = personal.map((marker) => `<div class="pcm-world-map-link-row personal"><button data-action="open-map-marker" data-marker-id="${esc(marker.id)}"><b>⌖</b><span>${esc(worldMapMarkerDisplayLabel(map, marker))}</span><i>→</i></button><button class="danger" data-action="unlink-personal-map-marker" data-marker-id="${esc(marker.id)}" title="Убрать мою связь">×</button></div>`).join("");
+    const rows = sharedRows || personalRows ? `${sharedRows}${personalRows}` : '<p class="muted">Точки на карте пока не связаны.</p>';
+    const controls = game.user?.isGM
+      ? `<div class="pcm-world-map-link-add"><select data-map-marker-link-select><option value="">Выберите точку карты…</option>${available.map((marker) => `<option value="${esc(marker.id)}">${esc(worldMapMarkerDisplayLabel(map, marker))}</option>`).join("")}</select><button data-action="link-map-marker" ${available.length ? "" : "disabled"}>+ Привязать точку</button></div>`
+      : `<div class="pcm-world-map-link-add personal"><select data-map-marker-link-select><option value="">Выберите известную точку карты…</option>${available.map((marker) => `<option value="${esc(marker.id)}">${esc(worldMapMarkerDisplayLabel(map, marker))}</option>`).join("")}</select><button data-action="link-personal-map-marker" ${available.length ? "" : "disabled"}>+ Запомнить здесь</button></div>`;
+    const firstMarker = shared[0] || personal[0] || null;
+    return `<section class="pcm-detail-panel wide pcm-world-map-links" data-world-map-entry-links><header><h3>⌖ Точки на карте</h3><button data-action="open-map-marker" data-marker-id="${esc(firstMarker?.id || "")}">${firstMarker ? "Открыть на карте" : "Открыть карту"}</button></header><div class="pcm-world-map-link-list">${rows}</div>${controls}</section>`;
+  }
+
+  async function openWorldMapArchiveLink(link) {
+    const actorId = String(link?.actorId || "");
+    const section = String(link?.section || "");
+    const entryId = String(link?.entryId || "");
+    const book = state.store?.notebooks?.[actorId];
+    const entry = book?.entries?.[section]?.find?.((item) => String(item.id) === entryId);
+    if (!book || !entry) {
+      notify("Связанная запись больше не найдена в этом архиве.", "warn");
+      return;
+    }
+    state.store.activeActorId = actorId;
+    state.section = section;
+    state.viewMode = section === "people" ? "person" : section === "locations" ? "location" : "entry";
+    state.viewId = entryId;
+    state.openId = entryId;
+    state.returnLocationId = null;
+    render();
+  }
+
+  function mountWorldMap(book) {
+    const host = state.root?.querySelector?.("[data-world-city-map-host]");
+    if (!host) return;
+    worldMapController?.destroy?.();
+    const focusMarkerId = String(state.worldMapFocusMarkerId || "");
+    worldMapController = renderWorldCityMap(host, {
+      legacyImage: String(book?.cityMap?.image || ""),
+      activeActorId: String(state.store?.activeActorId || ""),
+      listArchiveRecords: worldMapRecordCatalog,
+      openArchiveLink: openWorldMapArchiveLink,
+      pickImage: chooseImage,
+      focusMarkerId,
+      focusZoom: focusMarkerId ? WORLD_MAP_ARCHIVE_FOCUS_ZOOM : null,
+    });
+    state.worldMapFocusMarkerId = "";
   }
 
   function entryLocationIds(entry) {
@@ -1008,6 +1122,42 @@ export async function createCyberArchiveController(hostRoot, { requestClose = as
       <div class="pcm-field wide"><span>Связанные точки</span>${locationChecks(entry, locations)}</div>`;
   }
 
+
+  function clueConnectionsEditor(entry, book) {
+    if (entry.type !== "clues") return "";
+    const people = book.entries.people ?? [];
+    const locations = book.entries.locations ?? [];
+    const rows = (entry.connections ?? []).map((connection, index) => `
+      <article class="pcm-clue-connection" data-clue-connection-id="${esc(connection.id)}">
+        <header>
+          <label><span>Связь ${index + 1}</span><input data-clue-connection-field="title" value="${esc(connection.title)}" placeholder="Название связи"></label>
+          <button class="danger" data-action="delete-clue-connection" title="Удалить связь">×</button>
+        </header>
+        <div class="pcm-clue-connection-grid">
+          <label class="pcm-field"><span>Контакт</span><select data-clue-connection-field="personId">${opt("", connection.personId, "Не выбран")}${people.map((person) => opt(person.id, connection.personId, person.title)).join("")}</select></label>
+          <label class="pcm-field"><span>Точка</span><select data-clue-connection-field="locationId">${opt("", connection.locationId, "Не выбрана")}${locations.map((location) => opt(location.id, connection.locationId, location.title)).join("")}</select></label>
+          <label class="pcm-field area wide"><span>Описание связи</span><textarea data-clue-connection-field="text" placeholder="Что именно связывает эту зацепку с контактом или точкой">${esc(connection.text)}</textarea></label>
+        </div>
+      </article>`).join("");
+    return `<section class="pcm-sub pcm-clue-connections"><header><div><h3>Дополнительные связи</h3><p>Каждая связь — отдельный пункт. Можно добавить сколько угодно.</p></div><button data-action="add-clue-connection">+ Добавить связь</button></header><div class="pcm-clue-connection-list">${rows || '<p class="muted">Дополнительных связей пока нет.</p>'}</div></section>`;
+  }
+
+  function clueConnectionsRead(book, entry) {
+    if (entry.type !== "clues" || !(entry.connections?.length)) return "";
+    const people = book.entries.people ?? [];
+    const locations = book.entries.locations ?? [];
+    const cards = entry.connections.map((connection, index) => {
+      const person = people.find((item) => item.id === connection.personId);
+      const location = locations.find((item) => item.id === connection.locationId);
+      const chips = [
+        person ? `<button data-action="view-person" data-person-id="${esc(person.id)}">◉ ${esc(person.title)}</button>` : "",
+        location ? `<button data-action="view-location" data-location-id="${esc(location.id)}">⌖ ${esc(location.title)}</button>` : "",
+      ].filter(Boolean).join("");
+      return `<article class="pcm-clue-connection-read"><header><small>СВЯЗЬ ${index + 1}</small><h4>${esc(connection.title || `Связь ${index + 1}`)}</h4></header>${chips ? `<div class="pcm-clue-connection-chips">${chips}</div>` : ""}${connection.text ? `<div class="pcm-clue-connection-text">${readText(connection.text)}</div>` : ""}</article>`;
+    }).join("");
+    return `<section class="pcm-detail-panel wide pcm-clue-connections-read"><h3>Дополнительные связи</h3><div class="pcm-clue-connection-read-list">${cards}</div></section>`;
+  }
+
   function tasks(entry) {
     if ( entry.type !== "quests" ) return "";
     return `<section class="pcm-sub"><header><h3>☑ Этапы заказа</h3><button data-action="add-task">+ Этап</button></header>
@@ -1084,7 +1234,7 @@ export async function createCyberArchiveController(hostRoot, { requestClose = as
       ${DIRECTORY_TYPES.has(entry.type) ? area(DIRECTORY_META[entry.type].quickLabel, "quickNotes", entry.quickNotes, "Короткая сводка, которая всегда видна в списке") : ""}
       <label class="pcm-field area pcm-main-text wide"><span>Основная запись</span><textarea data-field="content" data-autogrow placeholder="Пишите сколько нужно — поле растёт вместе с текстом…">${esc(entry.content)}</textarea><small>Текст не обрезается: поле увеличивается до удобной высоты, затем прокручивается внутри.</small></label>
       ${decodingEditor(entry)}
-      <details class="pcm-extra"><summary>Связи и подробности</summary><div class="pcm-grid">${typeFields(entry, book)}</div>${tasks(entry)}</details>
+      <details class="pcm-extra"><summary>Связи и подробности</summary><div class="pcm-grid">${typeFields(entry, book)}</div>${clueConnectionsEditor(entry, book)}${tasks(entry)}</details>
       <details class="pcm-extra pcm-attachments"><summary>Картинки, теги и отдельные материалы</summary>
         <div class="pcm-image-row"><div class="pcm-cover">${entry.image ? `<img src="${esc(entry.image)}" alt="">` : "▧<small>Обложка</small>"}</div><label class="pcm-field"><span>Картинка: выбрать файл или вставить <b>Ctrl+V</b></span><div class="pcm-path"><input data-field="image" value="${esc(entry.image)}" placeholder="Путь Foundry или URL"><button data-action="pick-image">Выбрать</button></div></label></div>
         ${input("Теги через запятую", "tags", entry.tags, "важное, проверить, вернуться", "text", true)}
@@ -1766,13 +1916,18 @@ export async function createCyberArchiveController(hostRoot, { requestClose = as
         <section class="pcm-detail-panel"><header><h3>⌑ Файлы и шифры</h3><button data-action="add-related-here" data-type="books">+ Файл</button></header>${related(books, "⌑", "Связанных файлов нет.")}</section>
         <section class="pcm-detail-panel"><header><h3>✒ Лог точки</h3><button data-action="add-related-here" data-type="sessions">+ Лог</button></header>${related(sessions, "✒", "Записей хроники здесь нет.")}</section>
         <section class="pcm-detail-panel"><header><h3>▧ Заметки о месте</h3><button data-action="add-related-here" data-type="notes">+ Заметка</button></header>${related(notes, "▧", "Связанных заметок нет.")}</section>
-        ${readFragments(location)}
+        ${worldMapLinksPanel(location)}${readFragments(location)}
       </div>
     </div>`;
   }
 
   function personOverview(book, person) {
     const locations = personLocationIds(person).map(id => book.entries.locations.find(location => location.id === id)).filter(Boolean);
+    const gigs = sortedEntries(book.entries.quests.filter(quest => quest.giverId === person.id));
+    const clues = sortedEntries(book.entries.clues.filter(clue => clue.personId === person.id));
+    const related = (items, icon, empty) => items.length
+      ? items.map(item => `<button class="pcm-related-row pcm-person-related-row" data-action="open-related" data-entry-id="${item.id}"><b class="pcm-person-related-icon">${icon}</b><span class="pcm-person-related-copy"><strong>${esc(recordTitle(item))}</strong><small>${short(item.summary || item.objective || item.theory || item.content, 90)}</small></span><i class="pcm-person-related-arrow">→</i></button>`).join("")
+      : `<p class="muted">${empty}</p>`;
     const back = state.returnLocationId && book.entries.locations.some(location => location.id === state.returnLocationId) ? `<button data-action="back-location" data-location-id="${state.returnLocationId}">← Вернуться к точке</button>` : '<button data-action="back-list" data-section="people">← Все контакты</button>';
     const quickEdit = state.quickEditPersonId === person.id;
     const heroBody = quickEdit ? personQuickEditPanel(book, person) : `<div><small>КОНТАКТ</small><h1>${esc(person.title)}</h1>${person.headline ? `<h2 class="pcm-detail-headline">${esc(person.headline)}</h2>` : ""}<div class="pcm-badges"><span>${esc(person.attitude || "Неизвестно")}</span></div>${inlinePersonTags(book, person, { hero: true })}${readText(person.summary, "Краткая сводка пока не добавлена.")}</div>`;
@@ -1781,12 +1936,14 @@ export async function createCyberArchiveController(hostRoot, { requestClose = as
       ${quickEdit ? "" : neuroContactPanel(person, book)}
       ${quickEdit ? "" : `<div class="pcm-detail-grid"><section class="pcm-detail-panel wide pcm-person-meetings"><h3>⌖ Где встречали</h3><div class="pcm-location-chips">${locations.length ? locations.map(location => `<button data-action="view-location" data-location-id="${location.id}" data-entry-id="${location.id}">⌖ ${esc(location.title)}</button>`).join("") : '<span class="muted">Точки пока не связаны.</span>'}</div>${person.firstMet || person.lastSeen ? `<div class="pcm-person-meeting-meta">${person.firstMet ? `<div class="pcm-meeting-fact"><h4>Первая встреча</h4>${readText(person.firstMet)}</div>` : ""}${person.lastSeen ? `<div class="pcm-meeting-fact"><h4>Последняя встреча</h4>${readText(person.lastSeen)}</div>` : ""}</div>` : ""}</section>
         ${personConnectionsPanel(person)}
+        <section class="pcm-detail-panel"><header><h3>▤ Заказы</h3><button data-action="add-person-gig">+ Заказ</button></header>${related(gigs, "▤", "Связанных заказов нет.")}</section>
+        <section class="pcm-detail-panel"><header><h3>◈ Зацепки</h3><button data-action="add-person-clue">+ Зацепка</button></header>${related(clues, "◈", "Связанных зацепок нет.")}</section>
         ${person.encounters?.length ? `<section class="pcm-detail-panel wide"><h3>◷ История встреч</h3><div class="pcm-encounters">${[...person.encounters].reverse().slice(0, 20).map(encounter => { const place = book.entries.locations.find(location => location.id === encounter.locationId); const date = String(encounter.at || "").slice(0, 10); return `<div><span><b>${esc(encounter.sceneName || place?.title || "Неизвестное место")}</b><small>${esc(date || "Без даты")}</small></span>${place ? `<button data-action="view-location" data-location-id="${place.id}" data-entry-id="${place.id}">Открыть</button>` : ""}</div>`; }).join("")}</div></section>` : ""}
         ${inlinePersonNote(person, "content", "Мои заметки", "Что важно помнить об этом человеке?", "▧")}
         ${inlinePersonNote(person, "quotes", "Что говорил", "Цитаты, обещания, имена, адреса, важные формулировки…", "❞")}
         ${inlinePersonNote(person, "promises", "Долги и договорённости", "Кто кому должен, что обещано и к какому сроку…", "◇")}
         ${inlinePersonNote(person, "secrets", "Подозрения", "Сомнения, несостыковки, скрытые мотивы и непроверенные версии…", "△")}
-        ${person.relationship ? `<section class="pcm-detail-panel wide"><h3>Наша связь</h3>${readText(person.relationship)}</section>` : ""}${readFragments(person)}
+        ${person.relationship ? `<section class="pcm-detail-panel wide"><h3>Наша связь</h3>${readText(person.relationship)}</section>` : ""}${worldMapLinksPanel(person)}${readFragments(person)}
         ${person.gallery.length ? `<section class="pcm-detail-panel wide pcm-person-gallery"><h3>▧ Галерея</h3><div class="pcm-gallery-view">${person.gallery.map(item => `<button data-action="view-gallery-image" data-gallery-id="${item.id}"><img src="${esc(item.image)}" alt="${esc(item.caption)}"><span>${esc(item.caption || "Открыть изображение")}</span></button>`).join("")}</div></section>` : ""}
       </div>`}</div>`;
   }
@@ -1815,11 +1972,7 @@ export async function createCyberArchiveController(hostRoot, { requestClose = as
   }
 
   function cityMapView(book) {
-    const map = book.cityMap ?? (book.cityMap = { title: "Карта Найт-Сити", image: "", notes: "" });
-    const zoom = Math.min(2.5, Math.max(0.35, Number(state.mapZoom) || 1));
-    return `<div class="pcm-city-map-view"><div class="pcm-section-head"><div><small>ОРИЕНТАЦИЯ ПО ГОРОДУ</small><h1>⌖ ${esc(map.title || "Карта Найт-Сити")}</h1></div><div><button data-action="map-zoom-out" ${map.image ? "" : "disabled"}>−</button><button data-action="map-zoom-reset" ${map.image ? "" : "disabled"}>${Math.round(zoom * 100)}%</button><button data-action="map-zoom-in" ${map.image ? "" : "disabled"}>+</button><button data-action="pick-city-map">Выбрать карту</button></div></div>
-      ${map.image ? `<div class="pcm-city-map-canvas"><img src="${esc(map.image)}" alt="Карта Найт-Сити" style="width:${Math.round(zoom * 100)}%;max-width:none;max-height:none"></div><div class="pcm-map-actions"><button class="danger" data-action="clear-city-map">Убрать изображение</button><span>Карта хранится отдельно для выбранного персонажа.</span></div>` : `<div class="pcm-city-map-empty" data-paste-target="city-map" tabindex="0"><b>⌖</b><h2>Добавьте свою карту Найт-Сити</h2><p>Выберите файл Foundry или щёлкните сюда и вставьте изображение через <b>Ctrl+V</b>.</p><button class="primary" data-action="pick-city-map">Выбрать изображение</button></div>`}
-      <label class="pcm-field area pcm-map-notes"><span>Ориентиры и пометки</span><textarea data-city-map-notes data-autogrow placeholder="Районы, безопасные маршруты, места встреч…">${esc(map.notes || "")}</textarea></label></div>`;
+    return `<div class="pcm-city-map-view pcm-world-map-view"><div data-world-city-map-host></div></div>`;
   }
 
   function subscriptionDays(entry) {
@@ -1883,7 +2036,7 @@ export async function createCyberArchiveController(hostRoot, { requestClose = as
     }
     if ( entry.type === "clues" ) {
       const person = book.entries.people.find(item => item.id === entry.personId);
-      return `${detailValue("Статус", entry.status)}${detailValue("Источник", entry.source)}${detailValue("Связанный контакт", person?.title || "")}${detailValue("Версия", entry.theory, {wide:true})}${detailValue("Что подтвердилось", entry.conclusion, {wide:true})}${locationPanel}`;
+      return `${detailValue("Статус", entry.status)}${detailValue("Источник", entry.source)}${detailValue("Связанный контакт", person?.title || "")}${detailValue("Версия", entry.theory, {wide:true})}${detailValue("Что подтвердилось", entry.conclusion, {wide:true})}${clueConnectionsRead(book, entry)}${locationPanel}`;
     }
     if ( entry.type === "books" ) {
       const helper = book.entries.people.find(item => item.id === entry.helperId);
@@ -1919,11 +2072,12 @@ export async function createCyberArchiveController(hostRoot, { requestClose = as
     return `<div class="pcm-detail" data-entry-id="${entry.id}">
       <div class="pcm-detail-nav"><button data-action="back-list" data-section="${entry.type}">← ${esc(section?.label || "Назад")}</button><div><button data-action="pin">${entry.pinned ? "★ Закреплено" : "☆ Закрепить"}</button><button class="primary" data-action="edit-entry">✎ Редактировать</button></div></div>
       <section class="pcm-generic-hero">${image}<div><small>${esc(section?.label || "ЗАПИСЬ")}</small><h1>${esc(recordTitle(entry))}</h1>${recordHeadline(entry) ? `<h2 class="pcm-detail-headline">${esc(recordHeadline(entry))}</h2>` : ""}${DIRECTORY_TYPES.has(entry.type) ? `<div class="pcm-badges">${directoryBadges(entry).map(value => `<span>${esc(value)}</span>`).join("")}</div>` : ""}${readText(entry.summary, "Краткая сводка пока не добавлена.")}${quick ? `<blockquote class="pcm-quick-read">${esc(quick).replaceAll("\n","<br>")}</blockquote>` : ""}${subscriptionActions}</div></section>
-      <div class="pcm-detail-grid">${entry.content ? `<section class="pcm-detail-panel wide"><h3>Основная запись</h3>${readText(entry.content)}</section>` : ""}${entryTypeReadPanels(book, entry)}${directoryContactsPanel(book, entry)}${tags.length ? `<section class="pcm-detail-panel wide"><h3>Теги</h3><div class="pcm-read-tags">${tags.map(tag => `<span>#${esc(tag)}</span>`).join("")}</div></section>` : ""}${readFragments(entry)}</div>
+      <div class="pcm-detail-grid">${entry.content ? `<section class="pcm-detail-panel wide"><h3>Основная запись</h3>${readText(entry.content)}</section>` : ""}${entryTypeReadPanels(book, entry)}${directoryContactsPanel(book, entry)}${worldMapLinksPanel(entry)}${tags.length ? `<section class="pcm-detail-panel wide"><h3>Теги</h3><div class="pcm-read-tags">${tags.map(tag => `<span>#${esc(tag)}</span>`).join("")}</div></section>` : ""}${readFragments(entry)}</div>
     </div>`;
   }
 
   function sectionView(book, key) {
+    if ( key === "citymap" ) return cityMapView(book);
     if ( key === "inbox" && state.viewMode === "list" ) return inboxView(book);
     if ( state.viewMode === "edit" ) {
       const entry = entryById(state.viewId);
@@ -1950,7 +2104,6 @@ export async function createCyberArchiveController(hostRoot, { requestClose = as
       resetView("dashboard");
       return dashboard(book);
     }
-    if ( key === "citymap" ) return cityMapView(book);
     if ( key === "subscriptions" ) return subscriptionsView(book);
     if ( DIRECTORY_TYPES.has(key) ) return directoryListView(book, key);
     if ( VIRTUAL_CONTACT_SECTIONS.has(key) ) return virtualContactListView(book, key);
@@ -2121,6 +2274,8 @@ export async function createCyberArchiveController(hostRoot, { requestClose = as
 
 
   function render() {
+    worldMapController?.destroy?.();
+    worldMapController = null;
     const win = state.root.querySelector(".pcm-window");
     if ( !state.actors.length ) { win.innerHTML = `<div class="pcm-no-actors"><h2>Нет доступного персонажа</h2><p>Нужен Actor типа character с правами владельца.</p><button data-action="close">Закрыть</button></div>`; return; }
     const actor = actorById(state.store.activeActorId);
@@ -2134,6 +2289,7 @@ export async function createCyberArchiveController(hostRoot, { requestClose = as
       ${toolsPanel()}${themePanel(book)}${helpPanel()}${globalSearchPanel(book)}${chatPanel()}${contactPickerPanel(book)}${quickGroupCreatePanel(book)}${lightboxView()}</div>${deviceHardware()}${resizeHandles()}`;
     applyAppearance(book);
     applyWindowGeometry();
+    if (state.section === "citymap") mountWorldMap(book);
     queueMicrotask(() => { autoGrowTextareas(); applyContactSearchDom(); for ( const history of root.querySelectorAll("[data-neuro-history]") ) history.scrollTop = history.scrollHeight; });
   }
 
@@ -2224,6 +2380,8 @@ export async function createCyberArchiveController(hostRoot, { requestClose = as
     const entry = blankEntry(type, seed);
     entry.inbox = Boolean(options.inbox);
     if ( LOCATION_LINK_TYPES.has(type) && options.locationId ) setEntryLocations(entry, [options.locationId]);
+    if ( type === "quests" && options.giverId ) entry.giverId = options.giverId;
+    if ( type === "clues" && options.personId ) entry.personId = options.personId;
     notebook().entries[type].push(entry);
     state.quick = "";
     if ( options.stay ) {
@@ -3548,6 +3706,30 @@ export async function createCyberArchiveController(hostRoot, { requestClose = as
 #pcm-root.field-archive-embedded .pcm-resize-handle,#pcm-root.field-archive-embedded .pcm-window-toggle,#pcm-root.field-archive-embedded .pcm-close{display:none!important}
 #pcm-root.field-archive-embedded .pcm-device-screen{max-width:none!important;max-height:none!important}`;
   root.innerHTML = `<style>${CSS}
+
+  /* 2.8.37 — independent clue connections */
+  #pcm-root .pcm-clue-connections>header{align-items:flex-start;gap:12px}
+  #pcm-root .pcm-clue-connections>header>div{min-width:0}
+  #pcm-root .pcm-clue-connections>header p{margin:3px 0 0;color:var(--muted);font-size:10px}
+  #pcm-root .pcm-clue-connection-list,#pcm-root .pcm-clue-connection-read-list{display:grid;gap:9px;margin-top:9px}
+  #pcm-root .pcm-clue-connection{padding:10px;background:var(--field);border:1px solid var(--line);border-radius:10px}
+  #pcm-root .pcm-clue-connection>header{display:grid;grid-template-columns:minmax(0,1fr) 32px;gap:8px;align-items:end}
+  #pcm-root .pcm-clue-connection>header label{min-width:0}
+  #pcm-root .pcm-clue-connection>header label>span{display:block;margin-bottom:4px;color:var(--muted);font-size:9px;font-weight:800;text-transform:uppercase}
+  #pcm-root .pcm-clue-connection>header input{width:100%}
+  #pcm-root .pcm-clue-connection>header button{min-height:32px;padding:0}
+  #pcm-root .pcm-clue-connection-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}
+  #pcm-root .pcm-clue-connection-grid .wide{grid-column:1/-1}
+  #pcm-root .pcm-clue-connection-grid textarea{min-height:78px}
+  #pcm-root .pcm-clue-connections-read{overflow:hidden}
+  #pcm-root .pcm-clue-connection-read{padding:11px;background:var(--field);border:1px solid var(--line);border-radius:10px}
+  #pcm-root .pcm-clue-connection-read header small{display:block;color:var(--muted);font-size:8px;font-weight:800;letter-spacing:.05em}
+  #pcm-root .pcm-clue-connection-read header h4{margin:2px 0 0;color:var(--ink);font-size:13px}
+  #pcm-root .pcm-clue-connection-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  #pcm-root .pcm-clue-connection-chips button{color:var(--teal)}
+  #pcm-root .pcm-clue-connection-text{margin-top:8px}
+  @media(max-width:620px){#pcm-root .pcm-clue-connections>header{align-items:stretch;flex-direction:column}#pcm-root .pcm-clue-connection-grid{grid-template-columns:1fr}#pcm-root .pcm-clue-connection-grid .wide{grid-column:auto}}
+
 ${EMBEDDED_HOST_CSS}
   /* v7.0 — крупнее типографика, заметнее теги и быстрые фракционные сценарии */
   #pcm-root{font-size:clamp(14px,var(--font-size),20px)}
@@ -3879,6 +4061,14 @@ ${EMBEDDED_HOST_CSS}
       if ( target.matches("textarea[data-autogrow]") ) autoGrowTextareas();
       return;
     }
+    const clueConnectionBox = target.closest("[data-clue-connection-id]");
+    if (clueConnectionBox && target.matches("[data-clue-connection-field]") && entry.type === "clues") {
+      if (updateClueConnection(entry.connections, clueConnectionBox.dataset.clueConnectionId, target.dataset.clueConnectionField, target.value)) {
+        entry.updatedAt = now();
+        dirty();
+      }
+      return;
+    }
     if ( target.matches("[data-field]") ) {
       const field = target.dataset.field;
       entry[field] = target.value;
@@ -4022,6 +4212,42 @@ ${EMBEDDED_HOST_CSS}
     event.stopPropagation();
     const action = button.dataset.action;
     const entry = findEntry(button);
+
+    if (action === "open-map-marker") {
+      resetView("citymap");
+      state.section = "citymap";
+      state.worldMapFocusMarkerId = String(button.dataset.markerId || "");
+      render();
+      return;
+    }
+    if (action === "link-personal-map-marker" && entry && !game.user?.isGM) {
+      const select = button.closest?.("[data-world-map-entry-links]")?.querySelector?.("[data-map-marker-link-select]");
+      const markerId = String(select?.value || "");
+      if (!markerId) { notify("Выберите точку карты.", "warn"); return; }
+      await addPersonalWorldMapLink({ ...archiveMapLink(entry), markerId });
+      render();
+      return;
+    }
+    if (action === "unlink-personal-map-marker" && entry && !game.user?.isGM) {
+      const markerId = String(button.dataset.markerId || "");
+      if (markerId) await removePersonalWorldMapLink({ ...archiveMapLink(entry), markerId });
+      render();
+      return;
+    }
+    if (action === "link-map-marker" && entry && game.user?.isGM) {
+      const select = button.closest?.("[data-world-map-entry-links]")?.querySelector?.("[data-map-marker-link-select]");
+      const markerId = String(select?.value || "");
+      if (!markerId) { notify("Выберите точку карты.", "warn"); return; }
+      await linkMarkerToArchiveEntry(markerId, archiveMapLink(entry));
+      render();
+      return;
+    }
+    if (action === "unlink-map-marker" && entry && game.user?.isGM) {
+      const markerId = String(button.dataset.markerId || "");
+      if (markerId) await unlinkMarkerFromArchiveEntry(markerId, archiveMapLink(entry));
+      render();
+      return;
+    }
     const contextPerson = contactContextPerson();
     if ( action === "context-close" ) { closeContactContextMenu(); return; }
     if ( action === "context-entry-close" ) { closeEntryContextMenu(); return; }
@@ -4311,6 +4537,14 @@ ${EMBEDDED_HOST_CSS}
       render(); return;
     }
     if ( action === "open-related" && entry ) { openExistingEntry(entry, { returnLocationId: state.viewMode === "location" ? state.viewId : null }); render(); return; }
+    if ( action === "add-person-gig" && entry?.type === "people" ) {
+      addEntry("quests", "", { giverId: entry.id, previousView: viewSnapshot() });
+      return;
+    }
+    if ( action === "add-person-clue" && entry?.type === "people" ) {
+      addEntry("clues", "", { personId: entry.id, previousView: viewSnapshot() });
+      return;
+    }
     if ( action === "edit-entry" && entry?.type === "people" ) {
       const enabling = state.quickEditPersonId !== entry.id;
       state.quickEditPersonId = enabling ? entry.id : null;
@@ -4440,6 +4674,27 @@ ${EMBEDDED_HOST_CSS}
     const fragment = entry.fragments.find(item => item.id === fragmentBox?.dataset.fragmentId);
     if ( action === "delete-fragment" && fragment ) { if ( confirm(`Удалить фрагмент «${fragment.title}»?`) ) { entry.fragments = entry.fragments.filter(item => item.id !== fragment.id); if ( state.openFragmentId === fragment.id ) state.openFragmentId = null; state.openId = entry.id; dirty(); render(); } return; }
     if ( action === "pick-fragment-image" && fragment ) { chooseImage(fragment.image, path => { fragment.image = path; state.openFragmentId = fragment.id; entry.updatedAt = now(); state.openId = entry.id; dirty(); render(); }); return; }
+    if (action === "add-clue-connection" && entry?.type === "clues") {
+      const connection = createClueConnection(uid);
+      entry.connections ??= [];
+      entry.connections.push(connection);
+      entry.updatedAt = now();
+      state.openId = entry.id;
+      dirty();
+      render();
+      root.querySelector(`[data-clue-connection-id="${connection.id}"] [data-clue-connection-field="title"]`)?.focus();
+      return;
+    }
+    if (action === "delete-clue-connection" && entry?.type === "clues") {
+      const id = button.closest("[data-clue-connection-id]")?.dataset.clueConnectionId;
+      if (removeClueConnection(entry.connections, id)) {
+        entry.updatedAt = now();
+        state.openId = entry.id;
+        dirty();
+        render();
+      }
+      return;
+    }
     if ( action === "add-task" ) { entry.tasks.push({ id: uid(), text: "", done: false }); entry.updatedAt = now(); state.openId = entry.id; dirty(); render(); return; }
     if ( action === "delete-task" ) { const id = button.closest("[data-task-id]")?.dataset.taskId; entry.tasks = entry.tasks.filter(item => item.id !== id); entry.updatedAt = now(); state.openId = entry.id; dirty(); render(); }
   });
@@ -4696,6 +4951,8 @@ ${EMBEDDED_HOST_CSS}
     async close() { await saveServer(true); await requestClose(); },
     getShareSnapshot,
     destroy() {
+      worldMapController?.destroy?.();
+      worldMapController = null;
       closeContactContextMenu();
       closeEntryContextMenu();
       clearTimeout(state.saveTimer);

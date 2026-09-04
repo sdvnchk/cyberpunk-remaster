@@ -1,4 +1,5 @@
 import { NEURO_ARCHIVE_VERSION } from "./neuro-archive-constants.mjs";
+import { registerWorldCityMapSetting } from "./world-city-map.mjs";
 import { migrateLegacyArchivesOnReady } from "./neuro-archive-store.mjs";
 import {
   archiveShareHookName,
@@ -508,6 +509,7 @@ function addDirectoryButton(app, html) {
 }
 
 Hooks.once("init", () => {
+  registerWorldCityMapSetting();
   const module = game.modules.get(MODULE_ID);
   if (!module) return;
   module.api = {

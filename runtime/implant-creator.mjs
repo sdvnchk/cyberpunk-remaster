@@ -1,6 +1,6 @@
 const PACKAGE_ID = "cyberpunk-remaster";
 const MODULE_ID = "cyberpunk-implant-creator";
-const MODULE_VERSION = "1.13.31";
+const MODULE_VERSION = "1.13.33";
 const REMASTER_IDS = [PACKAGE_ID, "sf2e-cyberware-pkt"];
 
 const IMPLANT_LABELS = {
@@ -4200,15 +4200,26 @@ function nativeActivationFrequencyState(action, config = null) {
   return { value, max, per: frequency.per ?? null };
 }
 
+function legacyActivationChargeState(item, config) {
+  const max = Math.max(1, Number(config?.frequencyMax ?? 1) || 1);
+  const key = activationPeriodKey(config);
+  if (!key) return { key: null, count: 0, value: max, max };
+  const state = item?.flags?.[MODULE_ID]?.activationState ?? {};
+  const count = state.key === key ? Math.max(0, Number(state.count ?? 0) || 0) : 0;
+  return { key, count, value: Math.max(0, max - count), max };
+}
+
 function activationChargeState(item, config = getActivationConfig(item), preferredAction = null) {
   if (!config || (config.frequency ?? "unlimited") === "unlimited") {
     return { limited: false, value: Infinity, max: Infinity, available: true, action: linkedActivationAction(item, preferredAction) };
   }
   const action = linkedActivationAction(item, preferredAction);
   const frequency = nativeActivationFrequencyState(action, config);
-  const max = Math.max(1, Number(config.frequencyMax ?? 1) || 1);
-  const value = frequency?.value ?? max;
-  return { limited: true, value, max: frequency?.max ?? max, available: value > 0, action };
+  if (frequency) {
+    return { limited: true, value: frequency.value, max: frequency.max, available: frequency.value > 0, action };
+  }
+  const legacy = legacyActivationChargeState(item, config);
+  return { limited: true, value: legacy.value, max: legacy.max, available: legacy.value > 0, action };
 }
 
 async function consumeActivationUse(item, config, preferredAction = null) {
@@ -4234,16 +4245,13 @@ async function consumeActivationUse(item, config, preferredAction = null) {
 
   // Legacy fallback для активаций, у которых пользователь отключил создание
   // нативного Action. Новые активации с Action сюда не попадают.
-  const key = activationPeriodKey(config);
-  if (!key) return true;
-  const max = Math.max(1, Number(config.frequencyMax ?? 1) || 1);
-  const state = item.flags?.[MODULE_ID]?.activationState ?? {};
-  const count = state.key === key ? Number(state.count ?? 0) : 0;
-  if (count >= max) {
+  const legacy = legacyActivationChargeState(item, config);
+  if (!legacy.key) return true;
+  if (legacy.count >= legacy.max) {
     ui.notifications.warn(`Активация «${config.name ?? item.name}» уже использована максимально допустимое число раз за этот период.`);
     return false;
   }
-  await item.update({ [`flags.${MODULE_ID}.activationState`]: { key, count: count + 1 } });
+  await item.update({ [`flags.${MODULE_ID}.activationState`]: { key: legacy.key, count: legacy.count + 1 } });
   return true;
 }
 
@@ -4409,7 +4417,10 @@ function activationNativeFrequency(config) {
   const max = Math.max(1, Number(config?.frequencyMax ?? 1) || 1);
   switch (config?.frequency) {
     case "round": return { value: max, max, per: "round" };
-    case "encounter": return { value: max, max, per: "encounter" };
+    // Foundry V14 / PF2e-SF2e FrequencyField does not accept `encounter`.
+    // Encounter limits stay exact through activationPeriodKey()/activationState
+    // instead of being approximated as a round, day, or fixed ISO duration.
+    case "encounter": return null;
     case "minute": return { value: max, max, per: "PT1M" };
     case "hour": return { value: max, max, per: "PT1H" };
     case "day": return { value: max, max, per: "day" };
@@ -4511,7 +4522,8 @@ async function syncActivationActionForImplant(item) {
       return true;
     }
     const signature = existing.flags?.[MODULE_ID]?.syncSignature;
-    if (signature === source.flags?.[MODULE_ID]?.syncSignature) return false;
+    const hasLegacyEncounterFrequency = existing?.system?.frequency?.per === "encounter";
+    if (signature === source.flags?.[MODULE_ID]?.syncSignature && !hasLegacyEncounterFrequency) return false;
     const existingFrequency = nativeActivationFrequencyState(existing, config);
     const targetFrequency = source.system.frequency
       ? {
@@ -4672,6 +4684,15 @@ function activationSchemaRepairUpdate(item) {
     changed = true;
   }
 
+  if (
+    item?.type === "action" &&
+    item?.flags?.[MODULE_ID]?.activationAction === true &&
+    item?.system?.frequency?.per === "encounter"
+  ) {
+    update["system.frequency"] = null;
+    changed = true;
+  }
+
   return changed ? update : null;
 }
 
@@ -4824,12 +4845,20 @@ function observeActorActivationControls(app, html) {
   const root = html instanceof HTMLElement ? html : html?.[0];
   if (!root || ACTIVATION_CONTROL_OBSERVERS.has(root) || typeof MutationObserver === "undefined") return;
   let scheduled = false;
-  const observer = new MutationObserver(() => {
+  const observer = new MutationObserver((mutations) => {
     if (!root.isConnected) {
       observer.disconnect();
       ACTIVATION_CONTROL_OBSERVERS.delete(root);
       return;
     }
+    // updateActorActivationControl() replaces the icon markup when an activation
+    // changes state. Those childList mutations belong to our own control and must
+    // not schedule another injection pass, otherwise the observer feeds itself on
+    // every animation frame while an actor sheet is open.
+    const hasRelevantMutation = mutations.some((mutation) =>
+      !mutation.target?.closest?.("[data-cic-actor-activate]")
+    );
+    if (!hasRelevantMutation) return;
     if (scheduled) return;
     scheduled = true;
     requestAnimationFrame(() => {
@@ -5310,4 +5339,4 @@ Hooks.on("deleteItem",(item)=>{
   if(action) void safeDeleteActorEmbeddedItem(action).catch((error)=>console.error(`${MODULE_ID} | delete linked action failed`,error));
 });
 
-export { openCreator, createImplant, applyCyberwareData, activateImplant, deactivateImplant, syncActivationActionForImplant, resolveActivationSourceReferences, activationSchemaRepairUpdate, repairActivationArtifacts, installCustomPktModel, registerPktModelDefinition, customPktModels, RULE_PRESETS };
+export { openCreator, createImplant, applyCyberwareData, activateImplant, deactivateImplant, syncActivationActionForImplant, resolveActivationSourceReferences, activationNativeFrequency, activationPeriodKey, activationSchemaRepairUpdate, repairActivationArtifacts, installCustomPktModel, registerPktModelDefinition, customPktModels, RULE_PRESETS };

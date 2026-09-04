@@ -3,6 +3,12 @@ import test from "node:test";
 
 const registered = new Map();
 const settingDefinitions = new Map();
+class ForcedDeletion {}
+
+globalThis.foundry = {
+  data: { operators: { ForcedDeletion } },
+};
+
 globalThis.Hooks = {
   on(name, callback) {
     const callbacks = registered.get(name) ?? [];
@@ -39,11 +45,12 @@ const { CyberwareTab } = await import("../sheets/CyberwareTab.js");
 
 function setPath(object, path, value) {
   const parts = path.split(".");
-  const deletion = parts.at(-1).startsWith("-=");
-  if (deletion) parts[parts.length - 1] = parts.at(-1).slice(2);
+  const legacyDeletion = parts.at(-1).startsWith("-=");
+  const operatorDeletion = value instanceof ForcedDeletion;
+  if (legacyDeletion) parts[parts.length - 1] = parts.at(-1).slice(2);
   let target = object;
   for (const part of parts.slice(0, -1)) target = target[part] ??= {};
-  if (deletion) delete target[parts.at(-1)];
+  if (legacyDeletion || operatorDeletion) delete target[parts.at(-1)];
   else target[parts.at(-1)] = value;
 }
 

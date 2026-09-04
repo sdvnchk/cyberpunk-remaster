@@ -247,6 +247,7 @@ Hooks.on("preCreateItem", (item, _data, options, userId) => {
 Hooks.on("preUpdateItem", (item, changes, options) => {
   const actor = item.actor;
   if (!actor || actor.type !== "character") return;
+  if (CyberwareTab.isExternalBioware(item)) return;
   options ??= {};
   options.cyberpunkRemasterWasInstalledById ??= {};
   options.cyberpunkRemasterWasInstalledById[item.id] =
@@ -305,12 +306,18 @@ Hooks.on("preUpdateItem", (item, changes, options) => {
       item.type === "equipment" &&
       item.system?.equipped?.carryType !== "implanted";
     const update = preserveUninstalledInventoryState
-      ? {
-          _id: item.id,
-          [`flags.${MODULE_ID}.installed`]: false,
-          [`flags.${MODULE_ID}.-=parentId`]: null,
-          [`flags.${MODULE_ID}.-=previousCarryState`]: null,
-        }
+      ? CyberwareTab.deleteFlagUpdate(
+          CyberwareTab.deleteFlagUpdate(
+            {
+              _id: item.id,
+              [`flags.${MODULE_ID}.installed`]: false,
+            },
+            MODULE_ID,
+            "parentId",
+          ),
+          MODULE_ID,
+          "previousCarryState",
+        )
       : CyberwareTab.installationUpdate(item, installed);
     delete update._id;
     Object.assign(changes, update);
@@ -472,7 +479,9 @@ async function normalizeCyberwareActor(actor) {
     netrunnerActionsRemoved: 0,
     descriptionMetadata: 0,
   };
-  const itemState = actor.items.map((item) => {
+  const itemState = actor.items
+    .filter((item) => !CyberwareTab.isExternalBioware(item))
+    .map((item) => {
     const current = item.flags?.[MODULE_ID] ?? {};
     const legacy = item.flags?.[LEGACY_MODULE_ID] ?? {};
     const value = (key) => current[key] ?? legacy[key];
@@ -598,12 +607,18 @@ async function normalizeCyberwareActor(actor) {
       item.type === "equipment" &&
       item.system?.equipped?.carryType !== "implanted";
     const update = preserveUninstalledInventoryState
-      ? {
-          _id: item.id,
-          [`flags.${MODULE_ID}.installed`]: false,
-          [`flags.${MODULE_ID}.-=parentId`]: null,
-          [`flags.${MODULE_ID}.-=previousCarryState`]: null,
-        }
+      ? CyberwareTab.deleteFlagUpdate(
+          CyberwareTab.deleteFlagUpdate(
+            {
+              _id: item.id,
+              [`flags.${MODULE_ID}.installed`]: false,
+            },
+            MODULE_ID,
+            "parentId",
+          ),
+          MODULE_ID,
+          "previousCarryState",
+        )
       : CyberwareTab.installationUpdate(item, installed);
 
     const describedFlagKeys = new Set();
@@ -632,7 +647,7 @@ async function normalizeCyberwareActor(actor) {
     ]) {
       for (const key of describedFlagKeys) {
         if (Object.prototype.hasOwnProperty.call(values, key)) {
-          update[`flags.${scope}.-=${key}`] = null;
+          CyberwareTab.deleteFlagUpdate(update, scope, key);
           removedDescriptionMetadata = true;
         }
       }
@@ -647,7 +662,7 @@ async function normalizeCyberwareActor(actor) {
     if (validParent) {
       update[`flags.${MODULE_ID}.parentId`] = parentId;
     } else if (parentId) {
-      update[`flags.${MODULE_ID}.-=parentId`] = null;
+      CyberwareTab.deleteFlagUpdate(update, MODULE_ID, "parentId");
     }
     updates.push(update);
   }

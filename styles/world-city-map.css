@@ -1,0 +1,374 @@
+.world-city-map-shell{display:grid;grid-template-columns:minmax(210px,280px) minmax(0,1fr);width:100%;height:100%;min-width:0;min-height:0;max-width:none;max-height:none;gap:10px;overflow:hidden;color:var(--pcm-text,#e9edf2)}
+.world-city-map-sidebar,.world-city-map-main{min-width:0;min-height:0;border:1px solid color-mix(in srgb,var(--pcm-accent,#d04b4b) 55%,transparent);background:color-mix(in srgb,#05080c 92%,var(--pcm-accent,#d04b4b) 8%)}
+.world-city-map-sidebar{display:flex;flex-direction:column;padding:12px;gap:10px;overflow:auto}.world-city-map-sidebar header h2{margin:2px 0 0}.world-city-map-sidebar header small,.world-city-map-category i,.world-city-map-result small{opacity:.64}
+.world-city-map-search{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:7px;border:1px solid color-mix(in srgb,var(--pcm-accent,#d04b4b) 45%,transparent);padding:5px 8px;background:#05080c}.world-city-map-search input{border:0!important;background:transparent!important;min-width:0}
+.world-city-map-categories{display:grid;gap:4px}.world-city-map-category{display:grid;grid-template-columns:1fr auto;align-items:center;gap:4px}.world-city-map-category label{display:grid;grid-template-columns:auto 1fr auto;gap:7px;align-items:center;padding:6px 7px;border:1px solid #ffffff14;background:#ffffff05}.world-city-map-category.hidden{opacity:.48}.world-city-map-category button{width:28px;min-width:28px;padding:0}
+.world-city-map-results{display:grid;gap:4px;overflow:auto;min-height:80px}.world-city-map-result{display:grid;grid-template-columns:28px 1fr;gap:6px;text-align:left;align-items:center;padding:6px}.world-city-map-result span{display:grid;min-width:0}.world-city-map-result strong,.world-city-map-result small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.world-city-map-result.selected{outline:1px solid var(--pcm-accent,#d04b4b);background:color-mix(in srgb,var(--pcm-accent,#d04b4b) 18%,transparent)}
+.world-city-map-no-results{opacity:.58;font-size:.86em}.world-city-map-gm{margin-top:auto;border-top:1px solid #ffffff1f;padding-top:10px;display:grid;gap:7px}.world-city-map-gm header{display:flex;justify-content:space-between;align-items:center;gap:8px}.world-city-map-gm header>span{display:grid;gap:2px}.world-city-map-gm-toggle{width:30px!important;min-width:30px!important;padding:0!important}.world-city-map-gm-body{display:grid;gap:7px}.world-city-map-gm.collapsed .world-city-map-gm-body{display:none}.world-city-map-gm.collapsed{padding-bottom:2px}.world-city-map-gm-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}.world-city-map-category-create{display:grid;grid-template-columns:1fr 44px 32px;gap:4px}.world-city-map-category-create input{min-width:0}
+.world-city-map-main{position:relative;display:grid;grid-template-rows:auto minmax(0,1fr);overflow:hidden}.world-city-map-toolbar{display:flex;gap:5px;align-items:center;padding:6px 8px;border-bottom:1px solid #ffffff1c;background:#020406}.world-city-map-toolbar span{margin-left:auto;font-size:.78em;letter-spacing:.08em;opacity:.7}.world-city-map-toolbar button{min-width:38px}
+.world-city-map-viewport{position:relative;overflow:hidden;min-height:0;background:radial-gradient(circle at center,#101823 0,#05080d 55%,#010204 100%);cursor:grab;touch-action:none;user-select:none}.world-city-map-viewport.dragging{cursor:grabbing}.world-city-map-scene{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}.world-city-map-scene>img{display:block;width:100%;height:100%;object-fit:fill;pointer-events:none;user-select:none}.world-city-map-marker-layer{position:absolute;inset:0;pointer-events:none}
+.world-city-map-marker{position:absolute;z-index:2;display:grid;grid-template-columns:auto auto;grid-template-rows:auto auto;align-items:center;gap:0 5px;transform:translate(-50%,-100%) scale(var(--world-map-marker-scale,1));transform-origin:50% 100%;pointer-events:auto;min-width:34px;padding:4px 6px;border:1px solid #ffdf8b;background:#08090ced;color:#fff;box-shadow:0 0 0 1px #000,0 0 14px #ffba3b55;border-radius:5px}.world-city-map-marker>span{grid-row:1/3;font-size:20px;line-height:1}.world-city-map-marker>small{font-size:10px;white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis}.world-city-map-marker>i{font-size:8px;font-style:normal;opacity:.62;text-align:left}.world-city-map-marker.selected{outline:2px solid var(--pcm-accent,#ff5b4c);z-index:4}.world-city-map-marker:hover{z-index:5;filter:brightness(1.18)}
+.world-city-map-empty{position:absolute;inset:0;display:grid;place-content:center;text-align:center;padding:30px}.world-city-map-empty>b{font-size:72px;opacity:.45}.world-city-map-empty h2{margin:5px}.world-city-map-empty p{max-width:520px;opacity:.72}.world-city-map-empty button{justify-self:center}
+.world-city-map-inspector{position:absolute;right:10px;bottom:10px;width:min(430px,calc(100% - 20px));max-height:calc(100% - 65px);overflow:auto;z-index:20;pointer-events:none}.world-city-map-detail,.world-city-map-editor{pointer-events:auto;border:1px solid color-mix(in srgb,var(--pcm-accent,#d04b4b) 66%,#fff 8%);background:#05070bef;box-shadow:0 12px 45px #000b;padding:12px}.world-city-map-detail header,.world-city-map-editor header{display:flex;gap:9px;align-items:center}.world-city-map-detail header>b{font-size:28px}.world-city-map-detail header div,.world-city-map-editor header div{min-width:0;flex:1}.world-city-map-detail h3,.world-city-map-editor h3{margin:1px 0}.world-city-map-detail p{white-space:normal;overflow-wrap:anywhere}.world-city-map-detail-links{display:grid;gap:4px}.world-city-map-detail-links button{text-align:left;display:flex;justify-content:space-between;gap:8px}
+.world-city-map-editor{display:grid;grid-template-columns:1fr 1fr;gap:8px}.world-city-map-editor>header,.world-city-map-editor>footer,.world-city-map-editor>.wide,.world-city-map-editor-links{grid-column:1/-1}.world-city-map-editor label{display:grid;gap:3px}.world-city-map-editor label>span{font-size:.75em;opacity:.65}.world-city-map-editor textarea{resize:vertical}.world-city-map-editor-links{display:grid;gap:5px;border-top:1px solid #ffffff1a;padding-top:7px}.world-city-map-editor-links h4{margin:0}.world-city-map-link-row{display:grid;grid-template-columns:1fr auto;gap:5px;align-items:center}.world-city-map-link-row span{min-width:0;overflow-wrap:anywhere}.world-city-map-link-add{display:grid;grid-template-columns:1fr auto;gap:5px}.world-city-map-editor footer{display:flex;justify-content:space-between;gap:8px}.world-city-map-editor .danger{margin-right:auto}
+@media (max-width:900px){.world-city-map-shell{grid-template-columns:210px 1fr}.world-city-map-marker small,.world-city-map-marker i{display:none}.world-city-map-marker{grid-template-columns:auto;grid-template-rows:auto;padding:5px}}
+@media (max-width:680px){.world-city-map-shell{grid-template-columns:1fr;grid-template-rows:190px minmax(0,1fr)}.world-city-map-sidebar{display:grid;grid-template-columns:1fr 1fr;overflow:auto}.world-city-map-sidebar>header,.world-city-map-gm{display:none}.world-city-map-categories{max-height:110px}}
+
+/* 2.8.38 — links between archive records and the shared world map */
+.pcm-world-map-links{display:grid;gap:8px;min-width:0}
+.pcm-world-map-links>header{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.pcm-world-map-link-list{display:grid;gap:5px;min-width:0}
+.pcm-world-map-link-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px;align-items:stretch;min-width:0}
+.pcm-world-map-link-row>button:first-child{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:7px;align-items:center;text-align:left;min-width:0}
+.pcm-world-map-link-row>button:first-child span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pcm-world-map-link-row>.danger{min-width:34px;padding-inline:8px}
+.pcm-world-map-link-add{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;min-width:0}
+.pcm-world-map-link-add select{min-width:0;width:100%}
+@media(max-width:620px){.pcm-world-map-link-add{grid-template-columns:1fr}.pcm-world-map-links>header>button{width:100%}}
+
+
+/* 2.8.40 — Night City style icon/color library. */
+.world-city-map-category{grid-template-columns:minmax(0,1fr) auto}
+.world-city-map-category label{border-left:3px solid var(--world-map-category-color,#f6c85f)}
+.world-city-map-category-name{display:grid!important;grid-template-columns:22px minmax(0,1fr);gap:7px;align-items:center;min-width:0;color:var(--world-map-category-color,#f6c85f)}
+.world-city-map-category-name>b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--pcm-text,#e9edf2);font-weight:600}
+.world-city-map-category-icon{display:grid!important;place-items:center;width:20px;height:20px;color:var(--world-map-category-color,#f6c85f)}
+.world-city-map-category-controls{display:flex;gap:3px}.world-city-map-category-controls button{width:28px;min-width:28px;padding:0}
+.world-city-map-category-create{grid-template-columns:minmax(100px,1.2fr) minmax(120px,1fr) 42px 34px 34px!important;align-items:stretch}
+.world-city-map-category-create select,.world-city-map-category-create input{min-width:0}
+.world-city-map-category-create input[type="color"]{width:42px;min-width:42px;height:100%;padding:2px;cursor:pointer}
+.world-city-map-gm>[data-world-map-category-editing]{font-size:.72em;opacity:.72;letter-spacing:.04em}
+
+.world-city-map-result>b{display:grid;place-items:center;color:var(--world-map-marker-color,#f6c85f);font-size:16px}
+.world-city-map-result-icon{display:grid!important;place-items:center;width:22px;height:22px;color:var(--world-map-marker-color,#f6c85f)}
+
+.world-city-map-marker{
+  grid-template-columns:26px minmax(0,auto)!important;
+  border-color:var(--world-map-marker-color,#f6c85f)!important;
+  box-shadow:0 0 0 1px #000,0 0 14px color-mix(in srgb,var(--world-map-marker-color,#f6c85f) 48%,transparent)!important;
+}
+.world-city-map-marker-icon{
+  grid-row:1/3;
+  display:grid!important;
+  place-items:center;
+  width:24px;
+  height:24px;
+  color:var(--world-map-marker-color,#f6c85f);
+  font-size:18px;
+  line-height:1;
+}
+.world-city-map-marker.selected{outline-color:var(--world-map-marker-color,var(--pcm-accent,#ff5b4c))!important}
+
+.world-city-map-detail{border-color:var(--world-map-marker-color,var(--pcm-accent,#d04b4b))!important}
+.world-city-map-detail header>b{display:grid!important;place-items:center;width:32px;height:32px;color:var(--world-map-marker-color,#f6c85f)}
+.world-city-map-detail-icon{color:var(--world-map-marker-color,#f6c85f);font-size:24px}
+
+.world-city-map-color-field{display:grid;grid-template-columns:52px minmax(0,1fr);gap:8px;align-items:center}
+.world-city-map-color-field>input[type="color"]{width:52px;height:34px;padding:2px;cursor:pointer}
+.world-city-map-color-field>label{display:flex!important;flex-direction:row!important;align-items:center;gap:5px;font-size:.76em;opacity:.85}
+.world-city-map-color-field>label>input{width:auto}
+
+@media(max-width:900px){
+  .world-city-map-category-create{grid-template-columns:1fr 1fr 42px!important}
+  .world-city-map-category-create button{min-height:30px}
+}
+
+/* 2.8.41 — reliable placement mode and separate category visibility controls. */
+.world-city-map-category{grid-template-columns:minmax(0,1fr) 30px auto!important}
+.world-city-map-category-select{display:grid!important;grid-template-columns:minmax(0,1fr) auto;gap:7px;align-items:center;width:100%;min-width:0;padding:6px 7px;text-align:left;border:1px solid #ffffff14;border-left:3px solid var(--world-map-category-color,#f6c85f);background:#ffffff05;color:inherit}
+.world-city-map-category-select>i{font-style:normal;opacity:.64}
+.world-city-map-category.selected .world-city-map-category-select{outline:1px solid var(--world-map-category-color,#f6c85f);background:color-mix(in srgb,var(--world-map-category-color,#f6c85f) 12%,#ffffff05)}
+.world-city-map-category.hidden{opacity:.72}
+.world-city-map-category.hidden .world-city-map-category-select{filter:saturate(.5);opacity:.7}
+.world-city-map-category-visibility{display:grid!important;place-items:center;width:30px;min-width:30px;padding:0;color:var(--world-map-category-color,#f6c85f)}
+.world-city-map-category-controls{align-self:stretch}
+.world-city-map-viewport.placing{cursor:crosshair!important;box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--pcm-accent,#ff5b4c) 78%,transparent)}
+.world-city-map-gm-actions [data-world-map-action="add-marker"].active{outline:1px solid var(--pcm-accent,#ff5b4c);background:color-mix(in srgb,var(--pcm-accent,#ff5b4c) 22%,#111)}
+
+/* 2.8.42 — compact map pins, reversible filters and explicit archive-link labels. */
+.world-city-map-filter-tools{display:flex;justify-content:flex-end;padding:0 0 5px}
+.world-city-map-filter-tools button{min-height:27px!important;padding:0 8px!important;display:inline-flex!important;align-items:center;gap:6px;font-size:10px;opacity:.82}
+.world-city-map-filter-tools button:hover{opacity:1}
+
+.world-city-map-marker{
+  width:24px!important;
+  height:24px!important;
+  min-width:24px!important;
+  min-height:24px!important;
+  max-width:24px!important;
+  padding:0!important;
+  display:grid!important;
+  grid-template-columns:1fr!important;
+  grid-template-rows:1fr!important;
+  place-items:center!important;
+  gap:0!important;
+  border-radius:6px!important;
+  transform:translate(-50%,-100%) scale(var(--world-map-marker-scale,1))!important;
+  transform-origin:50% 100%!important;
+  overflow:visible!important;
+}
+.world-city-map-marker-icon{
+  grid-row:auto!important;
+  width:18px!important;
+  height:18px!important;
+  font-size:14px!important;
+  pointer-events:none;
+}
+.world-city-map-marker::after{
+  content:attr(data-world-map-tooltip);
+  position:absolute;
+  left:50%;
+  bottom:calc(100% + 7px);
+  transform:translateX(-50%);
+  min-width:max-content;
+  max-width:220px;
+  padding:4px 7px;
+  border:1px solid color-mix(in srgb,var(--world-map-marker-color,#f6c85f) 58%,#fff 8%);
+  border-radius:5px;
+  background:#05070bf2;
+  color:#fff;
+  box-shadow:0 5px 18px #000a;
+  font-size:10px;
+  font-weight:700;
+  line-height:1.2;
+  white-space:nowrap;
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+  transition:opacity .1s ease,visibility .1s ease;
+}
+.world-city-map-marker:hover::after,.world-city-map-marker:focus-visible::after{opacity:1;visibility:visible}
+#pcm-root .world-city-map-marker:hover:not(:disabled),
+#pcm-root .world-city-map-marker:active:not(:disabled),
+#pcm-root .world-city-map-marker:focus-visible{
+  transform:translate(-50%,-100%) scale(var(--world-map-marker-scale,1))!important;
+}
+#pcm-root .world-city-map-marker:hover:not(:disabled){filter:brightness(1.12);box-shadow:0 0 0 1px #000,0 0 12px color-mix(in srgb,var(--world-map-marker-color,#f6c85f) 55%,transparent)!important}
+
+.world-city-map-category.hidden{opacity:.82!important}
+.world-city-map-category.hidden .world-city-map-category-select{filter:none!important;opacity:.72!important}
+.world-city-map-category.hidden .world-city-map-category-visibility{opacity:1!important;color:var(--world-map-category-color,#f6c85f)!important}
+
+.world-city-map-detail-links button{align-items:center!important;text-align:left!important}
+.world-city-map-detail-links button>span{display:grid;min-width:0;gap:1px}
+.world-city-map-detail-links button>span>b{font-size:9px;letter-spacing:.08em;color:var(--world-map-marker-color,#f6c85f)}
+.world-city-map-detail-links button>span>i{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-style:normal;font-size:11px}
+.world-city-map-detail-links button>strong{margin-left:auto}
+.world-city-map-link-row>span{display:grid!important;gap:1px}
+.world-city-map-link-row>span>b{font-size:9px;letter-spacing:.08em;color:var(--world-map-marker-color,var(--pcm-accent,#d04b4b))}
+.world-city-map-link-row>span>i{font-style:normal;font-size:11px;overflow-wrap:anywhere}
+
+/* 2.8.43 — visual icon picker and expandable category/point filters. */
+.world-city-map-sidebar{overflow-y:auto!important;overflow-x:hidden!important}
+.world-city-map-categories{min-width:0;overflow:visible}
+.world-city-map-category{display:block!important;min-width:0;border:1px solid #ffffff0d;background:#0002}
+.world-city-map-category-main{display:grid;grid-template-columns:26px minmax(0,1fr) 30px auto;gap:4px;align-items:stretch;width:100%;min-width:0}
+.world-city-map-category-main>button,.world-city-map-category-main .world-city-map-category-controls button{min-height:32px}
+.world-city-map-category-expand{display:grid!important;place-items:center;width:26px!important;min-width:26px!important;padding:0!important;color:var(--world-map-category-color,#f6c85f);background:#ffffff04;border:1px solid #ffffff12}
+.world-city-map-category .world-city-map-category-select{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:7px;align-items:center;width:100%!important;min-width:0!important;padding:6px 7px!important;text-align:left;border:1px solid #ffffff14;border-left:3px solid var(--world-map-category-color,#f6c85f);background:#ffffff05;color:inherit}
+.world-city-map-category-label{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--pcm-text,#e9edf2);font-weight:650}
+.world-city-map-category-visibility{width:30px!important;min-width:30px!important;padding:0!important}
+.world-city-map-category-controls{display:flex!important;gap:3px;min-width:0}.world-city-map-category-controls button{width:28px!important;min-width:28px!important;padding:0!important}
+.world-city-map-category-points{display:grid;gap:3px;padding:4px 4px 5px 30px;border-top:1px solid #ffffff0d;background:#0004}
+.world-city-map-category-point{display:grid;grid-template-columns:minmax(0,1fr) 28px;gap:4px;min-width:0;align-items:stretch}
+.world-city-map-category-point.hidden{opacity:.55}
+.world-city-map-category-point-main{display:grid!important;grid-template-columns:22px minmax(0,1fr)!important;gap:6px;align-items:center;width:100%!important;min-width:0!important;padding:4px 6px!important;text-align:left;background:#ffffff04;border:1px solid #ffffff10}
+.world-city-map-category-point-main>span{display:grid;min-width:0;gap:1px}
+.world-city-map-category-point-main b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;color:var(--pcm-text,#e9edf2)}
+.world-city-map-category-point-main small{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9px;opacity:.62}
+.world-city-map-category-point-icon{display:grid!important;place-items:center;width:20px;height:20px;color:var(--world-map-marker-color,#f6c85f);font-size:13px}
+.world-city-map-category-point-visibility{display:grid!important;place-items:center;width:28px!important;min-width:28px!important;padding:0!important;color:var(--world-map-marker-color,#f6c85f)}
+.world-city-map-category-empty{margin:3px 0;padding:5px 7px;font-size:10px;opacity:.55}
+
+.world-city-map-icon-picker{position:relative;min-width:0}
+.world-city-map-icon-trigger{display:grid!important;grid-template-columns:1fr 10px!important;place-items:center;width:42px!important;min-width:42px!important;height:34px!important;padding:3px!important;border:1px solid #ffffff22;background:#ffffff08;color:var(--pcm-text,#e9edf2)}
+.world-city-map-icon-trigger>i:last-child{font-size:8px;opacity:.55}
+.world-city-map-icon-trigger-glyph{display:grid!important;place-items:center;font-size:18px;color:inherit}
+.world-city-map-icon-grid{position:absolute;z-index:80;left:0;bottom:calc(100% + 4px);display:grid;grid-template-columns:repeat(6,32px);gap:4px;width:max-content;max-width:min(230px,70vw);max-height:220px;overflow:auto;padding:6px;border:1px solid color-mix(in srgb,var(--pcm-accent,#d04b4b) 55%,#fff 8%);background:#05070bf7;box-shadow:0 12px 35px #000c}
+.world-city-map-icon-grid[hidden]{display:none!important}
+.world-city-map-icon-choice{display:grid!important;place-items:center;width:32px!important;min-width:32px!important;height:32px!important;padding:0!important;border:1px solid #ffffff18;background:#ffffff06;color:#dfe7ef}
+.world-city-map-icon-choice:hover,.world-city-map-icon-choice:focus-visible{border-color:var(--pcm-accent,#d04b4b);background:#ffffff10}
+.world-city-map-icon-choice.selected{outline:1px solid var(--pcm-accent,#d04b4b);background:color-mix(in srgb,var(--pcm-accent,#d04b4b) 20%,#ffffff08)}
+.world-city-map-icon-choice.inherit{border-style:dashed}
+.world-city-map-icon-choice-glyph{display:grid!important;place-items:center;font-size:17px}
+.world-city-map-category-create{grid-template-columns:minmax(90px,1fr) 42px 42px 34px 34px!important;align-items:stretch}
+.world-city-map-category-create>.world-city-map-icon-picker{align-self:stretch}
+.world-city-map-category-create .world-city-map-icon-trigger{height:100%!important;min-height:32px!important}
+.world-city-map-editor .world-city-map-icon-picker{justify-self:start}
+.world-city-map-editor .world-city-map-icon-grid{bottom:auto;top:calc(100% + 4px)}
+
+@media(max-width:900px){
+  .world-city-map-category-main{grid-template-columns:24px minmax(0,1fr) 28px auto}
+  .world-city-map-category-points{padding-left:26px}
+  .world-city-map-icon-grid{grid-template-columns:repeat(5,32px)}
+}
+
+/* 2.8.44 — Leaflet CRS.Simple tiled Night City renderer. */
+.world-city-map-viewport{
+  position:relative;
+  overflow:hidden;
+  touch-action:none;
+}
+.world-city-map-leaflet{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  min-width:0;
+  min-height:0;
+  background:#05080d;
+}
+.world-city-map-leaflet.leaflet-container{
+  z-index:0;
+  font:inherit;
+  background:#05080d;
+  outline:0;
+}
+.world-city-map-leaflet .leaflet-map-pane,
+.world-city-map-leaflet .leaflet-tile-pane,
+.world-city-map-leaflet .leaflet-marker-pane{
+  will-change:auto;
+}
+.world-city-map-leaflet .leaflet-tile{
+  user-select:none;
+  -webkit-user-drag:none;
+}
+.world-city-map-leaflet .world-city-map-custom-image{
+  max-width:none!important;
+  max-height:none!important;
+  image-rendering:auto;
+}
+.world-city-map-leaflet-div-icon{
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+.world-city-map-leaflet-div-icon .world-city-map-marker{
+  position:static!important;
+  inset:auto!important;
+  transform:none!important;
+  width:24px!important;
+  min-width:24px!important;
+  max-width:24px!important;
+  height:24px!important;
+  min-height:24px!important;
+  max-height:24px!important;
+  margin:0!important;
+  padding:0!important;
+  display:grid!important;
+  place-items:center!important;
+  overflow:visible!important;
+  border:1px solid var(--world-map-marker-color,#f6c85f)!important;
+  border-radius:50%!important;
+  background:color-mix(in srgb,var(--world-map-marker-color,#f6c85f) 72%,#05070d)!important;
+  color:#070b10!important;
+  box-shadow:0 0 0 1px #000,0 0 10px color-mix(in srgb,var(--world-map-marker-color,#f6c85f) 50%,transparent)!important;
+  cursor:pointer!important;
+}
+.world-city-map-leaflet-div-icon .world-city-map-marker:hover,
+.world-city-map-leaflet-div-icon .world-city-map-marker:focus,
+.world-city-map-leaflet-div-icon .world-city-map-marker:focus-visible{
+  transform:none!important;
+  filter:brightness(1.15);
+  outline:0!important;
+}
+.world-city-map-leaflet-div-icon .world-city-map-marker-icon{
+  display:grid!important;
+  place-items:center!important;
+  width:22px!important;
+  height:22px!important;
+  line-height:1!important;
+  font-size:12px!important;
+  color:#fff!important;
+  pointer-events:none!important;
+}
+.world-city-map-leaflet-div-icon .world-city-map-marker>small{
+  display:none!important;
+}
+.world-city-map-viewport.placing .world-city-map-leaflet,
+.world-city-map-viewport.placing .leaflet-container{
+  cursor:crosshair!important;
+}
+.world-city-map-viewport.placing .leaflet-marker-icon{
+  pointer-events:none!important;
+}
+
+/* Leaflet owns pin positioning; neutralize the legacy #pcm-root hover transform. */
+#pcm-root .world-city-map-leaflet-div-icon .world-city-map-marker:hover:not(:disabled),
+#pcm-root .world-city-map-leaflet-div-icon .world-city-map-marker:active:not(:disabled),
+#pcm-root .world-city-map-leaflet-div-icon .world-city-map-marker:focus,
+#pcm-root .world-city-map-leaflet-div-icon .world-city-map-marker:focus-visible{
+  transform:none!important;
+}
+
+
+/* 2.8.47 — map owns the complete archive work area in all three archive modes. */
+#pcm-root .pcm-world-map-view{
+  width:100%!important;
+  height:100%!important;
+  min-width:0!important;
+  min-height:0!important;
+  max-width:none!important;
+  max-height:none!important;
+  overflow:hidden!important;
+}
+#pcm-root .pcm-world-map-view>[data-world-city-map-host]{
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  min-width:0!important;
+  min-height:0!important;
+  max-width:none!important;
+  max-height:none!important;
+  overflow:hidden!important;
+}
+/* Neo Archive applies its navigation `aside` rules to every nested aside.
+   The map sidebar is content, not the outer navigation rail. */
+#pcm-root .world-city-map-shell>.world-city-map-sidebar{
+  grid-area:auto!important;
+  min-width:0!important;
+  min-height:0!important;
+  padding:12px!important;
+  gap:10px!important;
+  overflow:auto!important;
+  background:color-mix(in srgb,#05080c 92%,var(--pcm-accent,#d04b4b) 8%)!important;
+  border:1px solid color-mix(in srgb,var(--pcm-accent,#d04b4b) 55%,transparent)!important;
+  box-shadow:none!important;
+}
+
+
+/* 2.8.49 — collapsible sidebar, reversible map visibility, editable marker colors. */
+.world-city-map-sidebar header{display:flex!important;align-items:flex-start;justify-content:space-between;gap:8px}
+.world-city-map-sidebar-title{display:grid;gap:2px;min-width:0}
+.world-city-map-sidebar-toggle{width:30px!important;min-width:30px!important;padding:0!important;align-self:flex-start}
+.world-city-map-shell.sidebar-collapsed{grid-template-columns:40px minmax(0,1fr)!important}
+.world-city-map-shell.sidebar-collapsed .world-city-map-sidebar{padding:8px 4px!important;overflow:hidden!important}
+.world-city-map-shell.sidebar-collapsed .world-city-map-sidebar> :not(header){display:none!important}
+.world-city-map-shell.sidebar-collapsed .world-city-map-sidebar header{justify-content:center!important}
+.world-city-map-shell.sidebar-collapsed .world-city-map-sidebar-title{display:none!important}
+.world-city-map-shell.sidebar-collapsed .world-city-map-sidebar-toggle{margin-inline:auto}
+.world-city-map-category.map-off,.world-city-map-category-point.map-off{opacity:.7!important}
+.world-city-map-category.map-off .world-city-map-category-select,.world-city-map-category-point.map-off .world-city-map-category-point-main{filter:saturate(.55)!important;opacity:.78!important}
+.world-city-map-category.map-off .world-city-map-category-visibility,.world-city-map-category-point.map-off .world-city-map-category-point-visibility{opacity:1!important;color:var(--world-map-category-color,var(--world-map-marker-color,#f6c85f))!important}
+.world-city-map-category.hidden,.world-city-map-category-point.hidden{display:revert!important;opacity:inherit!important}
+
+
+/* 2.8.51 — marker pins scale with Leaflet zoom. */
+.world-city-map-marker-size-24{--world-map-marker-size:24px;--world-map-marker-glyph-size:14px}
+.world-city-map-marker-size-30{--world-map-marker-size:30px;--world-map-marker-glyph-size:18px}
+.world-city-map-marker-size-36{--world-map-marker-size:36px;--world-map-marker-glyph-size:22px}
+.world-city-map-marker-size-42{--world-map-marker-size:42px;--world-map-marker-glyph-size:26px}
+.world-city-map-marker-size-48{--world-map-marker-size:48px;--world-map-marker-glyph-size:30px}
+.world-city-map-leaflet-div-icon .world-city-map-marker{
+  width:var(--world-map-marker-size,24px)!important;
+  min-width:var(--world-map-marker-size,24px)!important;
+  max-width:var(--world-map-marker-size,24px)!important;
+  height:var(--world-map-marker-size,24px)!important;
+  min-height:var(--world-map-marker-size,24px)!important;
+  max-height:var(--world-map-marker-size,24px)!important;
+}
+.world-city-map-leaflet-div-icon .world-city-map-marker-icon{
+  width:calc(var(--world-map-marker-size,24px) - 4px)!important;
+  height:calc(var(--world-map-marker-size,24px) - 4px)!important;
+  font-size:var(--world-map-marker-glyph-size,14px)!important;
+}
