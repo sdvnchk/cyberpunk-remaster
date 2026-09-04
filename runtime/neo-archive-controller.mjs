@@ -3698,9 +3698,9 @@ export async function createNeoArchiveController(hostRoot, { requestClose = asyn
     Object.assign(win.style, { left: `${p.left}px`, top: `${p.top}px`, width: `${visibleWidth}px`, height: `${visibleHeight}px` });
     win.classList.toggle("is-minimized", p.minimized);
     win.classList.toggle("nav-collapsed", p.navCollapsed);
-    win.classList.toggle("is-compact", !p.minimized && visibleWidth < 760);
-    win.classList.toggle("is-narrow", !p.minimized && visibleWidth < 560);
-    win.classList.toggle("is-tiny", !p.minimized && visibleWidth < 440);
+    win.classList.toggle("is-compact", !p.minimized && visibleWidth < 1180);
+    win.classList.toggle("is-narrow", !p.minimized && visibleWidth < 820);
+    win.classList.toggle("is-tiny", !p.minimized && visibleWidth < 560);
     win.classList.toggle("is-short", !p.minimized && visibleHeight < 520);
     const toggle = win.querySelector('[data-action="toggle-minimize"]');
     if ( toggle ) {
@@ -6518,6 +6518,286 @@ ${EMBEDDED_HOST_CSS}
   #pcm-root .pcm-neuro-compose.gm{margin-top:9px}.pcm-neuro-no-target{flex:1}.pcm-neuro-no-target b{color:var(--heading);font-size:15px}.pcm-neuro-no-target p{max-width:520px;margin:6px auto 0}
   @media(max-width:950px){#pcm-root .pcm-gm-neuro-grid{grid-template-columns:1fr}#pcm-root .pcm-gm-neuro .pcm-neuro-threads{max-height:240px!important}#pcm-root .pcm-neuro-routing{grid-template-columns:1fr 1fr}}
   @media(max-width:650px){#pcm-root .pcm-neuro-compose{grid-template-columns:1fr}#pcm-root .pcm-neuro-send{width:100%!important}#pcm-root .pcm-neuro-routing{grid-template-columns:1fr}#pcm-root .pcm-neuro-console-head{grid-template-columns:48px minmax(0,1fr)}#pcm-root .pcm-neuro-console-head>i{grid-column:1/-1;justify-self:start}#pcm-root .pcm-neuro-big-avatar{width:48px;height:48px}}
+
+  /* 2.8.54 — window-width responsive repair */
+  #pcm-root .pcm-window:not(.is-compact):not(.nav-collapsed) .pcm-layout{
+    grid-template-columns:minmax(0,1fr) clamp(225px,28%,290px)!important;
+    grid-template-areas:"main aside"!important;
+  }
+  #pcm-root .pcm-window main{grid-area:main!important;min-width:0!important;max-width:100%!important}
+  #pcm-root .pcm-window aside{grid-area:aside!important;min-width:0!important;max-width:100%!important}
+
+  #pcm-root .pcm-window.is-compact .pcm-layout,
+  #pcm-root .pcm-window.nav-collapsed .pcm-layout{
+    grid-template-columns:minmax(0,1fr) 58px!important;
+    grid-template-areas:"main aside"!important;
+  }
+  #pcm-root .pcm-window.is-narrow .pcm-layout{
+    grid-template-columns:minmax(0,1fr) 50px!important;
+  }
+  #pcm-root .pcm-window.is-tiny .pcm-layout{
+    grid-template-columns:minmax(0,1fr) 44px!important;
+  }
+  #pcm-root .pcm-window.is-compact aside,
+  #pcm-root .pcm-window.is-narrow aside,
+  #pcm-root .pcm-window.is-tiny aside{
+    overflow-x:hidden!important;
+    padding-left:5px!important;
+    padding-right:5px!important;
+  }
+  #pcm-root .pcm-window.is-compact aside>button,
+  #pcm-root .pcm-window.is-narrow aside>button,
+  #pcm-root .pcm-window.is-tiny aside>button{
+    grid-template-columns:1fr!important;
+    justify-items:center!important;
+    padding-left:0!important;
+    padding-right:0!important;
+  }
+  #pcm-root .pcm-window.is-compact aside>button>span,
+  #pcm-root .pcm-window.is-compact aside>button>i,
+  #pcm-root .pcm-window.is-compact .pcm-caption,
+  #pcm-root .pcm-window.is-compact .pcm-goal,
+  #pcm-root .pcm-window.is-narrow aside>button>span,
+  #pcm-root .pcm-window.is-narrow aside>button>i,
+  #pcm-root .pcm-window.is-narrow .pcm-caption,
+  #pcm-root .pcm-window.is-narrow .pcm-goal,
+  #pcm-root .pcm-window.is-tiny aside>button>span,
+  #pcm-root .pcm-window.is-tiny aside>button>i,
+  #pcm-root .pcm-window.is-tiny .pcm-caption,
+  #pcm-root .pcm-window.is-tiny .pcm-goal{
+    display:none!important;
+  }
+
+  #pcm-root .pcm-window.is-compact .pcm-section-head,
+  #pcm-root .pcm-window.is-compact .pcm-faction-head{
+    min-width:0!important;
+    align-items:stretch!important;
+    flex-direction:column!important;
+    gap:8px!important;
+  }
+  #pcm-root .pcm-window.is-compact .pcm-section-head>div:first-child,
+  #pcm-root .pcm-window.is-compact .pcm-faction-head>div:first-child{
+    min-width:0!important;
+    max-width:100%!important;
+  }
+  #pcm-root .pcm-window.is-compact .pcm-section-head h1,
+  #pcm-root .pcm-window.is-compact .pcm-faction-head h1{
+    max-width:100%!important;
+    white-space:nowrap!important;
+    word-break:normal!important;
+    overflow-wrap:normal!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    font-size:clamp(20px,4vw,27px)!important;
+  }
+  #pcm-root .pcm-window.is-compact .pcm-section-head>div:last-child,
+  #pcm-root .pcm-window.is-compact .pcm-faction-head>div:last-child{
+    min-width:0!important;
+    width:100%!important;
+    justify-content:flex-start!important;
+    flex-wrap:wrap!important;
+  }
+  #pcm-root .pcm-window.is-compact .pcm-section-head>div:last-child>button,
+  #pcm-root .pcm-window.is-compact .pcm-faction-head>div:last-child>button{
+    flex:0 1 auto!important;
+    max-width:100%!important;
+    white-space:normal!important;
+  }
+  #pcm-root .pcm-window.is-narrow .pcm-section-hint{
+    margin-top:0!important;
+  }
+
+  #pcm-root .pcm-window.is-compact .pcm-modal-backdrop{
+    padding:10px!important;
+  }
+  #pcm-root .pcm-window.is-compact .pcm-contact-picker,
+  #pcm-root .pcm-window.is-compact .pcm-quick-group-create{
+    width:min(680px,100%)!important;
+    max-width:100%!important;
+    min-width:0!important;
+  }
+  #pcm-root .pcm-window.is-narrow .pcm-contact-picker>header,
+  #pcm-root .pcm-window.is-narrow .pcm-quick-group-create>header{
+    padding:12px!important;
+    gap:8px!important;
+  }
+  #pcm-root .pcm-window.is-narrow .pcm-contact-picker>header>div,
+  #pcm-root .pcm-window.is-narrow .pcm-quick-group-create>header>div{
+    min-width:0!important;
+  }
+  #pcm-root .pcm-window.is-narrow .pcm-contact-picker h2,
+  #pcm-root .pcm-window.is-narrow .pcm-quick-group-create h2{
+    font-size:19px!important;
+    line-height:1.15!important;
+    overflow-wrap:anywhere!important;
+  }
+  #pcm-root .pcm-window.is-narrow .pcm-picker-list>button{
+    grid-template-columns:40px minmax(0,1fr)!important;
+    grid-template-rows:auto auto!important;
+    align-items:center!important;
+  }
+  #pcm-root .pcm-window.is-narrow .pcm-picker-list>button>strong{
+    grid-column:2!important;
+    justify-self:start!important;
+    min-width:0!important;
+    max-width:100%!important;
+    white-space:normal!important;
+    overflow-wrap:anywhere!important;
+  }
+  #pcm-root .pcm-window.is-tiny .pcm-modal-backdrop{
+    padding:6px!important;
+  }
+  #pcm-root .pcm-window.is-tiny .pcm-contact-picker,
+  #pcm-root .pcm-window.is-tiny .pcm-quick-group-create{
+    width:100%!important;
+    max-width:100%!important;
+    max-height:100%!important;
+    border-radius:8px!important;
+  }
+  #pcm-root .pcm-window.is-tiny .pcm-picker-search{
+    margin:8px 8px 6px!important;
+  }
+  #pcm-root .pcm-window.is-tiny .pcm-picker-list{
+    padding:5px 8px 8px!important;
+  }
+  #pcm-root .pcm-window.is-tiny .pcm-contact-picker>footer,
+  #pcm-root .pcm-window.is-tiny .pcm-quick-group-create>footer{
+    padding:8px!important;
+  }
+
+
+  /* 2.8.55 — compact nav overlay and clickable map editor */
+  #pcm-root .pcm-window.is-compact:not(.nav-collapsed) .pcm-layout{
+    position:relative!important;
+    grid-template-columns:minmax(0,1fr) 0!important;
+    grid-template-areas:"main aside"!important;
+  }
+  #pcm-root .pcm-window.is-compact:not(.nav-collapsed) aside{
+    position:absolute!important;
+    top:0!important;
+    right:0!important;
+    bottom:0!important;
+    width:min(280px,72%)!important;
+    max-width:min(280px,72%)!important;
+    height:100%!important;
+    z-index:80!important;
+    padding:10px 9px!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    background:linear-gradient(180deg,var(--sidebar),var(--sidebar-tint))!important;
+    border-left:1px solid var(--line)!important;
+    box-shadow:-16px 0 32px #000b,inset 1px 0 0 #ffffff08!important;
+  }
+  #pcm-root .pcm-window.is-compact:not(.nav-collapsed) .pcm-nav-header{
+    display:flex!important;
+  }
+  #pcm-root .pcm-window.is-compact:not(.nav-collapsed) aside>button{
+    grid-template-columns:24px minmax(0,1fr) 24px!important;
+    justify-items:stretch!important;
+    padding:0 8px!important;
+  }
+  #pcm-root .pcm-window.is-compact:not(.nav-collapsed) aside>button>span,
+  #pcm-root .pcm-window.is-compact:not(.nav-collapsed) aside>button>i,
+  #pcm-root .pcm-window.is-compact:not(.nav-collapsed) .pcm-caption{
+    display:block!important;
+  }
+  #pcm-root .pcm-window.is-compact:not(.nav-collapsed) .pcm-goal{
+    display:grid!important;
+  }
+  #pcm-root .pcm-window.is-compact.nav-collapsed .pcm-layout{
+    grid-template-columns:minmax(0,1fr) 58px!important;
+    grid-template-areas:"main aside"!important;
+  }
+  #pcm-root .pcm-window.is-compact.nav-collapsed aside>button>span,
+  #pcm-root .pcm-window.is-compact.nav-collapsed aside>button>i,
+  #pcm-root .pcm-window.is-compact.nav-collapsed .pcm-caption,
+  #pcm-root .pcm-window.is-compact.nav-collapsed .pcm-goal{
+    display:none!important;
+  }
+  #pcm-root .pcm-window.is-compact.is-narrow.nav-collapsed .pcm-layout{
+    grid-template-columns:minmax(0,1fr) 50px!important;
+  }
+  #pcm-root .pcm-window.is-compact.is-tiny.nav-collapsed .pcm-layout{
+    grid-template-columns:minmax(0,1fr) 44px!important;
+  }
+
+  /* 2.8.56 — explicit nav collapse only; restore compact top labels */
+  #pcm-root .pcm-window.is-compact:not(.nav-collapsed) .pcm-layout{
+    position:relative!important;
+    grid-template-columns:minmax(0,1fr) clamp(220px,30%,290px)!important;
+    grid-template-areas:"main aside"!important;
+  }
+  #pcm-root .pcm-window.is-compact:not(.nav-collapsed) aside{
+    position:static!important;
+    inset:auto!important;
+    width:auto!important;
+    max-width:100%!important;
+    height:auto!important;
+    z-index:auto!important;
+    padding:calc(10px * var(--pcm-ui-scale)) calc(8px * var(--pcm-ui-scale))!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    box-shadow:inset 1px 0 0 #ffffff05,inset 8px 0 18px #0003!important;
+  }
+  #pcm-root .pcm-window.is-compact:not(.nav-collapsed) .pcm-nav-header{
+    display:flex!important;
+  }
+  #pcm-root .pcm-window.is-compact:not(.nav-collapsed) aside>button{
+    grid-template-columns:24px minmax(0,1fr) 24px!important;
+    justify-items:stretch!important;
+    padding:0 8px!important;
+  }
+  #pcm-root .pcm-window.is-compact:not(.nav-collapsed) aside>button>span,
+  #pcm-root .pcm-window.is-compact:not(.nav-collapsed) aside>button>i,
+  #pcm-root .pcm-window.is-compact:not(.nav-collapsed) .pcm-caption{
+    display:block!important;
+  }
+  #pcm-root .pcm-window.is-compact:not(.nav-collapsed) .pcm-goal{
+    display:grid!important;
+  }
+
+  #pcm-root .pcm-window.nav-collapsed .pcm-layout{
+    grid-template-columns:minmax(0,1fr) 58px!important;
+    grid-template-areas:"main aside"!important;
+  }
+  #pcm-root .pcm-window.nav-collapsed aside>button{
+    grid-template-columns:1fr!important;
+    justify-items:center!important;
+    padding-left:0!important;
+    padding-right:0!important;
+  }
+  #pcm-root .pcm-window.nav-collapsed aside>button>span,
+  #pcm-root .pcm-window.nav-collapsed aside>button>i,
+  #pcm-root .pcm-window.nav-collapsed .pcm-caption,
+  #pcm-root .pcm-window.nav-collapsed .pcm-goal{
+    display:none!important;
+  }
+  #pcm-root .pcm-window.is-narrow.nav-collapsed .pcm-layout{
+    grid-template-columns:minmax(0,1fr) 50px!important;
+  }
+  #pcm-root .pcm-window.is-tiny.nav-collapsed .pcm-layout{
+    grid-template-columns:minmax(0,1fr) 44px!important;
+  }
+
+  #pcm-root .pcm-window.is-compact .pcm-top{
+    flex-wrap:wrap!important;
+    align-content:center!important;
+    overflow:visible!important;
+  }
+  #pcm-root .pcm-window.is-compact .pcm-top-actions{
+    flex-wrap:wrap!important;
+    justify-content:flex-end!important;
+    overflow:visible!important;
+  }
+  #pcm-root .pcm-window.is-compact .pcm-top-actions>button span{
+    display:inline!important;
+  }
+  #pcm-root .pcm-window.is-compact .pcm-top-actions>button:not(.pcm-window-toggle):not(.pcm-close){
+    width:auto!important;
+    min-width:0!important;
+    max-width:none!important;
+    padding:0 calc(10px * var(--pcm-ui-scale))!important;
+  }
 
 ${EMBEDDED_HOST_CSS}
 </style><div class="pcm-window" role="dialog" aria-label="Night City: полевой архив"></div>`;
